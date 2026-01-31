@@ -3,6 +3,14 @@
     const projects = $derived(data.projects);
 </script>
 
+<svelte:head>
+    <title>Project | Chelvyn Kleden</title>
+    <meta
+        name="description"
+        content="Kumpulan project dan karya digital oleh Blasius Chelvyn Kera Kleden."
+    />
+</svelte:head>
+
 <div class="projects-page">
     <section class="page-header container">
         <a href="/" class="back-link">← Kembali ke Home</a>

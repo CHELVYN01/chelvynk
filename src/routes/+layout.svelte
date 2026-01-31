@@ -19,6 +19,24 @@
 		rel="stylesheet"
 	/>
 	<title>Chelvyn Kleden | Portfolio</title>
+	<meta
+		name="description"
+		content="Portfolio Blasius Chelvyn Kera Kleden - Fullstack Developer & Odoo Expert. Spesialis dalam membangun aplikasi web modern yang responsif dan berdampak."
+	/>
+	<meta
+		name="keywords"
+		content="BLASIUS CHELVYN KERA KLEDEN, Kleden kelvin, kelvin kleden, chelvyn Kleden, Fullstack Developer, Odoo Indonesia, Web Developer, Svelte Indonesia"
+	/>
+	<meta name="author" content="Blasius Chelvyn Kera Kleden" />
+
+	<!-- Open Graph / Social Media -->
+	<meta property="og:type" content="website" />
+	<meta property="og:title" content="Chelvyn Kleden | Portfolio" />
+	<meta
+		property="og:description"
+		content="Portfolio Blasius Chelvyn Kera Kleden - Fullstack Developer & Odoo Expert."
+	/>
+	<meta property="og:site_name" content="Chelvyn Kleden Portfolio" />
 </svelte:head>
 
 <header class="header">
