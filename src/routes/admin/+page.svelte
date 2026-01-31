@@ -589,23 +589,28 @@
                                 method="POST"
                                 action="?/updateStatus"
                                 use:enhance
-                                class="status-form"
+                                class="admin-form"
                             >
                                 <div class="form-group">
                                     <label for="status">Status Saat Ini</label>
-                                    <div class="status-input-group">
-                                        <input
-                                            type="text"
-                                            id="status"
-                                            name="status"
-                                            bind:value={currentStatus}
-                                            placeholder="Contoh: Tersedia untuk Project Baru"
-                                            required
-                                        />
+                                    <div
+                                        style="display: flex; gap: 1rem; align-items: flex-start;"
+                                    >
+                                        <div style="flex: 1;">
+                                            <input
+                                                type="text"
+                                                id="status"
+                                                name="status"
+                                                bind:value={currentStatus}
+                                                placeholder="Contoh: Tersedia untuk Project Baru"
+                                                required
+                                            />
+                                        </div>
                                         <button
                                             type="submit"
                                             class="btn btn-primary"
-                                            >Simpan Status</button
+                                            style="height: 52px; padding: 0 2rem;"
+                                            >Simpan</button
                                         >
                                     </div>
                                     <div class="status-presets">
@@ -652,8 +657,8 @@
                                 method="POST"
                                 action="?/updateSocialLinks"
                                 use:enhance
-                                class="status-form"
-                                style="max-width: 800px;"
+                                class="admin-form"
+                                style="max-width: 900px;"
                             >
                                 <div class="form-grid">
                                     <div class="form-group">
@@ -692,13 +697,17 @@
                                         />
                                     </div>
                                 </div>
-                                <button
-                                    type="submit"
-                                    class="btn btn-primary"
-                                    style="margin-top: 1.5rem;"
+                                <div
+                                    style="margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid #f1f5f9;"
                                 >
-                                    Simpan Social Links
-                                </button>
+                                    <button
+                                        type="submit"
+                                        class="btn btn-primary"
+                                        style="padding: 0.875rem 2.5rem;"
+                                    >
+                                        Simpan Perubahan Social Links
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     </div>
@@ -1393,32 +1402,11 @@
         margin-bottom: 2.5rem;
     }
 
-    .status-form {
-        max-width: 600px;
-    }
-    .status-input-group {
-        display: flex;
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-    }
-    .status-input-group input {
-        flex: 1;
-        padding: 1rem 1.25rem;
-        border: 2px solid #e2e8f0;
-        border-radius: 1rem;
-        font-size: 1rem;
-        font-weight: 500;
-    }
-    .status-input-group input:focus {
-        border-color: var(--primary);
-        outline: none;
-        box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.1);
-    }
-
     .status-presets {
         display: flex;
         gap: 0.75rem;
         flex-wrap: wrap;
+        margin-top: 1.5rem;
     }
     .preset-tag {
         background: #f1f5f9;
