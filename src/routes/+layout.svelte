@@ -1,0 +1,265 @@
+<script lang="ts">
+	import "../app.css";
+	import favicon from "$lib/assets/favicon.svg";
+
+	let { children } = $props();
+	let isMobileMenuOpen = $state(false);
+
+	function toggleMenu() {
+		isMobileMenuOpen = !isMobileMenuOpen;
+	}
+</script>
+
+<svelte:head>
+	<link rel="icon" href={favicon} />
+	<link rel="preconnect" href="https://fonts.googleapis.com" />
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+	<link
+		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+		rel="stylesheet"
+	/>
+	<title>Chelvyn Kleden | Portfolio</title>
+</svelte:head>
+
+<header class="header">
+	<div class="container nav-container">
+		<div class="logo">CK<span>.</span></div>
+
+		<button
+			class="mobile-toggle"
+			onclick={toggleMenu}
+			aria-label="Toggle Menu"
+		>
+			<span class={isMobileMenuOpen ? "open" : ""}></span>
+			<span class={isMobileMenuOpen ? "open" : ""}></span>
+			<span class={isMobileMenuOpen ? "open" : ""}></span>
+		</button>
+
+		<nav class="nav-links {isMobileMenuOpen ? 'show' : ''}">
+			<ul>
+				<li>
+					<a href="/#home" onclick={() => (isMobileMenuOpen = false)}
+						>Home</a
+					>
+				</li>
+				<li>
+					<a href="/#about" onclick={() => (isMobileMenuOpen = false)}
+						>About</a
+					>
+				</li>
+				<li>
+					<a
+						href="/projects"
+						onclick={() => (isMobileMenuOpen = false)}>Projects</a
+					>
+				</li>
+				<li>
+					<a
+						href="#contact"
+						class="btn btn-primary btn-sm"
+						onclick={() => (isMobileMenuOpen = false)}>Kontak</a
+					>
+				</li>
+			</ul>
+		</nav>
+	</div>
+</header>
+
+<main>
+	{@render children()}
+</main>
+
+<footer class="footer">
+	<div class="container">
+		<div class="footer-content">
+			<div class="footer-logo">CK<span>.</span></div>
+			<div class="footer-links">
+				<a href="https://github.com" target="_blank">GitHub</a>
+				<a href="https://linkedin.com" target="_blank">LinkedIn</a>
+				<a href="https://twitter.com" target="_blank">Twitter</a>
+			</div>
+			<p class="copyright">
+				&copy; 2026 Chelvyn Kleden. Membangun solusi digital yang
+				bermakna.
+			</p>
+		</div>
+	</div>
+</footer>
+
+<style>
+	.header {
+		position: sticky;
+		top: 0;
+		background: rgba(255, 255, 255, 0.9);
+		backdrop-filter: blur(12px);
+		-webkit-backdrop-filter: blur(12px);
+		z-index: 1000;
+		border-bottom: 1px solid var(--border);
+	}
+
+	.nav-container {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		height: 4.5rem;
+	}
+
+	.logo {
+		font-size: 1.5rem;
+		font-weight: 800;
+		color: var(--text-main);
+		z-index: 1100;
+	}
+
+	.logo span {
+		color: var(--primary);
+	}
+
+	.nav-links {
+		display: flex;
+		align-items: center;
+	}
+
+	.nav-links ul {
+		display: flex;
+		align-items: center;
+		gap: 2.5rem;
+		list-style: none;
+	}
+
+	.nav-links a {
+		font-size: 0.9375rem;
+		font-weight: 500;
+		color: var(--text-muted);
+		text-decoration: none;
+		transition: color 0.2s;
+	}
+
+	.nav-links a:hover {
+		color: var(--primary);
+	}
+
+	.nav-links a.btn {
+		color: white;
+	}
+
+	.btn-sm {
+		padding: 0.5rem 1.25rem;
+		font-size: 0.875rem;
+	}
+
+	/* Mobile Toggle Button */
+	.mobile-toggle {
+		display: none;
+		flex-direction: column;
+		justify-content: space-between;
+		width: 24px;
+		height: 18px;
+		background: none;
+		border: none;
+		cursor: pointer;
+		padding: 0;
+		z-index: 1100;
+	}
+
+	.mobile-toggle span {
+		width: 100%;
+		height: 2px;
+		background-color: var(--text-main);
+		transition: all 0.3s;
+		border-radius: 2px;
+	}
+
+	.mobile-toggle span.open:nth-child(1) {
+		transform: translateY(8px) rotate(45deg);
+	}
+	.mobile-toggle span.open:nth-child(2) {
+		opacity: 0;
+	}
+	.mobile-toggle span.open:nth-child(3) {
+		transform: translateY(-8px) rotate(-45deg);
+	}
+
+	/* Tablet/Mobile styles */
+	@media (max-width: 768px) {
+		.mobile-toggle {
+			display: flex;
+		}
+
+		.nav-links {
+			position: fixed;
+			top: 0;
+			right: -100%;
+			width: 80%;
+			max-width: 300px;
+			height: 100vh;
+			background: white;
+			flex-direction: column;
+			justify-content: center;
+			padding: 2rem;
+			box-shadow: -10px 0 30px rgba(0, 0, 0, 0.05);
+			transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+		}
+
+		.nav-links.show {
+			right: 0;
+		}
+
+		.nav-links ul {
+			flex-direction: column;
+			gap: 2rem;
+			width: 100%;
+		}
+
+		.nav-links a {
+			font-size: 1.25rem;
+			width: 100%;
+			display: block;
+			text-align: center;
+		}
+	}
+
+	.footer {
+		padding: 4rem 0;
+		background: #f8fafc;
+		border-top: 1px solid var(--border);
+	}
+
+	.footer-content {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 1.5rem;
+	}
+
+	.footer-logo {
+		font-size: 1.25rem;
+		font-weight: 800;
+	}
+
+	.footer-logo span {
+		color: var(--primary);
+	}
+
+	.footer-links {
+		display: flex;
+		gap: 2rem;
+	}
+
+	.footer-links a {
+		color: var(--text-muted);
+		font-size: 0.875rem;
+		font-weight: 500;
+		text-decoration: none;
+	}
+
+	.footer-links a:hover {
+		color: var(--primary);
+	}
+
+	.copyright {
+		color: var(--text-muted);
+		font-size: 0.8125rem;
+		text-align: center;
+	}
+</style>

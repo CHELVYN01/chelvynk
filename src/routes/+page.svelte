@@ -1,0 +1,531 @@
+<script lang="ts">
+  let { data } = $props();
+  const projects = $derived(data.projects);
+</script>
+
+<section id="home" class="hero-section">
+  <div class="container hero-grid">
+    <div class="hero-content fade-in">
+      <div class="badge">Tersedia untuk Project Baru</div>
+      <h1>
+        Membangun <span class="text-orange">Pengalaman Digital</span> yang Berdampak.
+      </h1>
+      <p>
+        Halo, saya Chelvyn. Seorang Full-stack Developer yang mendedikasikan
+        diri untuk merancang aplikasi web yang cepat, aman, dan mudah digunakan.
+      </p>
+      <div class="hero-btns">
+        <a href="/projects" class="btn btn-primary">Lihat Pekerjaan</a>
+        <a href="#about" class="btn btn-outline">Tentang Saya</a>
+      </div>
+    </div>
+    <div class="hero-visual fade-in delay-1">
+      <div class="illustration-container">
+        <img
+          src="/hero-dev-2.png"
+          alt="Developer Illustration"
+          class="hero-img"
+        />
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="about" class="about-section">
+  <div class="container grid-2">
+    <div class="fade-in delay-1">
+      <span class="section-tag">Tentang Saya</span>
+      <h2>
+        Membangun Karir di <span class="text-orange">Dunia Teknologi.</span>
+      </h2>
+
+      <div class="experience-list">
+        <div class="exp-item">
+          <div class="exp-date">Apr 2025 — Sekarang</div>
+          <div class="exp-info">
+            <h3>Odoo Technical Consultant</h3>
+            <p class="company">PT. Sinergi Karya Solusindo</p>
+          </div>
+        </div>
+
+        <div class="exp-item">
+          <div class="exp-date">Agu 2024 — Sekarang</div>
+          <div class="exp-info">
+            <h3>Freelance Fullstack Developer</h3>
+            <p class="company">Web, Mobile & Desktop Specialist</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="about-text fade-in delay-2">
+      <p>
+        Saya adalah pengembang perangkat lunak yang berpengalaman dalam
+        membangun ekosistem digital yang kompleks. Dengan latar belakang yang
+        kuat di berbagai platform, saya berfokus pada solusi yang efisien dan
+        skalabel.
+      </p>
+      <p>
+        Keahlian saya mencakup implementasi ERP menggunakan <strong>Odoo</strong
+        >, pengembangan web modern dengan <strong>Svelte</strong> dan
+        <strong>Next.js</strong>, hingga solusi aplikasi desktop berbasis
+        <strong>Tauri</strong>
+        dan mobile dengan <strong>React Native</strong>.
+      </p>
+      <p>
+        Di sisi infrastruktur dan CI/CD, saya mengandalkan <strong>Rust</strong
+        >, <strong>Python</strong>, <strong>Git</strong>, serta
+        <strong>Docker</strong> untuk membangun backend yang performan, handal, dan
+        mudah dideploy secara otomatis.
+      </p>
+
+      <div class="stack-tags">
+        <span class="tag">Odoo ERP</span>
+        <span class="tag">Svelte</span>
+        <span class="tag">Next.js</span>
+        <span class="tag">Tauri (Desktop)</span>
+        <span class="tag">React Native</span>
+        <span class="tag">Rust</span>
+        <span class="tag">Python</span>
+        <span class="tag">Git</span>
+        <span class="tag">Docker</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="projects" class="project-section">
+  <div class="container">
+    <div class="section-header">
+      <div>
+        <span class="section-tag">Portofolio</span>
+        <h2>Project <span class="text-orange">Terpilih</span></h2>
+      </div>
+      <p>
+        Kumpulan project yang mencerminkan dedikasi saya dalam pengembangan
+        perangkat lunak.
+      </p>
+    </div>
+
+    <div class="project-grid">
+      {#each projects as project}
+        <div class="card project-card fade-in">
+          <div class="project-info">
+            <div class="project-tags">
+              {#each project.categories as cat}
+                <span class="project-cat">{cat}</span>
+              {/each}
+            </div>
+            <h3>{project.title}</h3>
+            <p>{project.description}</p>
+            <div class="project-tech">
+              {#each project.tech as t}
+                <span>{t}</span>
+              {/each}
+            </div>
+            <a href={project.link} class="project-link">Lihat Demo →</a>
+          </div>
+        </div>
+      {/each}
+    </div>
+  </div>
+</section>
+
+<section id="contact" class="contact-section">
+  <div class="container">
+    <div class="contact-card-main fade-in">
+      <span class="section-tag">Kontak</span>
+      <h2 class="contact-title">
+        <span>Mari Mulai</span>
+        <span class="text-orange">Sesuatu yang Besar.</span>
+      </h2>
+      <p>
+        Punya ide project atau ingin diskusi tentang Odoo & Fullstack
+        development? Saya selalu terbuka untuk kolaborasi baru.
+      </p>
+
+      <div class="contact-options">
+        <a href="mailto:kledenchelvyn@gmail.com" class="contact-box">
+          <div class="contact-icon">✉️</div>
+          <div class="contact-info">
+            <h3>Email</h3>
+            <p>kledenchelvyn@gmail.com</p>
+          </div>
+        </a>
+
+        <a href="https://t.me/kledenvin" target="_blank" class="contact-box">
+          <div class="contact-icon">✈️</div>
+          <div class="contact-info">
+            <h3>Telegram</h3>
+            <p>@kledenvin</p>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .text-orange {
+    color: var(--primary);
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: #fff7ed;
+    color: var(--primary);
+    border: 1px solid #ffedd5;
+    border-radius: 2rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-section {
+    position: relative;
+    padding: 8rem 0 6rem;
+    overflow: hidden;
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+  }
+
+  .hero-grid {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 2rem;
+    align-items: center;
+    width: 100%;
+  }
+
+  .hero-content h1 {
+    font-size: clamp(2.5rem, 5vw, 4.25rem);
+    line-height: 1.1;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-content p {
+    font-size: 1.125rem;
+    color: var(--text-muted);
+    max-width: 520px;
+    margin-bottom: 2.5rem;
+    line-height: 1.6;
+  }
+
+  .hero-btns {
+    display: flex;
+    gap: 1rem;
+    position: relative;
+    z-index: 10;
+  }
+
+  .hero-visual {
+    position: relative;
+    z-index: -1;
+    opacity: 1;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    pointer-events: none;
+  }
+
+  .illustration-container {
+    width: 100%;
+    max-width: 650px;
+    margin-right: -10%;
+  }
+
+  .hero-img {
+    width: 100%;
+    height: auto;
+    display: block;
+    mix-blend-mode: multiply;
+  }
+  .project-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  @keyframes blob {
+    from {
+      border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+    }
+    to {
+      border-radius: 50% 50% 20% 80% / 25% 80% 20% 75%;
+    }
+  }
+
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+  }
+
+  .section-tag {
+    color: var(--primary);
+    font-weight: 700;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    display: block;
+    margin-bottom: 0.75rem;
+  }
+
+  .about-text p {
+    margin-bottom: 1.5rem;
+    color: var(--text-muted);
+  }
+
+  .experience-list {
+    margin-top: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .exp-item {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .exp-date {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: var(--primary);
+    text-transform: uppercase;
+    min-width: 140px;
+    padding-top: 0.25rem;
+  }
+
+  .exp-info h3 {
+    font-size: 1.125rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .exp-info .company {
+    color: var(--text-muted);
+    font-size: 0.9375rem;
+  }
+
+  .stack-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 2rem;
+  }
+
+  .tag {
+    background: #fff7ed;
+    color: var(--primary);
+    padding: 0.4rem 1rem;
+    border-radius: 2rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    border: 1px solid #ffedd5;
+  }
+
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 4rem;
+  }
+
+  .section-header p {
+    max-width: 400px;
+    color: var(--text-muted);
+  }
+
+  .project-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+  }
+
+  .project-card {
+    padding: 2.5rem;
+  }
+
+  .project-cat {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--primary);
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    display: block;
+  }
+
+  .project-card h3 {
+    margin-bottom: 1rem;
+  }
+
+  .project-card p {
+    color: var(--text-muted);
+    font-size: 0.9375rem;
+    margin-bottom: 1.5rem;
+    height: 4.5rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .project-tech {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .project-tech span {
+    font-size: 0.75rem;
+    background: #f8fafc;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.5rem;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+
+  .project-link {
+    font-weight: 600;
+    color: var(--primary);
+    font-size: 0.9375rem;
+  }
+
+  .contact-card-main {
+    background: #0f172a;
+    padding: 5rem 3rem;
+    border-radius: 2.5rem;
+    text-align: center;
+    color: white;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  }
+
+  .contact-title {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    margin: 1rem 0 1.5rem;
+  }
+
+  .contact-title span {
+    display: block;
+    line-height: 1.1;
+  }
+
+  .contact-card-main h2 {
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 800;
+  }
+
+  .contact-card-main p {
+    color: #94a3b8;
+    max-width: 550px;
+    margin: 0 auto 3.5rem;
+    font-size: 1.05rem;
+    line-height: 1.6;
+  }
+
+  .contact-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    max-width: 900px;
+    margin: 0 auto;
+    align-items: stretch;
+  }
+
+  .contact-box {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 1.5rem 2rem;
+    border-radius: 1.5rem;
+    display: flex;
+    align-items: center; /* This centers the icon and text block vertically */
+    gap: 1.5rem;
+    text-decoration: none;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: left;
+  }
+
+  .contact-box:hover {
+    background: rgba(255, 255, 255, 0.07);
+    transform: translateY(-8px);
+    border-color: var(--primary);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+  }
+
+  .contact-icon {
+    font-size: 1.75rem;
+    background: rgba(255, 255, 255, 0.05);
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 1.15rem;
+    flex-shrink: 0;
+    transition: all 0.3s ease;
+    line-height: 1;
+  }
+
+  .contact-box:hover .contact-icon {
+    background: var(--primary);
+    color: white;
+    transform: rotate(-10deg);
+  }
+
+  .contact-info {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.15rem;
+  }
+
+  .contact-info h3 {
+    font-size: 1.25rem;
+    color: white;
+    margin: 0;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .contact-info p {
+    font-size: 0.9375rem;
+    color: #94a3b8;
+    margin: 0;
+    font-weight: 500;
+    line-height: 1.2;
+  }
+
+  @media (max-width: 768px) {
+    .contact-card-main {
+      padding: 3rem 1.5rem;
+    }
+
+    .contact-card-main h2 {
+      font-size: 2rem;
+    }
+
+    .contact-options {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .hero-grid,
+    .grid-2,
+    .section-header {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+    .section-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  }
+</style>
