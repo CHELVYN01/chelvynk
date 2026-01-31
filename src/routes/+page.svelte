@@ -3,13 +3,34 @@
   let { data } = $props();
   const projects = $derived(data.projects);
 
-  // Helper untuk memastikan link diawali http/https
   const formatUrl = (url: string) => {
     if (!url) return "#";
     if (url.startsWith("http://") || url.startsWith("https://")) return url;
     return `https://${url}`;
   };
+
+  // Structured Data for Google
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: "Blasius Chelvyn Kera Kleden",
+    alternateName: "Chelvyn Kleden",
+    url: "https://chelvynkleden.com",
+    jobTitle: "Fullstack Developer & Odoo Consultant",
+    description:
+      "Fullstack Developer spesialis Odoo, Svelte, dan Next.js berbasis di Indonesia.",
+    sameAs: [
+      "https://github.com/CHELVYN01",
+      "https://linkedin.com/in/chelvynkleden",
+    ],
+  };
 </script>
+
+<svelte:head>
+  <script type="application/ld+json">
+    {JSON.stringify(structuredData)}
+  </script>
+</svelte:head>
 
 <section id="home" class="hero-section">
   <div class="container hero-grid">
@@ -31,7 +52,7 @@
       <div class="illustration-container">
         <img
           src="/hero-dev-2.png"
-          alt="Developer Illustration"
+          alt="Blasius Chelvyn Kera Kleden - Fullstack Developer Portfolio Illustration"
           class="hero-img"
         />
       </div>
