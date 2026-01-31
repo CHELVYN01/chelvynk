@@ -525,29 +525,107 @@
   }
 
   @media (max-width: 768px) {
-    .contact-card-main {
-      padding: 3rem 1.5rem;
+    .container {
+      padding: 0 1rem;
     }
 
-    .contact-card-main h2 {
-      font-size: 2rem;
+    .hero-section {
+      padding: 6rem 0 3rem;
+      text-align: center;
+    }
+
+    .hero-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .hero-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .hero-content h1 {
+      font-size: 2.5rem;
+    }
+
+    .hero-btns {
+      width: 100%;
+      flex-direction: column;
+    }
+
+    .hero-btns .btn {
+      width: 100%;
+    }
+
+    .hero-visual {
+      display: none; /* Hide complex visual on small mobile to avoid overflow */
+    }
+
+    .grid-2 {
+      grid-template-columns: 1fr;
+      gap: 2rem;
+    }
+
+    .section-header {
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+
+    .project-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .project-card {
+      padding: 1.5rem;
+    }
+
+    .contact-card-main {
+      padding: 3rem 1rem;
+      border-radius: 1.5rem;
+      margin: 0 0.5rem; /* Give some breathing room */
+    }
+
+    .contact-title {
+      font-size: 1.75rem;
     }
 
     .contact-options {
       grid-template-columns: 1fr;
+      width: 100%;
+    }
+
+    .contact-box {
+      padding: 1rem;
+      gap: 1rem;
+    }
+
+    .contact-icon {
+      width: 50px;
+      height: 50px;
+    }
+
+    .contact-info p {
+      font-size: 0.8125rem;
+      word-break: break-all; /* Prevent long email from pushing out box */
     }
   }
 
-  @media (max-width: 768px) {
-    .hero-grid,
-    .grid-2,
-    .section-header {
-      grid-template-columns: 1fr;
-      gap: 2rem;
+  @media (max-width: 480px) {
+    .badge {
+      font-size: 0.75rem;
     }
-    .section-header {
+    .tag {
+      padding: 0.3rem 0.75rem;
+      font-size: 0.75rem;
+    }
+    .exp-item {
       flex-direction: column;
-      align-items: flex-start;
+      gap: 0.5rem;
+    }
+    .exp-date {
+      min-width: unset;
     }
   }
 </style>

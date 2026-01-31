@@ -151,4 +151,26 @@
         color: var(--primary);
         font-size: 0.9375rem;
     }
+    @media (max-width: 768px) {
+        .page-header {
+            padding: 6rem 0 2rem;
+            text-align: center;
+        }
+        .page-header h1 {
+            font-size: 2.25rem;
+        }
+        .project-grid {
+            grid-template-columns: 1fr;
+            padding: 0 0.5rem;
+        }
+        .project-card {
+            padding: 1.5rem;
+        }
+    }
+
+    @media (max-width: 480px) {
+        .page-header h1 {
+            font-size: 1.875rem;
+        }
+    }
 </style>
