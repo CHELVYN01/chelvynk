@@ -1,5 +1,6 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
+    import { Star, Pencil, Trash2, LogOut, PlusCircle } from "lucide-svelte";
     let {
         data,
         form,
@@ -41,9 +42,14 @@
             <div class="admin-title-row">
                 <h1>Dashboard <span class="text-orange">Project</span></h1>
                 <form method="POST" action="?/logout" use:enhance>
-                    <button type="submit" class="btn btn-outline btn-sm"
-                        >Keluar</button
+                    <button
+                        type="submit"
+                        class="btn btn-outline btn-sm"
+                        style="gap: 0.5rem;"
                     >
+                        <LogOut size={16} />
+                        Keluar
+                    </button>
                 </form>
             </div>
             <p>Kelola daftar project portofolio Anda di sini.</p>
@@ -115,9 +121,14 @@
                     </div>
                     <div class="form-group-horizontal">
                         <div></div>
-                        <button type="submit" class="btn btn-primary"
-                            >Simpan Project</button
+                        <button
+                            type="submit"
+                            class="btn btn-primary"
+                            style="gap: 0.5rem;"
                         >
+                            <PlusCircle size={18} />
+                            Simpan Project
+                        </button>
                     </div>
                 </form>
             </div>
@@ -230,9 +241,15 @@
                                                 ? "Hapus dari Home"
                                                 : "Tampilkan di Home"}
                                         >
-                                            {project.featured === 1
-                                                ? "⭐"
-                                                : "☆"}
+                                            <Star
+                                                size={18}
+                                                fill={project.featured === 1
+                                                    ? "var(--primary)"
+                                                    : "none"}
+                                                color={project.featured === 1
+                                                    ? "var(--primary)"
+                                                    : "currentColor"}
+                                            />
                                         </button>
                                     </form>
 
@@ -242,7 +259,7 @@
                                         onclick={() => (editingId = project.id)}
                                         title="Edit Project"
                                     >
-                                        ✍️
+                                        <Pencil size={18} />
                                     </button>
 
                                     <form
@@ -264,7 +281,7 @@
                                                     "Hapus project ini?",
                                                 ) && e.preventDefault()}
                                         >
-                                            🗑️
+                                            <Trash2 size={18} />
                                         </button>
                                     </form>
                                 </div>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Mail, Send } from "lucide-svelte";
   let { data } = $props();
   const projects = $derived(data.projects);
 </script>
@@ -146,7 +147,9 @@
 
       <div class="contact-options">
         <a href="mailto:kledenchelvyn@gmail.com" class="contact-box">
-          <div class="contact-icon">✉️</div>
+          <div class="contact-icon">
+            <Mail size={24} />
+          </div>
           <div class="contact-info">
             <h3>Email</h3>
             <p>kledenchelvyn@gmail.com</p>
@@ -154,7 +157,9 @@
         </a>
 
         <a href="https://t.me/kledenvin" target="_blank" class="contact-box">
-          <div class="contact-icon">✈️</div>
+          <div class="contact-icon">
+            <Send size={24} />
+          </div>
           <div class="contact-info">
             <h3>Telegram</h3>
             <p>@kledenvin</p>
