@@ -1,12 +1,60 @@
 <script lang="ts">
     import { enhance } from "$app/forms";
-    import { Star, Pencil, Trash2, LogOut, PlusCircle } from "lucide-svelte";
+    import {
+        Star,
+        Pencil,
+        Trash2,
+        LogOut,
+        PlusCircle,
+        X,
+        CheckCircle2,
+        AlertCircle,
+    } from "lucide-svelte";
+    import { fade, slide, fly } from "svelte/transition";
+
     let {
         data,
         form,
     }: { data: { projects: any[]; authenticated: boolean }; form: any } =
         $props();
+
     let editingId = $state(null);
+    let isAddModalOpen = $state(false);
+
+    // Toast State
+    let toast = $state({ show: false, message: "", type: "success" });
+
+    function showToast(message: string, type: "success" | "error" = "success") {
+        toast.message = message;
+        toast.type = type;
+        toast.show = true;
+        setTimeout(() => {
+            toast.show = false;
+        }, 3000);
+    }
+
+    // Handle form responses with Toast
+    $effect(() => {
+        if (form?.success) {
+            showToast(form.message || "Berhasil!");
+            isAddModalOpen = false;
+        } else if (form?.error) {
+            showToast(form.error, "error");
+        }
+    });
+
+    const handleUpdateResult = (result: any) => {
+        if (result.type === "success") {
+            editingId = null;
+            showToast("Perubahan berhasil disimpan!");
+        }
+    };
+
+    const handleDeleteResult = (result: any) => {
+        if (result.type === "success") {
+            showToast("Project berhasil dihapus");
+        }
+    };
 </script>
 
 <div class="admin-page container">
@@ -40,105 +88,145 @@
     {:else}
         <header class="admin-header fade-in">
             <div class="admin-title-row">
-                <h1>Dashboard <span class="text-orange">Project</span></h1>
-                <form method="POST" action="?/logout" use:enhance>
+                <div class="title-group">
+                    <h1>Dashboard <span class="text-orange">Project</span></h1>
+                    <span class="project-count"
+                        >{data.projects.length} Project Tersimpan</span
+                    >
+                </div>
+                <div class="header-actions">
                     <button
-                        type="submit"
-                        class="btn btn-outline btn-sm"
+                        class="btn btn-primary"
+                        onclick={() => (isAddModalOpen = true)}
                         style="gap: 0.5rem;"
                     >
-                        <LogOut size={16} />
-                        Keluar
+                        <PlusCircle size={18} />
+                        Tambah Project
                     </button>
-                </form>
-            </div>
-            <p>Kelola daftar project portofolio Anda di sini.</p>
-        </header>
-
-        {#if form?.error}
-            <div class="alert alert-error">{form.error}</div>
-        {/if}
-        {#if form?.success}
-            <div class="alert alert-success">Project berhasil disimpan!</div>
-        {/if}
-
-        <section class="admin-grid-full">
-            <div class="card admin-card fade-in delay-1">
-                <h2>Tambah Project Baru</h2>
-                <form
-                    method="POST"
-                    action="?/addProject"
-                    use:enhance
-                    class="admin-form"
-                >
-                    <div class="form-group-horizontal">
-                        <label for="title">Judul Project</label>
-                        <input
-                            type="text"
-                            id="title"
-                            name="title"
-                            placeholder="Contoh: E-Commerce App"
-                            required
-                        />
-                    </div>
-                    <div class="form-group-horizontal">
-                        <label for="category">Kategori</label>
-                        <input
-                            type="text"
-                            id="category"
-                            name="category"
-                            placeholder="Contoh: Web App / Odoo Module"
-                            required
-                        />
-                    </div>
-                    <div class="form-group-horizontal">
-                        <label for="tech">Teknologi</label>
-                        <input
-                            type="text"
-                            id="tech"
-                            name="tech"
-                            placeholder="Svelte, Bun, SQLite"
-                        />
-                    </div>
-                    <div class="form-group-horizontal">
-                        <label for="link">Link Demo</label>
-                        <input
-                            type="text"
-                            id="link"
-                            name="link"
-                            placeholder="https://github.com/..."
-                        />
-                    </div>
-                    <div class="form-group-horizontal">
-                        <label for="description">Deskripsi</label>
-                        <textarea
-                            id="description"
-                            name="description"
-                            rows="3"
-                            placeholder="Jelaskan tentang project ini..."
-                            required
-                        ></textarea>
-                    </div>
-                    <div class="form-group-horizontal">
-                        <div></div>
+                    <form method="POST" action="?/logout" use:enhance>
                         <button
                             type="submit"
-                            class="btn btn-primary"
-                            style="gap: 0.5rem;"
+                            class="btn btn-outline"
+                            title="Keluar"
                         >
-                            <PlusCircle size={18} />
-                            Simpan Project
+                            <LogOut size={16} />
                         </button>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
+        </header>
+
+        <section class="admin-content">
+            <!-- Modal Tambah Project -->
+            {#if isAddModalOpen}
+                <div
+                    class="modal-overlay"
+                    transition:fade={{ duration: 200 }}
+                    onclick={(e) => {
+                        if (e.target === e.currentTarget)
+                            isAddModalOpen = false;
+                    }}
+                >
+                    <div
+                        class="modal-content card"
+                        transition:fly={{ y: 20, duration: 300 }}
+                    >
+                        <div class="modal-header">
+                            <h2>Tambah Project Baru</h2>
+                            <button
+                                class="close-btn"
+                                onclick={() => (isAddModalOpen = false)}
+                            >
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <form
+                            method="POST"
+                            action="?/addProject"
+                            use:enhance={() => {
+                                return async ({ result }) => {
+                                    if (result.type === "success") {
+                                        isAddModalOpen = false;
+                                        showToast(
+                                            "Project baru berhasil ditambahkan!",
+                                        );
+                                    }
+                                };
+                            }}
+                            class="admin-form"
+                        >
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label for="title">Judul Project</label>
+                                    <input
+                                        type="text"
+                                        id="title"
+                                        name="title"
+                                        placeholder="Contoh: E-Commerce App"
+                                        required
+                                    />
+                                </div>
+                                <div class="form-group">
+                                    <label for="category">Kategori</label>
+                                    <input
+                                        type="text"
+                                        id="category"
+                                        name="category"
+                                        placeholder="Contoh: Web App"
+                                        required
+                                    />
+                                </div>
+                                <div class="form-group">
+                                    <label for="tech">Teknologi</label>
+                                    <input
+                                        type="text"
+                                        id="tech"
+                                        name="tech"
+                                        placeholder="Svelte, Rust, etc."
+                                    />
+                                </div>
+                                <div class="form-group">
+                                    <label for="link">Link Website</label>
+                                    <input
+                                        type="text"
+                                        id="link"
+                                        name="link"
+                                        placeholder="https://..."
+                                    />
+                                </div>
+                                <div class="form-group full-width">
+                                    <label for="description">Deskripsi</label>
+                                    <textarea
+                                        id="description"
+                                        name="description"
+                                        rows="4"
+                                        placeholder="Jelaskan detail project..."
+                                        required
+                                    ></textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button
+                                    type="button"
+                                    class="btn btn-outline"
+                                    onclick={() => (isAddModalOpen = false)}
+                                    >Batal</button
+                                >
+                                <button type="submit" class="btn btn-primary"
+                                    >Simpan Project</button
+                                >
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            {/if}
 
             <!-- Daftar Project -->
-            <div
-                class="card admin-card fade-in delay-2"
-                style="margin-top: 2rem;"
-            >
-                <h2>Daftar Project ({data.projects.length})</h2>
+            <div class="card projects-container fade-in delay-1">
+                <div class="container-header">
+                    <h2>Daftar Project</h2>
+                    <p>Kelola semua karya bapak di sini.</p>
+                </div>
                 <div class="project-list">
                     {#each data.projects as project}
                         <div
@@ -150,9 +238,12 @@
                                 <form
                                     method="POST"
                                     action="?/updateProject"
-                                    use:enhance
+                                    use:enhance={() => {
+                                        return async ({ result }) => {
+                                            handleUpdateResult(result);
+                                        };
+                                    }}
                                     class="edit-inline-form"
-                                    onsubmit={() => (editingId = null)}
                                 >
                                     <input
                                         type="hidden"
@@ -209,15 +300,39 @@
                                 </form>
                             {:else}
                                 <div class="project-main-info">
+                                    <div class="project-tags">
+                                        <span class="tag"
+                                            >{project.category}</span
+                                        >
+                                        {#if project.tech}
+                                            {#each project.tech.split(",") as t}
+                                                <span class="tag-tech"
+                                                    >{t.trim()}</span
+                                                >
+                                            {/each}
+                                        {/if}
+                                    </div>
                                     <h3>{project.title}</h3>
-                                    <span class="tag">{project.category}</span>
+                                    <p class="project-desc">
+                                        {project.description}
+                                    </p>
                                 </div>
 
                                 <div class="project-item-actions">
                                     <form
                                         method="POST"
                                         action="?/toggleFeatured"
-                                        use:enhance
+                                        use:enhance={() => {
+                                            return async ({ result }) => {
+                                                if (result.type === "success") {
+                                                    showToast(
+                                                        project.featured === 1
+                                                            ? "Dihapus dari Home"
+                                                            : "Ditampilkan di Home",
+                                                    );
+                                                }
+                                            };
+                                        }}
                                     >
                                         <input
                                             type="hidden"
@@ -227,9 +342,7 @@
                                         <input
                                             type="hidden"
                                             name="featured"
-                                            value={project.featured === 1
-                                                ? "false"
-                                                : "true"}
+                                            value={project.featured}
                                         />
                                         <button
                                             type="submit"
@@ -265,7 +378,11 @@
                                     <form
                                         method="POST"
                                         action="?/deleteProject"
-                                        use:enhance
+                                        use:enhance={() => {
+                                            return async ({ result }) => {
+                                                handleDeleteResult(result);
+                                            };
+                                        }}
                                     >
                                         <input
                                             type="hidden"
@@ -297,6 +414,20 @@
                 </div>
             </div>
         </section>
+    {/if}
+
+    <!-- Toast Notification -->
+    {#if toast.show}
+        <div class="toast-container" transition:fly={{ y: -50, duration: 300 }}>
+            <div class="toast-item {toast.type}">
+                {#if toast.type === "success"}
+                    <CheckCircle2 size={18} />
+                {:else}
+                    <AlertCircle size={18} />
+                {/if}
+                <span>{toast.message}</span>
+            </div>
+        </div>
     {/if}
 </div>
 
@@ -330,169 +461,220 @@
     }
 
     .admin-header {
-        margin-bottom: 3rem;
+        margin-bottom: 2.5rem;
     }
     .admin-title-row {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 0.5rem;
-    }
-    .admin-header h1 {
-        font-size: 2.5rem;
-    }
-    .text-orange {
-        color: var(--primary);
-    }
-
-    .admin-card {
-        padding: 2rem;
-    }
-
-    .admin-card h2 {
-        font-size: 1.25rem;
-        margin-bottom: 2rem;
-        border-bottom: 2px solid var(--border);
-        padding-bottom: 1rem;
-    }
-
-    .admin-grid-full {
-        display: flex;
-        flex-direction: column;
-        gap: 2rem;
-    }
-
-    .admin-form {
-        display: flex;
-        flex-direction: column;
         gap: 1.5rem;
     }
-
-    .form-group-horizontal {
-        display: grid;
-        grid-template-columns: 180px 1fr;
-        align-items: center;
-        gap: 2rem;
+    .title-group h1 {
+        font-size: 2.25rem;
+        margin-bottom: 0.25rem;
     }
-
-    .form-group-horizontal label {
+    .project-count {
         font-size: 0.875rem;
-        font-weight: 600;
-        color: var(--text-main);
+        color: var(--text-muted);
+        font-weight: 500;
+        background: #f1f5f9;
+        padding: 0.35rem 0.85rem;
+        border-radius: 2rem;
     }
-
-    .form-group-horizontal input,
-    .form-group-horizontal textarea {
-        padding: 0.75rem 1rem;
-        border: 1px solid var(--border);
-        border-radius: 0.75rem;
-        font-family: inherit;
-        font-size: 0.9375rem;
-        background: #fcfcfd;
-        width: 100%;
-    }
-
-    .form-group-horizontal input:focus,
-    .form-group-horizontal textarea:focus {
-        outline: none;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
-    }
-
-    @media (max-width: 640px) {
-        .form-group-horizontal {
-            grid-template-columns: 1fr;
-            gap: 0.5rem;
-        }
-    }
-
-    .w-full {
-        width: 100%;
-    }
-    .alert {
-        padding: 1rem;
-        border-radius: 0.75rem;
-        margin-bottom: 2rem;
-        font-size: 0.875rem;
-        font-weight: 600;
-    }
-    .alert-error {
-        background: #fee2e2;
-        color: #b91c1c;
-    }
-    .alert-success {
-        background: #dcfce7;
-        color: #15803d;
-    }
-
-    .project-list {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-    .project-item {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1.25rem 1.5rem;
-        background: #f8fafc;
-        border-radius: 1rem;
-        border: 1px solid var(--border);
-        transition: all 0.2s ease;
-    }
-    .project-item.editing {
-        flex-direction: column;
-        align-items: stretch;
-        background: white;
-        border-color: var(--primary);
-        box-shadow: 0 10px 15px -3px rgba(249, 115, 22, 0.1);
-    }
-    .project-main-info h3 {
-        font-size: 1.125rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-    }
-    .project-item-actions {
+    .header-actions {
         display: flex;
         gap: 0.75rem;
         align-items: center;
     }
-    .action-btn {
-        background: white;
-        border: 1px solid var(--border);
-        width: 38px;
-        height: 38px;
+
+    .projects-container {
+        padding: 0;
+        overflow: hidden;
+    }
+    .container-header {
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid var(--border);
+        background: #fafafa;
+    }
+    .container-header h2 {
+        font-size: 1.125rem;
+        margin: 0;
+        font-weight: 700;
+        border-bottom: none;
+    }
+    .container-header p {
+        font-size: 0.875rem;
+        color: var(--text-muted);
+    }
+
+    /* Modal Overlay */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.7);
+        backdrop-filter: blur(8px);
         display: flex;
         align-items: center;
         justify-content: center;
-        border-radius: 0.75rem;
+        z-index: 9999;
+        padding: 1rem;
+    }
+    .modal-content {
+        width: 100%;
+        max-width: 750px;
+        position: relative;
+        padding: 2.5rem;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+    }
+    .modal-header h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        border-bottom: none;
+    }
+    .close-btn {
+        background: none;
+        border: none;
+        color: var(--text-muted);
         cursor: pointer;
-        transition: all 0.2s;
-        font-size: 1.1rem;
+        padding: 0.5rem;
+        border-radius: 0.5rem;
     }
-    .action-btn:hover {
+    .close-btn:hover {
         background: #f1f5f9;
-        transform: translateY(-2px);
-        border-color: #cbd5e1;
-    }
-    .action-btn.active {
-        background: rgba(249, 115, 22, 0.05);
-        border-color: var(--primary);
-    }
-    .btn-delete-icon:hover {
-        background: #fef2f2;
-        border-color: #fecaca;
+        color: #000;
     }
 
-    /* Edit Inline Form */
-    .edit-inline-form {
-        width: 100%;
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
     }
+    .full-width {
+        grid-column: span 2;
+    }
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .form-group label {
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+    .form-group input,
+    .form-group textarea {
+        padding: 0.75rem 1rem;
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        font-family: inherit;
+        background: #f8fafc;
+    }
+    .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
+    }
+
+    /* Project Items */
+    .project-item {
+        padding: 1.75rem 2rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid var(--border);
+    }
+    .project-item:last-child {
+        border-bottom: none;
+    }
+    .project-item.editing {
+        display: block;
+        background: #fcfcfd;
+    }
+    .project-main-info h3 {
+        margin-bottom: 0.25rem;
+        font-size: 1.125rem;
+        font-weight: 700;
+    }
+    .project-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 0.75rem;
+    }
+    .tag {
+        font-size: 0.7rem;
+        font-weight: 800;
+        background: #f9f2ed;
+        color: var(--primary);
+        padding: 0.2rem 0.6rem;
+        border-radius: 0.5rem;
+        text-transform: uppercase;
+    }
+    .tag-tech {
+        font-size: 0.75rem;
+        background: #f1f5f9;
+        color: #64748b;
+        padding: 0.15rem 0.5rem;
+        border-radius: 0.4rem;
+        border: 1px solid var(--border);
+    }
+    .project-desc {
+        color: var(--text-muted);
+        font-size: 0.9375rem;
+        max-width: 750px;
+        line-height: 1.5;
+    }
+
+    .project-item-actions {
+        display: flex;
+        gap: 0.75rem;
+    }
+    .action-btn {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid var(--border);
+        border-radius: 0.75rem;
+        background: white;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    .action-btn:hover {
+        background: #f8fafc;
+        transform: translateY(-2px);
+    }
+    .action-btn.active {
+        color: var(--primary);
+        border-color: var(--primary);
+        background: #fff7ed;
+    }
+    .btn-delete-icon:hover {
+        border-color: #fca5a5;
+        color: #ef4444;
+        background: #fef2f2;
+    }
+
+    /* Edit Form */
     .edit-grid {
         display: grid;
         grid-template-columns: 1fr 1fr;
         gap: 1rem;
-        margin-bottom: 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+    .edit-grid textarea {
+        grid-column: span 2;
+        min-height: 100px;
     }
     .edit-grid input,
     .edit-grid textarea {
@@ -500,47 +682,65 @@
         border: 1px solid var(--border);
         border-radius: 0.75rem;
         font-family: inherit;
-        font-size: 0.9375rem;
-    }
-    .edit-grid textarea {
-        grid-column: span 2;
-        min-height: 100px;
     }
     .edit-actions {
         display: flex;
         justify-content: flex-end;
-        gap: 0.75rem;
-    }
-    .btn.sm {
-        padding: 0.5rem 1.25rem;
-        font-size: 0.875rem;
+        gap: 1rem;
     }
 
-    .tag {
-        font-size: 0.75rem;
+    /* Toast */
+    .toast-container {
+        position: fixed;
+        top: 2rem;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 10000;
+    }
+    .toast-item {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1rem 1.5rem;
         background: white;
-        padding: 0.3rem 0.75rem;
-        border-radius: 2rem;
-        color: var(--primary);
-        font-weight: 700;
+        border-radius: 1rem;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
         border: 1px solid var(--border);
+        font-weight: 600;
+    }
+    .toast-item.success {
+        border-left: 4px solid #10b981;
+    }
+    .toast-item.error {
+        border-left: 4px solid #ef4444;
     }
 
     .empty-state {
         text-align: center;
+        padding: 4rem;
         color: var(--text-muted);
-        padding: 2rem 0;
     }
 
     @media (max-width: 768px) {
-        .admin-grid-full {
+        .admin-title-row {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        .project-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1.5rem;
+        }
+        .edit-grid,
+        .form-grid {
             grid-template-columns: 1fr;
         }
-        .edit-grid {
-            grid-template-columns: 1fr;
-        }
-        .edit-grid textarea {
+        .edit-grid textarea,
+        .full-width {
             grid-column: span 1;
+        }
+        .modal-content {
+            padding: 1.5rem;
         }
     }
 </style>
