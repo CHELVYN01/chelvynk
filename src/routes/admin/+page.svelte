@@ -61,6 +61,9 @@
         }
     });
 
+    // Loading State
+    let isSubmitting = $state(false);
+
     // Toast State
     let toast = $state({ show: false, message: "", type: "success" });
 
@@ -274,10 +277,12 @@
                                             method="POST"
                                             action="?/toggleFeatured"
                                             use:enhance={() => {
+                                                isSubmitting = true;
                                                 return async ({
                                                     result,
                                                     update,
                                                 }) => {
+                                                    isSubmitting = false;
                                                     if (
                                                         result.type ===
                                                         "success"
@@ -301,7 +306,9 @@
                                             <input
                                                 type="hidden"
                                                 name="featured"
-                                                value={project.featured}
+                                                value={project.featured === 1
+                                                    ? "0"
+                                                    : "1"}
                                             />
                                             <button
                                                 type="submit"
@@ -309,6 +316,7 @@
                                                 1
                                                     ? 'active'
                                                     : ''}"
+                                                disabled={isSubmitting}
                                                 title={project.featured === 1
                                                     ? "Hapus dari Home"
                                                     : "Tampilkan di Home"}
@@ -747,7 +755,9 @@
                     method="POST"
                     action="?/addProject"
                     use:enhance={() => {
+                        isSubmitting = true;
                         return async ({ result, update }) => {
+                            isSubmitting = false;
                             if (result.type === "success") {
                                 isAddModalOpen = false;
                                 showToast("Project baru berhasil ditambahkan!");
@@ -832,8 +842,14 @@
                             onclick={() => (isAddModalOpen = false)}
                             >Batal</button
                         >
-                        <button type="submit" class="btn btn-primary"
-                            >Simpan Project</button
+                        <button
+                            type="submit"
+                            class="btn btn-primary"
+                            disabled={isSubmitting}
+                        >
+                            {isSubmitting
+                                ? "Menyimpan..."
+                                : "Simpan Project"}</button
                         >
                     </div>
                 </form>

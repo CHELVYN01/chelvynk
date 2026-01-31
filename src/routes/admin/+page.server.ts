@@ -98,7 +98,7 @@ export const actions: Actions = {
 
         const formData = await request.formData();
         const id = formData.get('id');
-        const featured = formData.get('featured') === 'true' ? 1 : 0;
+        const featured = formData.get('featured') === '1' ? 1 : 0;
 
         if (!id) return fail(400, { error: 'ID tidak ditemukan' });
 
