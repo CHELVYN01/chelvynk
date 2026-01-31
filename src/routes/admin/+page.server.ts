@@ -15,6 +15,13 @@ export const load: PageServerLoad = async ({ cookies }) => {
     const settingsResult = await db.execute('SELECT * FROM settings');
     const experienceResult = await db.execute('SELECT * FROM experiences ORDER BY start_date DESC');
 
+    // Fetch Traffic Stats
+    const totalVisits = await db.execute('SELECT COUNT(*) as count FROM traffic');
+    const humanVisits = await db.execute('SELECT COUNT(*) as count FROM traffic WHERE is_bot = 0');
+    const botVisits = await db.execute('SELECT COUNT(*) as count FROM traffic WHERE is_bot = 1');
+    const recentTraffic = await db.execute('SELECT * FROM traffic ORDER BY timestamp DESC LIMIT 50');
+    const topPages = await db.execute('SELECT path, COUNT(*) as count FROM traffic WHERE is_bot = 0 GROUP BY path ORDER BY count DESC LIMIT 5');
+
     const settings = settingsResult.rows.reduce((acc: any, row: any) => {
         acc[row.key] = row.value;
         return acc;
@@ -24,6 +31,13 @@ export const load: PageServerLoad = async ({ cookies }) => {
         projects: projectsResult.rows,
         settings,
         experiences: experienceResult.rows,
+        stats: {
+            total: totalVisits.rows[0].count,
+            human: humanVisits.rows[0].count,
+            bot: botVisits.rows[0].count,
+            recent: recentTraffic.rows,
+            topPages: topPages.rows
+        },
         authenticated: true
     };
 };

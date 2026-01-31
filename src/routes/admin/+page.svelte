@@ -13,6 +13,11 @@
         Settings as SettingsIcon,
         User,
         Briefcase,
+        BarChart3,
+        Globe,
+        Eye,
+        Bot,
+        Clock,
     } from "lucide-svelte";
     import { fade, slide, fly } from "svelte/transition";
 
@@ -24,6 +29,13 @@
             projects: any[];
             settings: any;
             experiences: any[];
+            stats: {
+                total: number;
+                human: number;
+                bot: number;
+                recent: any[];
+                topPages: any[];
+            };
             authenticated: boolean;
         };
         form: any;
@@ -124,6 +136,14 @@
                 </button>
                 <button
                     class="nav-item"
+                    class:active={activeTab === "analytics"}
+                    onclick={() => (activeTab = "analytics")}
+                >
+                    <BarChart3 size={20} />
+                    <span>Analytics</span>
+                </button>
+                <button
+                    class="nav-item"
                     class:active={activeTab === "settings"}
                     onclick={() => (activeTab = "settings")}
                 >
@@ -149,19 +169,23 @@
                     <h1>
                         {#if activeTab === "projects"}
                             Kelola Project
+                        {:else if activeTab === "experiences"}
+                            Kelola Pengalaman
+                        {:else if activeTab === "analytics"}
+                            Analitik Trafik
                         {:else}
-                            {activeTab === "settings"
-                                ? "Pengaturan Situs"
-                                : "Kelola Pengalaman"}
+                            Pengaturan Situs
                         {/if}
                     </h1>
                     <p>
                         {#if activeTab === "projects"}
                             Daftar semua hasil karya bapak.
+                        {:else if activeTab === "experiences"}
+                            Daftar riwayat karir bapak.
+                        {:else if activeTab === "analytics"}
+                            Pantau pengunjung website bapak secara real-time.
                         {:else}
-                            {activeTab === "settings"
-                                ? "Sesuaikan informasi publik di website."
-                                : "Daftar riwayat karir bapak."}
+                            Sesuaikan informasi publik di website.
                         {/if}
                     </p>
                 </div>
@@ -478,6 +502,159 @@
                                     Belum ada pengalaman yang ditambahkan.
                                 </p>
                             {/if}
+                        </div>
+                    </div>
+                {:else if activeTab === "analytics"}
+                    <!-- ANALYTICS DASHBOARD -->
+                    <div class="analytics-wrapper fade-in">
+                        <!-- STAT CARDS -->
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div
+                                    class="stat-icon"
+                                    style="background: #eff6ff; color: #3b82f6;"
+                                >
+                                    <Eye size={24} />
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-label"
+                                        >Total Kunjungan</span
+                                    >
+                                    <span class="stat-value"
+                                        >{data.stats.total}</span
+                                    >
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div
+                                    class="stat-icon"
+                                    style="background: #f0fdf4; color: #22c55e;"
+                                >
+                                    <User size={24} />
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-label"
+                                        >Pengunjung Manusia</span
+                                    >
+                                    <span class="stat-value"
+                                        >{data.stats.human}</span
+                                    >
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div
+                                    class="stat-icon"
+                                    style="background: #fef2f2; color: #ef4444;"
+                                >
+                                    <Bot size={24} />
+                                </div>
+                                <div class="stat-info">
+                                    <span class="stat-label">Bot / Crawler</span
+                                    >
+                                    <span class="stat-value"
+                                        >{data.stats.bot}</span
+                                    >
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="analytics-grid">
+                            <!-- TOP PAGES -->
+                            <div class="card analytics-card">
+                                <div class="card-header">
+                                    <h3>Halaman Terpopuler</h3>
+                                </div>
+                                <div class="top-pages-list">
+                                    {#each data.stats.topPages as page}
+                                        <div class="page-item">
+                                            <span class="page-path"
+                                                >{page.path}</span
+                                            >
+                                            <span class="page-count"
+                                                >{page.count} hits</span
+                                            >
+                                        </div>
+                                    {/each}
+                                </div>
+                            </div>
+
+                            <!-- REAL TIME LOG -->
+                            <div class="card analytics-card full-width-card">
+                                <div class="card-header">
+                                    <h3>Kunjungan Terbaru</h3>
+                                </div>
+                                <div class="traffic-log">
+                                    <table class="traffic-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Waktu</th>
+                                                <th>Path</th>
+                                                <th>Browser / Bot</th>
+                                                <th>Tipe</th>
+                                                <th>Asal (Referrer)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {#each data.stats.recent as visit}
+                                                <tr>
+                                                    <td
+                                                        class="text-xs text-muted"
+                                                    >
+                                                        {new Date(
+                                                            visit.timestamp,
+                                                        ).toLocaleString(
+                                                            "id-ID",
+                                                            {
+                                                                hour: "2-digit",
+                                                                minute: "2-digit",
+                                                                day: "2-digit",
+                                                                month: "short",
+                                                            },
+                                                        )}
+                                                    </td>
+                                                    <td class="font-bold"
+                                                        >{visit.path}</td
+                                                    >
+                                                    <td
+                                                        class="ua-cell text-xs"
+                                                        title={visit.ua}
+                                                    >
+                                                        {visit.ua.length > 40
+                                                            ? visit.ua.substring(
+                                                                  0,
+                                                                  40,
+                                                              ) + "..."
+                                                            : visit.ua}
+                                                    </td>
+                                                    <td>
+                                                        <span
+                                                            class="badge-type {visit.is_bot
+                                                                ? 'bot'
+                                                                : 'human'}"
+                                                        >
+                                                            {visit.is_bot
+                                                                ? "BOT"
+                                                                : "USER"}
+                                                        </span>
+                                                    </td>
+                                                    <td class="text-xs"
+                                                        >{visit.referrer ===
+                                                        "direct"
+                                                            ? "Langsung"
+                                                            : visit.referrer
+                                                                    .length > 20
+                                                              ? visit.referrer.substring(
+                                                                    0,
+                                                                    20,
+                                                                ) + "..."
+                                                              : visit.referrer}</td
+                                                    >
+                                                </tr>
+                                            {/each}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 {:else if activeTab === "settings"}
@@ -1236,12 +1413,137 @@
         border-left-color: #ef4444;
     }
 
+    /* Analytics Styles */
+    .analytics-wrapper {
+        display: flex;
+        flex-direction: column;
+        gap: 2rem;
+    }
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+    }
+    .stat-card {
+        background: white;
+        padding: 1.5rem;
+        border-radius: 1.25rem;
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 1.25rem;
+    }
+    .stat-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .stat-label {
+        display: block;
+        font-size: 0.875rem;
+        color: #64748b;
+        font-weight: 600;
+    }
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #0172a;
+    }
+
+    .analytics-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+    .analytics-card {
+        padding: 1.5rem;
+    }
+    .card-header h3 {
+        font-size: 1.125rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        color: #0f172a;
+    }
+
+    .top-pages-list {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+    .page-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem 1rem;
+        background: #f8fafc;
+        border-radius: 0.75rem;
+    }
+    .page-path {
+        font-weight: 700;
+        color: #334155;
+    }
+    .page-count {
+        font-weight: 600;
+        color: var(--primary);
+    }
+
+    .traffic-log {
+        overflow-x: auto;
+    }
+    .traffic-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .traffic-table th {
+        text-align: left;
+        padding: 0.75rem 1rem;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: #64748b;
+        border-bottom: 1px solid var(--border);
+    }
+    .traffic-table td {
+        padding: 1rem;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.8125rem;
+    }
+
+    .badge-type {
+        font-size: 0.625rem;
+        font-weight: 800;
+        padding: 0.2rem 0.5rem;
+        border-radius: 0.375rem;
+    }
+    .badge-type.human {
+        background: #dcfce7;
+        color: #166534;
+    }
+    .badge-type.bot {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .text-xs {
+        font-size: 0.75rem;
+    }
+    .text-muted {
+        color: #64748b;
+    }
+    .font-bold {
+        font-weight: 700;
+    }
+
     @media (max-width: 1024px) {
         .admin-layout {
             grid-template-columns: 1fr;
         }
         .sidebar {
             display: none;
+        }
+        .stats-grid {
+            grid-template-columns: 1fr;
         }
     }
 </style>

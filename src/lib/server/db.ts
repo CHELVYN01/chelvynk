@@ -55,6 +55,18 @@ async function init() {
           )
         `);
 
+        await client.execute(`
+          CREATE TABLE IF NOT EXISTS traffic (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ip TEXT,
+            ua TEXT,
+            path TEXT,
+            referrer TEXT,
+            is_bot INTEGER DEFAULT 0,
+            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+
         // Migration: Add start_date if not exists
         try {
             await client.execute("ALTER TABLE experiences ADD COLUMN start_date TEXT");
