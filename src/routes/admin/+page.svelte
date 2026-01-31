@@ -18,6 +18,8 @@
         Eye,
         Bot,
         Clock,
+        Github,
+        Play,
     } from "lucide-svelte";
     import { fade, slide, fly } from "svelte/transition";
 
@@ -41,9 +43,13 @@
         form: any;
     } = $props();
 
-    let editingId = $state(null);
+    let editingId = $state<number | null>(null);
+    let editingProject = $derived(
+        editingId ? data.projects.find((p) => p.id === editingId) : null,
+    );
     let isAddModalOpen = $state(false);
     let isAddExpModalOpen = $state(false);
+    let projectToDelete = $state<any | null>(null);
     let isPresent = $state(false);
     let activeTab = $state("projects");
     let currentStatus = $state(data.settings.status || "");
@@ -217,16 +223,56 @@
                     <div class="card projects-container fade-in">
                         <div class="project-list">
                             {#each data.projects as project}
-                                <div
-                                    class="project-item {editingId ===
-                                    project.id
-                                        ? 'editing'
-                                        : ''}"
-                                >
-                                    {#if editingId === project.id}
+                                <div class="project-item">
+                                    <div class="project-main-info">
+                                        <div class="project-tags">
+                                            <span class="tag"
+                                                >{project.category}</span
+                                            >
+                                            {#if project.tech}
+                                                {#each project.tech.split(",") as t}
+                                                    <span class="tag-tech"
+                                                        >{t.trim()}</span
+                                                    >
+                                                {/each}
+                                            {/if}
+                                        </div>
+                                        <h3>{project.title}</h3>
+                                        <p class="project-desc">
+                                            {project.description}
+                                        </p>
+                                        <div class="project-links-preview">
+                                            {#if project.link}
+                                                <a
+                                                    href={project.link}
+                                                    target="_blank"
+                                                    title="Website"
+                                                    ><Globe size={14} /></a
+                                                >
+                                            {/if}
+                                            {#if project.github}
+                                                <a
+                                                    href={project.github}
+                                                    target="_blank"
+                                                    title="GitHub"
+                                                    ><Github size={14} /></a
+                                                >
+                                            {/if}
+                                            {#if project.demo}
+                                                <a
+                                                    href={project.demo}
+                                                    target="_blank"
+                                                    title="Demo"
+                                                    ><Play size={14} /></a
+                                                >
+                                            {/if}
+                                        </div>
+                                    </div>
+
+                                    <div class="project-item-actions">
                                         <form
                                             method="POST"
-                                            action="?/updateProject"
+                                            action="?/toggleFeatured"
                                             use:enhance={() => {
                                                 return async ({
                                                     result,
@@ -236,198 +282,70 @@
                                                         result.type ===
                                                         "success"
                                                     ) {
-                                                        editingId = null;
                                                         showToast(
-                                                            "Perubahan berhasil disimpan!",
+                                                            project.featured ===
+                                                                1
+                                                                ? "Dihapus dari Home"
+                                                                : "Ditampilkan di Home",
                                                         );
                                                     }
                                                     await update();
                                                 };
                                             }}
-                                            class="edit-inline-form"
                                         >
                                             <input
                                                 type="hidden"
                                                 name="id"
                                                 value={project.id}
                                             />
-                                            <div class="edit-grid">
-                                                <input
-                                                    type="text"
-                                                    name="title"
-                                                    value={project.title}
-                                                    placeholder="Judul"
-                                                    required
-                                                />
-                                                <input
-                                                    type="text"
-                                                    name="category"
-                                                    value={project.category}
-                                                    placeholder="Kategori"
-                                                    required
-                                                />
-                                                <input
-                                                    type="text"
-                                                    name="tech"
-                                                    value={project.tech}
-                                                    placeholder="Teknologi"
-                                                />
-                                                <input
-                                                    type="text"
-                                                    name="link"
-                                                    value={project.link}
-                                                    placeholder="Link"
-                                                />
-                                                <textarea
-                                                    name="description"
-                                                    placeholder="Deskripsi"
-                                                    required
-                                                    >{project.description}</textarea
-                                                >
-                                            </div>
-                                            <div class="edit-actions">
-                                                <button
-                                                    type="submit"
-                                                    class="btn btn-primary sm"
-                                                    >Simpan</button
-                                                >
-                                                <button
-                                                    type="button"
-                                                    class="btn btn-outline sm"
-                                                    onclick={() =>
-                                                        (editingId = null)}
-                                                    >Batal</button
-                                                >
-                                            </div>
-                                        </form>
-                                    {:else}
-                                        <div class="project-main-info">
-                                            <div class="project-tags">
-                                                <span class="tag"
-                                                    >{project.category}</span
-                                                >
-                                                {#if project.tech}
-                                                    {#each project.tech.split(",") as t}
-                                                        <span class="tag-tech"
-                                                            >{t.trim()}</span
-                                                        >
-                                                    {/each}
-                                                {/if}
-                                            </div>
-                                            <h3>{project.title}</h3>
-                                            <p class="project-desc">
-                                                {project.description}
-                                            </p>
-                                        </div>
-
-                                        <div class="project-item-actions">
-                                            <form
-                                                method="POST"
-                                                action="?/toggleFeatured"
-                                                use:enhance={() => {
-                                                    return async ({
-                                                        result,
-                                                        update,
-                                                    }) => {
-                                                        if (
-                                                            result.type ===
-                                                            "success"
-                                                        ) {
-                                                            showToast(
-                                                                project.featured ===
-                                                                    1
-                                                                    ? "Dihapus dari Home"
-                                                                    : "Ditampilkan di Home",
-                                                            );
-                                                        }
-                                                        await update();
-                                                    };
-                                                }}
-                                            >
-                                                <input
-                                                    type="hidden"
-                                                    name="id"
-                                                    value={project.id}
-                                                />
-                                                <input
-                                                    type="hidden"
-                                                    name="featured"
-                                                    value={project.featured}
-                                                />
-                                                <button
-                                                    type="submit"
-                                                    class="action-btn {project.featured ===
-                                                    1
-                                                        ? 'active'
-                                                        : ''}"
-                                                    title={project.featured ===
-                                                    1
-                                                        ? "Hapus dari Home"
-                                                        : "Tampilkan di Home"}
-                                                >
-                                                    <Star
-                                                        size={18}
-                                                        fill={project.featured ===
-                                                        1
-                                                            ? "var(--primary)"
-                                                            : "none"}
-                                                        color={project.featured ===
-                                                        1
-                                                            ? "var(--primary)"
-                                                            : "currentColor"}
-                                                    />
-                                                </button>
-                                            </form>
-
+                                            <input
+                                                type="hidden"
+                                                name="featured"
+                                                value={project.featured}
+                                            />
                                             <button
-                                                type="button"
-                                                class="action-btn"
-                                                onclick={() =>
-                                                    (editingId = project.id)}
-                                                title="Edit Project"
+                                                type="submit"
+                                                class="action-btn {project.featured ===
+                                                1
+                                                    ? 'active'
+                                                    : ''}"
+                                                title={project.featured === 1
+                                                    ? "Hapus dari Home"
+                                                    : "Tampilkan di Home"}
                                             >
-                                                <Pencil size={18} />
-                                            </button>
-
-                                            <form
-                                                method="POST"
-                                                action="?/deleteProject"
-                                                use:enhance={() => {
-                                                    return async ({
-                                                        result,
-                                                        update,
-                                                    }) => {
-                                                        if (
-                                                            result.type ===
-                                                            "success"
-                                                        ) {
-                                                            showToast(
-                                                                "Project berhasil dihapus",
-                                                            );
-                                                        }
-                                                        await update();
-                                                    };
-                                                }}
-                                            >
-                                                <input
-                                                    type="hidden"
-                                                    name="id"
-                                                    value={project.id}
+                                                <Star
+                                                    size={18}
+                                                    fill={project.featured === 1
+                                                        ? "var(--primary)"
+                                                        : "none"}
+                                                    color={project.featured ===
+                                                    1
+                                                        ? "var(--primary)"
+                                                        : "currentColor"}
                                                 />
-                                                <button
-                                                    type="submit"
-                                                    class="action-btn btn-delete-icon"
-                                                    title="Hapus Project"
-                                                    onclick={(e) =>
-                                                        !confirm(
-                                                            "Hapus project ini?",
-                                                        ) && e.preventDefault()}
-                                                >
-                                                    <Trash2 size={18} />
-                                                </button>
-                                            </form>
-                                        </div>
-                                    {/if}
+                                            </button>
+                                        </form>
+
+                                        <button
+                                            type="button"
+                                            class="action-btn"
+                                            onclick={() =>
+                                                (editingId = project.id)}
+                                            title="Edit Project"
+                                        >
+                                            <Pencil size={18} />
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            class="action-btn btn-delete-icon"
+                                            title="Hapus Project"
+                                            onclick={() =>
+                                                (projectToDelete = project)}
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </div>
                                 </div>
                             {/each}
 
@@ -861,11 +779,29 @@
                             />
                         </div>
                         <div class="form-group">
-                            <label for="link">Link Website</label>
+                            <label for="link">Link Website (Live)</label>
                             <input
                                 type="text"
                                 id="link"
                                 name="link"
+                                placeholder="https://..."
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label for="github">Link GitHub / Source</label>
+                            <input
+                                type="text"
+                                id="github"
+                                name="github"
+                                placeholder="https://github.com/..."
+                            />
+                        </div>
+                        <div class="form-group">
+                            <label for="demo">Link Video / Live Demo</label>
+                            <input
+                                type="text"
+                                id="demo"
+                                name="demo"
                                 placeholder="https://..."
                             />
                         </div>
@@ -1018,7 +954,205 @@
     {/if}
 {/if}
 
+<!-- Modal Edit Project -->
+{#if editingProject}
+    <div
+        class="modal-overlay"
+        role="button"
+        tabindex="-1"
+        transition:fade={{ duration: 200 }}
+        onclick={(e) => {
+            if (e.target === e.currentTarget) editingId = null;
+        }}
+        onkeydown={(e) => {
+            if (e.key === "Escape") editingId = null;
+        }}
+    >
+        <div
+            class="modal-content card"
+            transition:fly={{ y: 20, duration: 300 }}
+        >
+            <div class="modal-header">
+                <h2>Edit Project</h2>
+                <button class="close-btn" onclick={() => (editingId = null)}>
+                    <X size={20} />
+                </button>
+            </div>
+            <form
+                method="POST"
+                action="?/updateProject"
+                use:enhance={() => {
+                    return async ({ result, update }) => {
+                        if (result.type === "success") {
+                            editingId = null;
+                            showToast("Perubahan berhasil disimpan!");
+                        }
+                        await update();
+                    };
+                }}
+                class="admin-form"
+            >
+                <input type="hidden" name="id" value={editingProject.id} />
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="edit-title">Judul Project</label>
+                        <input
+                            type="text"
+                            id="edit-title"
+                            name="title"
+                            value={editingProject.title}
+                            required
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-category">Kategori</label>
+                        <input
+                            type="text"
+                            id="edit-category"
+                            name="category"
+                            value={editingProject.category}
+                            required
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-tech">Teknologi</label>
+                        <input
+                            type="text"
+                            id="edit-tech"
+                            name="tech"
+                            value={editingProject.tech}
+                            placeholder="Svelte, Rust, etc."
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-link">Link Website (Live)</label>
+                        <input
+                            type="text"
+                            id="edit-link"
+                            name="link"
+                            value={editingProject.link}
+                            placeholder="https://..."
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-github">Link GitHub / Source</label>
+                        <input
+                            type="text"
+                            id="edit-github"
+                            name="github"
+                            value={editingProject.github}
+                            placeholder="https://github.com/..."
+                        />
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-demo">Link Video / Live Demo</label>
+                        <input
+                            type="text"
+                            id="edit-demo"
+                            name="demo"
+                            value={editingProject.demo}
+                            placeholder="https://..."
+                        />
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="edit-description">Deskripsi</label>
+                        <textarea
+                            id="edit-description"
+                            name="description"
+                            rows="4"
+                            required>{editingProject.description}</textarea
+                        >
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button
+                        type="button"
+                        class="btn btn-outline"
+                        onclick={() => (editingId = null)}>Batal</button
+                    >
+                    <button type="submit" class="btn btn-primary"
+                        >Simpan Perubahan</button
+                    >
+                </div>
+            </form>
+        </div>
+    </div>
+{/if}
+
+<!-- Modal Konfirmasi Hapus -->
+{#if projectToDelete}
+    <div
+        class="modal-overlay"
+        role="button"
+        tabindex="-1"
+        transition:fade={{ duration: 200 }}
+        onclick={(e) => {
+            if (e.target === e.currentTarget) projectToDelete = null;
+        }}
+        onkeydown={(e) => {
+            if (e.key === "Escape") projectToDelete = null;
+        }}
+    >
+        <div
+            class="modal-content card delete-confirm-modal"
+            transition:fly={{ y: 20, duration: 300 }}
+            style="max-width: 450px;"
+        >
+            <div class="modal-header">
+                <h2 style="color: #ef4444;">Hapus Project?</h2>
+                <button
+                    class="close-btn"
+                    onclick={() => (projectToDelete = null)}
+                >
+                    <X size={20} />
+                </button>
+            </div>
+            <div class="modal-body" style="padding: 1rem 0 2rem;">
+                <p>
+                    Bapak yakin ingin menghapus project <strong
+                        >{projectToDelete.title}</strong
+                    >?
+                </p>
+                <p
+                    style="font-size: 0.875rem; color: #64748b; margin-top: 0.5rem;"
+                >
+                    Tindakan ini tidak bisa dibatalkan ya pak.
+                </p>
+            </div>
+            <div class="modal-footer" style="padding-top: 0;">
+                <button
+                    type="button"
+                    class="btn btn-outline"
+                    onclick={() => (projectToDelete = null)}>Batal</button
+                >
+                <form
+                    method="POST"
+                    action="?/deleteProject"
+                    use:enhance={() => {
+                        return async ({ result, update }) => {
+                            if (result.type === "success") {
+                                projectToDelete = null;
+                                showToast("Project berhasil dihapus");
+                            }
+                            await update();
+                        };
+                    }}
+                >
+                    <input type="hidden" name="id" value={projectToDelete.id} />
+                    <button
+                        type="submit"
+                        class="btn btn-primary"
+                        style="background: #ef4444; border-color: #ef4444;"
+                        >Ya, Hapus Sekarang</button
+                    >
+                </form>
+            </div>
+        </div>
+    </div>
+{/if}
+
 <!-- Toast Notification -->
+
 {#if toast.show}
     <div class="toast-container" transition:fly={{ x: 100, duration: 300 }}>
         <div class="toast-item {toast.type}">
@@ -1325,6 +1459,13 @@
         justify-content: space-between;
         align-items: center;
         margin-bottom: 2.5rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #f1f5f9;
+    }
+    .modal-header h2 {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #0f172a;
     }
     .close-btn {
         background: none;
@@ -1341,28 +1482,75 @@
     .full-width {
         grid-column: span 2;
     }
-    .form-group label {
-        display: block;
-        margin-bottom: 0.75rem;
-        font-weight: 700;
-        font-size: 0.875rem;
-        color: #334155;
+
+    .form-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
     }
-    .form-group input,
-    .form-group textarea {
+
+    .form-group label {
+        font-size: 0.75rem;
+        font-weight: 800;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .admin-form input,
+    .admin-form textarea {
         width: 100%;
-        padding: 1rem 1.25rem;
+        padding: 0.875rem 1.25rem;
         border: 2px solid #f1f5f9;
         border-radius: 1rem;
         background: #f8fafc;
-        font-family: inherit;
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: #0f172a;
         transition: all 0.2s;
     }
-    .form-group input:focus,
-    .form-group textarea:focus {
+
+    .admin-form input:focus,
+    .admin-form textarea:focus {
         background: white;
         border-color: var(--primary);
         outline: none;
+        box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.08);
+    }
+
+    .admin-form textarea {
+        resize: vertical;
+        min-height: 120px;
+    }
+
+    .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 1rem;
+        margin-top: 2.5rem;
+        padding-top: 2rem;
+        border-top: 1px solid #f1f5f9;
+    }
+    .project-links-preview {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1rem;
+    }
+    .project-links-preview a {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #f1f5f9;
+        color: #64748b;
+        transition: all 0.2s;
+    }
+    .project-links-preview a:hover {
+        background: var(--primary);
+        color: white;
+        transform: translateY(-2px);
     }
 
     /* Login Specific */
@@ -1450,7 +1638,7 @@
     .stat-value {
         font-size: 1.5rem;
         font-weight: 800;
-        color: #0172a;
+        color: #0f172a;
     }
 
     .analytics-grid {

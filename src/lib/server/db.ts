@@ -25,6 +25,8 @@ function getClient() {
 async function init() {
     const client = getClient();
     try {
+        console.log('[DB] Initializing tables...');
+
         await client.execute(`
           CREATE TABLE IF NOT EXISTS projects (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -33,10 +35,13 @@ async function init() {
             description TEXT NOT NULL,
             tech TEXT NOT NULL,
             link TEXT NOT NULL,
+            github TEXT,
+            demo TEXT,
             featured INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
           )
         `);
+
         await client.execute(`
           CREATE TABLE IF NOT EXISTS settings (
             key TEXT PRIMARY KEY,
@@ -67,12 +72,21 @@ async function init() {
           )
         `);
 
-        // Migration: Add start_date if not exists
+        // Migrations
+        console.log('[DB] Checking migrations...');
+        try {
+            await client.execute("ALTER TABLE projects ADD COLUMN github TEXT");
+            console.log('[DB] Migration: Added github column');
+        } catch (e) { }
+
+        try {
+            await client.execute("ALTER TABLE projects ADD COLUMN demo TEXT");
+            console.log('[DB] Migration: Added demo column');
+        } catch (e) { }
+
         try {
             await client.execute("ALTER TABLE experiences ADD COLUMN start_date TEXT");
-        } catch (e) {
-            // Column already exists or table doesn't exist yet
-        }
+        } catch (e) { }
 
         // Insert default status if not exists
         const checkStatus = await client.execute("SELECT key FROM settings WHERE key = 'status'");

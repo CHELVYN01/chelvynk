@@ -74,14 +74,17 @@ export const actions: Actions = {
         const tech = formData.get('tech') as string;
         const link = formData.get('link') as string;
 
+        const github = formData.get('github') as string;
+        const demo = formData.get('demo') as string;
+
         if (!title || !category || !description) {
             return fail(400, { error: 'Semua kolom wajib diisi' });
         }
 
         try {
             await db.execute(
-                'INSERT INTO projects (title, category, description, tech, link, featured) VALUES (?, ?, ?, ?, ?, 0)',
-                [title, category, description, tech, link]
+                'INSERT INTO projects (title, category, description, tech, link, github, demo, featured) VALUES (?, ?, ?, ?, ?, ?, ?, 0)',
+                [title, category, description, tech, link, github, demo]
             );
             return { success: true };
         } catch (e) {
@@ -118,6 +121,8 @@ export const actions: Actions = {
         const description = formData.get('description') as string;
         const tech = formData.get('tech') as string;
         const link = formData.get('link') as string;
+        const github = formData.get('github') as string;
+        const demo = formData.get('demo') as string;
 
         if (!id || !title || !category || !description) {
             return fail(400, { error: 'Semua kolom wajib diisi' });
@@ -125,8 +130,8 @@ export const actions: Actions = {
 
         try {
             await db.execute(
-                'UPDATE projects SET title = ?, category = ?, description = ?, tech = ?, link = ? WHERE id = ?',
-                [title, category, description, tech, link, id as string]
+                'UPDATE projects SET title = ?, category = ?, description = ?, tech = ?, link = ?, github = ?, demo = ? WHERE id = ?',
+                [title, category, description, tech, link, github, demo, id as string]
             );
             return { success: true };
         } catch (e) {

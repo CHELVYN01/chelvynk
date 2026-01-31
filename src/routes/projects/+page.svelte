@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { ExternalLink } from "lucide-svelte";
+    import { Globe, Github, Play } from "lucide-svelte";
     let { data } = $props();
     const projects = $derived(data.projects);
 
@@ -45,17 +45,45 @@
                                 <span>{t}</span>
                             {/each}
                         </div>
-                        <a
-                            href={formatUrl(project.link)}
-                            class="project-link"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            Kunjungi Website <ExternalLink
-                                size={14}
-                                style="margin-left: 4px;"
-                            />
-                        </a>
+                        <div class="project-actions-links">
+                            <div class="project-mini-links">
+                                {#if project.link}
+                                    <a
+                                        href={formatUrl(project.link)}
+                                        class="mini-link-btn"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        title="Kunjungi Website"
+                                    >
+                                        <Globe size={18} />
+                                    </a>
+                                {/if}
+
+                                {#if project.github}
+                                    <a
+                                        href={formatUrl(project.github)}
+                                        class="mini-link-btn"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        title="Lihat Source Code"
+                                    >
+                                        <Github size={18} />
+                                    </a>
+                                {/if}
+
+                                {#if project.demo}
+                                    <a
+                                        href={formatUrl(project.demo)}
+                                        class="mini-link-btn"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        title="Lihat Demo"
+                                    >
+                                        <Play size={18} />
+                                    </a>
+                                {/if}
+                            </div>
+                        </div>
                     </div>
                 </div>
             {/each}
@@ -146,10 +174,47 @@
         border: 1px solid var(--border);
     }
 
-    .project-link {
-        font-weight: 600;
+    .project-actions-links {
+        margin-top: auto;
+        display: flex;
+        justify-content: flex-start;
+        align-items: center;
+        gap: 1.5rem;
+    }
+
+    .project-mini-links {
+        display: flex;
+        gap: 0.75rem;
+        align-items: center;
+    }
+
+    .mini-link-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #fff7ed;
         color: var(--primary);
-        font-size: 0.9375rem;
+        border: 1px solid #ffedd5;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .mini-link-btn:hover {
+        background: var(--primary);
+        color: white;
+        transform: translateY(-3px) scale(1.1);
+        box-shadow: 0 10px 15px -3px rgba(249, 115, 22, 0.25);
+        border-color: var(--primary);
+    }
+
+    @media (max-width: 480px) {
+        .project-actions-links {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1.25rem;
+        }
     }
     @media (max-width: 768px) {
         .page-header {

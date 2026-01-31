@@ -7,11 +7,16 @@ export const load: PageServerLoad = async () => {
         const result = await db.execute('SELECT * FROM projects WHERE featured = 1 ORDER BY created_at DESC');
         const rawProjects = result.rows as any[];
 
-        const projects = rawProjects.map(p => ({
-            ...p,
-            tech: p.tech ? (p.tech as string).split(',').map((s: string) => s.trim()) : [],
-            categories: p.category ? (p.category as string).split(',').map((s: string) => s.trim()) : []
-        }));
+        const projects = rawProjects.map(p => {
+            // DEBUG LOG UNTUK KITA CEK PAK
+            console.log(`[DEBUG] Project: ${p.title} | GitHub: ${p.github} | Demo: ${p.demo}`);
+
+            return {
+                ...p,
+                tech: p.tech ? (p.tech as string).split(',').map((s: string) => s.trim()) : [],
+                categories: p.category ? (p.category as string).split(',').map((s: string) => s.trim()) : []
+            };
+        });
 
         const settingsResult = await db.execute("SELECT value FROM settings WHERE key = 'status'");
         const siteStatus = settingsResult.rows[0]?.value as string || 'Tersedia untuk Project Baru';
