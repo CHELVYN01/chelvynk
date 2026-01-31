@@ -8,11 +8,24 @@ export const load: PageServerLoad = async ({ cookies }) => {
     const auth = cookies.get('admin_auth');
 
     if (!auth || auth !== 'true') {
-        return { projects: [], authenticated: false };
+        return { projects: [], settings: {}, authenticated: false };
     }
 
-    const result = await db.execute('SELECT * FROM projects ORDER BY created_at DESC');
-    return { projects: result.rows, authenticated: true };
+    const projectsResult = await db.execute('SELECT * FROM projects ORDER BY created_at DESC');
+    const settingsResult = await db.execute('SELECT * FROM settings');
+    const experienceResult = await db.execute('SELECT * FROM experiences ORDER BY start_date DESC');
+
+    const settings = settingsResult.rows.reduce((acc: any, row: any) => {
+        acc[row.key] = row.value;
+        return acc;
+    }, {});
+
+    return {
+        projects: projectsResult.rows,
+        settings,
+        experiences: experienceResult.rows,
+        authenticated: true
+    };
 };
 
 export const actions: Actions = {
@@ -121,6 +134,77 @@ export const actions: Actions = {
             return { success: true };
         } catch (e) {
             return fail(500, { error: 'Gagal menghapus project' });
+        }
+    },
+
+    updateStatus: async ({ request, cookies }) => {
+        const auth = cookies.get('admin_auth');
+        if (auth !== 'true') return fail(403, { error: 'Tidak diijinkan' });
+
+        const formData = await request.formData();
+        const status = formData.get('status') as string;
+
+        if (!status) return fail(400, { error: 'Status tidak boleh kosong' });
+
+        try {
+            await db.execute("UPDATE settings SET value = ? WHERE key = 'status'", [status]);
+            return { success: true, message: 'Status berhasil diperbarui' };
+        } catch (e) {
+            return fail(500, { error: 'Gagal memperbarui status' });
+        }
+    },
+
+    addExperience: async ({ request, cookies }) => {
+        const auth = cookies.get('admin_auth');
+        if (auth !== 'true') return fail(403, { error: 'Tidak diijinkan' });
+
+        const formData = await request.formData();
+        const startDateRaw = formData.get('start_date') as string;
+        const endDateRaw = formData.get('end_date') as string;
+        const isPresent = formData.get('isPresent') === 'on';
+        const role = formData.get('role') as string;
+        const company = formData.get('company') as string;
+
+        if (!startDateRaw || !role || !company) {
+            return fail(400, { error: 'Semua kolom wajib diisi' });
+        }
+
+        const formatMonth = (dateStr: string) => {
+            if (!dateStr) return '';
+            const [year, month] = dateStr.split('-');
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            return `${months[parseInt(month) - 1]} ${year}`;
+        }
+
+        const period = isPresent
+            ? `${formatMonth(startDateRaw)} — Sekarang`
+            : `${formatMonth(startDateRaw)} — ${formatMonth(endDateRaw)}`;
+
+        try {
+            await db.execute(
+                'INSERT INTO experiences (period, role, company, start_date) VALUES (?, ?, ?, ?)',
+                [period, role, company, startDateRaw]
+            );
+            return { success: true, message: 'Pengalaman berhasil ditambahkan' };
+        } catch (e) {
+            return fail(500, { error: 'Gagal menambah pengalaman' });
+        }
+    },
+
+    deleteExperience: async ({ request, cookies }) => {
+        const auth = cookies.get('admin_auth');
+        if (auth !== 'true') return fail(403, { error: 'Tidak diijinkan' });
+
+        const formData = await request.formData();
+        const id = formData.get('id');
+
+        if (!id) return fail(400, { error: 'ID tidak ditemukan' });
+
+        try {
+            await db.execute('DELETE FROM experiences WHERE id = ?', [id as string]);
+            return { success: true, message: 'Pengalaman berhasil dihapus' };
+        } catch (e) {
+            return fail(500, { error: 'Gagal menghapus pengalaman' });
         }
     }
 };

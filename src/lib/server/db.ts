@@ -37,6 +37,37 @@ async function init() {
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
           )
         `);
+        await client.execute(`
+          CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+          )
+        `);
+
+        await client.execute(`
+          CREATE TABLE IF NOT EXISTS experiences (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            period TEXT NOT NULL,
+            role TEXT NOT NULL,
+            company TEXT NOT NULL,
+            start_date TEXT,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+
+        // Migration: Add start_date if not exists
+        try {
+            await client.execute("ALTER TABLE experiences ADD COLUMN start_date TEXT");
+        } catch (e) {
+            // Column already exists or table doesn't exist yet
+        }
+
+        // Insert default status if not exists
+        const checkStatus = await client.execute("SELECT key FROM settings WHERE key = 'status'");
+        if (checkStatus.rows.length === 0) {
+            await client.execute("INSERT INTO settings (key, value) VALUES ('status', 'Tersedia untuk Project Baru')");
+        }
+
         _initialized = true;
         console.log('[DB] Database initialized successfully');
     } catch (e) {

@@ -1,9 +1,12 @@
 <script lang="ts">
+	import { page } from "$app/state";
 	import "../app.css";
 	import favicon from "$lib/assets/favicon.svg";
 
 	let { children } = $props();
 	let isMobileMenuOpen = $state(false);
+
+	const isAdmin = $derived(page.url.pathname.startsWith("/admin"));
 
 	function toggleMenu() {
 		isMobileMenuOpen = !isMobileMenuOpen;
@@ -39,70 +42,77 @@
 	<meta property="og:site_name" content="Chelvyn Kleden Portfolio" />
 </svelte:head>
 
-<header class="header">
-	<div class="container nav-container">
-		<div class="logo">CK<span>.</span></div>
+{#if !isAdmin}
+	<header class="header">
+		<div class="container nav-container">
+			<div class="logo">CK<span>.</span></div>
 
-		<button
-			class="mobile-toggle"
-			onclick={toggleMenu}
-			aria-label="Toggle Menu"
-		>
-			<span class={isMobileMenuOpen ? "open" : ""}></span>
-			<span class={isMobileMenuOpen ? "open" : ""}></span>
-			<span class={isMobileMenuOpen ? "open" : ""}></span>
-		</button>
+			<button
+				class="mobile-toggle"
+				onclick={toggleMenu}
+				aria-label="Toggle Menu"
+			>
+				<span class={isMobileMenuOpen ? "open" : ""}></span>
+				<span class={isMobileMenuOpen ? "open" : ""}></span>
+				<span class={isMobileMenuOpen ? "open" : ""}></span>
+			</button>
 
-		<nav class="nav-links {isMobileMenuOpen ? 'show' : ''}">
-			<ul>
-				<li>
-					<a href="/#home" onclick={() => (isMobileMenuOpen = false)}
-						>Home</a
-					>
-				</li>
-				<li>
-					<a href="/#about" onclick={() => (isMobileMenuOpen = false)}
-						>About</a
-					>
-				</li>
-				<li>
-					<a
-						href="/projects"
-						onclick={() => (isMobileMenuOpen = false)}>Projects</a
-					>
-				</li>
-				<li>
-					<a
-						href="#contact"
-						class="btn btn-primary btn-sm"
-						onclick={() => (isMobileMenuOpen = false)}>Kontak</a
-					>
-				</li>
-			</ul>
-		</nav>
-	</div>
-</header>
+			<nav class="nav-links {isMobileMenuOpen ? 'show' : ''}">
+				<ul>
+					<li>
+						<a
+							href="/#home"
+							onclick={() => (isMobileMenuOpen = false)}>Home</a
+						>
+					</li>
+					<li>
+						<a
+							href="/#about"
+							onclick={() => (isMobileMenuOpen = false)}>About</a
+						>
+					</li>
+					<li>
+						<a
+							href="/projects"
+							onclick={() => (isMobileMenuOpen = false)}
+							>Projects</a
+						>
+					</li>
+					<li>
+						<a
+							href="#contact"
+							class="btn btn-primary btn-sm"
+							onclick={() => (isMobileMenuOpen = false)}>Kontak</a
+						>
+					</li>
+				</ul>
+			</nav>
+		</div>
+	</header>
+{/if}
 
 <main>
 	{@render children()}
 </main>
 
-<footer class="footer">
-	<div class="container">
-		<div class="footer-content">
-			<div class="footer-logo">CK<span>.</span></div>
-			<div class="footer-links">
-				<a href="https://github.com" target="_blank">GitHub</a>
-				<a href="https://linkedin.com" target="_blank">LinkedIn</a>
-				<a href="https://twitter.com" target="_blank">Twitter</a>
+{#if !isAdmin}
+	<footer class="footer">
+		<div class="container">
+			<div class="footer-content">
+				<div class="footer-logo">CK<span>.</span></div>
+				<div class="footer-links">
+					<a href="https://github.com" target="_blank">GitHub</a>
+					<a href="https://linkedin.com" target="_blank">LinkedIn</a>
+					<a href="https://twitter.com" target="_blank">Twitter</a>
+				</div>
+				<p class="copyright">
+					&copy; 2026 Chelvyn Kleden. Membangun solusi digital yang
+					bermakna.
+				</p>
 			</div>
-			<p class="copyright">
-				&copy; 2026 Chelvyn Kleden. Membangun solusi digital yang
-				bermakna.
-			</p>
 		</div>
-	</div>
-</footer>
+	</footer>
+{/if}
 
 <style>
 	.header {

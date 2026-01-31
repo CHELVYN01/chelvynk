@@ -33,9 +33,24 @@
 </svelte:head>
 
 <section id="home" class="hero-section">
+  <!-- Decorative Patterns -->
+  <div class="hero-patterns">
+    <div class="pattern-dots"></div>
+    <div class="pattern-grid"></div>
+    <div class="pattern-waves"></div>
+    <div class="abstract-curves">
+      <div class="curve curve-1"></div>
+      <div class="curve curve-2"></div>
+      <div class="curve curve-3"></div>
+    </div>
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+  </div>
+
   <div class="container hero-grid">
     <div class="hero-content fade-in">
-      <div class="badge">Tersedia untuk Project Baru</div>
+      <div class="badge">{data.siteStatus}</div>
       <h1>
         Membangun <span class="text-orange">Pengalaman Digital</span> yang Berdampak.
       </h1>
@@ -45,7 +60,7 @@
       </p>
       <div class="hero-btns">
         <a href="/projects" class="btn btn-primary">Lihat Pekerjaan</a>
-        <a href="#about" class="btn btn-outline">Tentang Saya</a>
+        <!-- <a href="#about" class="btn btn-outline">Tentang Saya</a> -->
       </div>
     </div>
     <div class="hero-visual fade-in delay-1">
@@ -69,21 +84,19 @@
       </h2>
 
       <div class="experience-list">
-        <div class="exp-item">
-          <div class="exp-date">Apr 2025 — Sekarang</div>
-          <div class="exp-info">
-            <h3>Odoo Technical Consultant</h3>
-            <p class="company">PT. Sinergi Karya Solusindo</p>
+        {#each data.experiences as exp}
+          <div class="exp-item">
+            <div class="exp-date">{exp.period}</div>
+            <div class="exp-info">
+              <h3>{exp.role}</h3>
+              <p class="company">{exp.company}</p>
+            </div>
           </div>
-        </div>
+        {/each}
 
-        <div class="exp-item">
-          <div class="exp-date">Agu 2024 — Sekarang</div>
-          <div class="exp-info">
-            <h3>Freelance Fullstack Developer</h3>
-            <p class="company">Web, Mobile & Desktop Specialist</p>
-          </div>
-        </div>
+        {#if data.experiences.length === 0}
+          <p class="text-muted">Riwayat pengalaman akan segera ditambahkan.</p>
+        {/if}
       </div>
     </div>
 
@@ -232,9 +245,143 @@
     min-height: 80vh;
     display: flex;
     align-items: center;
+    background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
+  }
+
+  /* Decorative Patterns */
+  .hero-patterns {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .pattern-dots {
+    position: absolute;
+    top: 5%;
+    left: -2%;
+    width: 300px;
+    height: 300px;
+    background-image: radial-gradient(#f97316 1.5px, transparent 1.5px);
+    background-size: 24px 24px;
+    opacity: 0.15;
+    mask-image: linear-gradient(to bottom right, black, transparent);
+  }
+
+  .pattern-grid {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 400px;
+    background-image: linear-gradient(#f1f5f9 1px, transparent 1px),
+      linear-gradient(90deg, #f1f5f9 1px, transparent 1px);
+    background-size: 60px 60px;
+    opacity: 0.5;
+    mask-image: radial-gradient(circle at top left, black, transparent 70%);
+  }
+
+  .pattern-waves {
+    position: absolute;
+    top: 15%;
+    left: -2%;
+    width: 500px;
+    height: 400px;
+    background-image: radial-gradient(
+        circle at 100% 150%,
+        #e2e8f0 24%,
+        white 25%
+      ),
+      radial-gradient(circle at 0% 150%, #e2e8f0 24%, white 25%),
+      radial-gradient(
+        circle at 50% 100%,
+        white 10%,
+        #e2e8f0 11%,
+        #e2e8f0 23%,
+        white 24%
+      );
+    background-size: 80px 40px;
+    opacity: 0.2; /* Dipertegas biar kelihatan pak */
+    mask-image: linear-gradient(to bottom right, black 40%, transparent);
+    z-index: 0;
+  }
+
+  /* Tambahan abstract curves dari referensi gambar kedua bapak */
+  .abstract-curves {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+
+  .curve {
+    position: absolute;
+    border: 8px solid transparent;
+    border-radius: 50%;
+    opacity: 0.15;
+  }
+
+  .curve-1 {
+    width: 200px;
+    height: 200px;
+    border-top-color: #f97316; /* Orange */
+    top: 10%;
+    left: 15%;
+    transform: rotate(-15deg);
+  }
+
+  .curve-2 {
+    width: 150px;
+    height: 150px;
+    border-right-color: #10b981; /* Green */
+    top: 35%;
+    left: 5%;
+    transform: rotate(20deg);
+  }
+
+  .curve-3 {
+    width: 250px;
+    height: 250px;
+    border-bottom-color: #3b82f6; /* Blue */
+    top: -50px;
+    left: 20%;
+    transform: rotate(-45deg);
+  }
+
+  .shape {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    z-index: 0;
+  }
+
+  .shape-1 {
+    width: 400px;
+    height: 400px;
+    background: rgba(249, 115, 22, 0.08); /* Primary color */
+    left: -100px;
+    top: -100px;
+  }
+
+  .shape-2 {
+    width: 300px;
+    height: 300px;
+    background: rgba(16, 185, 129, 0.05); /* Greenish accent */
+    left: 10%;
+    bottom: -50px;
+  }
+
+  .shape-3 {
+    width: 350px;
+    height: 350px;
+    background: rgba(59, 130, 246, 0.04); /* Bluish accent */
+    top: 20%;
+    left: 30%;
   }
 
   .hero-grid {
+    position: relative;
+    z-index: 1;
     display: grid;
     grid-template-columns: 1.1fr 0.9fr;
     gap: 2rem;

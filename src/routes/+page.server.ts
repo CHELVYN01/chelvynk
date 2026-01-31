@@ -13,9 +13,14 @@ export const load: PageServerLoad = async () => {
             categories: p.category ? (p.category as string).split(',').map((s: string) => s.trim()) : []
         }));
 
-        return { projects };
+        const settingsResult = await db.execute("SELECT value FROM settings WHERE key = 'status'");
+        const siteStatus = settingsResult.rows[0]?.value as string || 'Tersedia untuk Project Baru';
+
+        const expResult = await db.execute('SELECT * FROM experiences ORDER BY start_date DESC');
+
+        return { projects, siteStatus, experiences: expResult.rows };
     } catch (e) {
         console.error('[Home Load Error]:', e);
-        return { projects: [] };
+        return { projects: [], siteStatus: 'Tersedia untuk Project Baru', experiences: [] };
     }
 };
