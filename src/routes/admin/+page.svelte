@@ -69,7 +69,7 @@
 
             <form method="POST" action="?/login" use:enhance class="admin-form">
                 <div class="form-group">
-                    <label for="pin">PIN Keamanan</label>
+                    <label for="pin" class="pin-label">PIN Keamanan</label>
                     <input
                         type="password"
                         id="pin"
@@ -80,7 +80,7 @@
                         class="pin-input"
                     />
                 </div>
-                <button type="submit" class="btn btn-primary w-full"
+                <button type="submit" class="btn btn-primary w-full btn-login"
                     >Buka Dashboard</button
                 >
             </form>
@@ -121,10 +121,15 @@
             {#if isAddModalOpen}
                 <div
                     class="modal-overlay"
+                    role="button"
+                    tabindex="-1"
                     transition:fade={{ duration: 200 }}
                     onclick={(e) => {
                         if (e.target === e.currentTarget)
                             isAddModalOpen = false;
+                    }}
+                    onkeydown={(e) => {
+                        if (e.key === "Escape") isAddModalOpen = false;
                     }}
                 >
                     <div
@@ -144,13 +149,14 @@
                             method="POST"
                             action="?/addProject"
                             use:enhance={() => {
-                                return async ({ result }) => {
+                                return async ({ result, update }) => {
                                     if (result.type === "success") {
                                         isAddModalOpen = false;
                                         showToast(
                                             "Project baru berhasil ditambahkan!",
                                         );
                                     }
+                                    await update();
                                 };
                             }}
                             class="admin-form"
@@ -239,8 +245,14 @@
                                     method="POST"
                                     action="?/updateProject"
                                     use:enhance={() => {
-                                        return async ({ result }) => {
-                                            handleUpdateResult(result);
+                                        return async ({ result, update }) => {
+                                            if (result.type === "success") {
+                                                editingId = null;
+                                                showToast(
+                                                    "Perubahan berhasil disimpan!",
+                                                );
+                                            }
+                                            await update();
                                         };
                                     }}
                                     class="edit-inline-form"
@@ -323,7 +335,10 @@
                                         method="POST"
                                         action="?/toggleFeatured"
                                         use:enhance={() => {
-                                            return async ({ result }) => {
+                                            return async ({
+                                                result,
+                                                update,
+                                            }) => {
                                                 if (result.type === "success") {
                                                     showToast(
                                                         project.featured === 1
@@ -331,6 +346,7 @@
                                                             : "Ditampilkan di Home",
                                                     );
                                                 }
+                                                await update();
                                             };
                                         }}
                                     >
@@ -379,8 +395,16 @@
                                         method="POST"
                                         action="?/deleteProject"
                                         use:enhance={() => {
-                                            return async ({ result }) => {
-                                                handleDeleteResult(result);
+                                            return async ({
+                                                result,
+                                                update,
+                                            }) => {
+                                                if (result.type === "success") {
+                                                    showToast(
+                                                        "Project berhasil dihapus",
+                                                    );
+                                                }
+                                                await update();
                                             };
                                         }}
                                     >
@@ -418,7 +442,7 @@
 
     <!-- Toast Notification -->
     {#if toast.show}
-        <div class="toast-container" transition:fly={{ y: -50, duration: 300 }}>
+        <div class="toast-container" transition:fly={{ x: 100, duration: 300 }}>
             <div class="toast-item {toast.type}">
                 {#if toast.type === "success"}
                     <CheckCircle2 size={18} />
@@ -436,28 +460,61 @@
         padding: 8rem 0;
     }
     .login-container {
-        max-width: 400px;
-        margin: 4rem auto;
-        padding: 3rem 2rem;
+        max-width: 450px;
+        margin: 6rem auto;
+        padding: 3.5rem 2.5rem;
         text-align: center;
+        border-radius: 2rem;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
     }
     .login-container h1 {
-        font-size: 1.75rem;
-        margin-bottom: 0.5rem;
+        font-size: 2.25rem;
+        font-weight: 800;
+        margin-bottom: 0.75rem;
+        color: #0f172a;
     }
     .login-container p {
-        color: var(--text-muted);
-        margin-bottom: 2rem;
+        color: #64748b;
+        margin-bottom: 2.5rem;
+        font-size: 1rem;
+    }
+
+    .pin-label {
+        display: block;
+        margin-bottom: 1rem;
+        font-weight: 700;
+        font-size: 0.875rem;
+        color: #334155;
     }
 
     .pin-input {
         text-align: center;
-        font-size: 2rem;
-        letter-spacing: 0.8rem;
-        padding: 1rem !important;
-        width: 200px !important;
-        margin: 0 auto;
-        border: 2px solid var(--border) !important;
+        font-size: 2.5rem;
+        letter-spacing: 1rem;
+        padding: 1.25rem !important;
+        width: 100% !important;
+        max-width: 320px;
+        margin: 0 auto 2rem;
+        border: none !important;
+        background: #f8fafc !important;
+        border-radius: 1.25rem !important;
+        transition: all 0.3s ease;
+        color: #0f172a;
+    }
+
+    .pin-input:focus {
+        background: white !important;
+        box-shadow:
+            0 0 0 3px rgba(249, 115, 22, 0.1),
+            0 10px 20px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    .btn-login {
+        height: 56px;
+        font-size: 1.125rem;
+        font-weight: 700;
+        border-radius: 1rem;
+        box-shadow: 0 8px 20px rgba(249, 115, 22, 0.3);
     }
 
     .admin-header {
@@ -693,8 +750,7 @@
     .toast-container {
         position: fixed;
         top: 2rem;
-        left: 50%;
-        transform: translateX(-50%);
+        right: 2rem;
         z-index: 10000;
     }
     .toast-item {
