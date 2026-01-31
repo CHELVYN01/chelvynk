@@ -11,8 +11,8 @@ export const load: PageServerLoad = async ({ cookies }) => {
         return { projects: [], authenticated: false };
     }
 
-    const projects = db.prepare('SELECT * FROM projects ORDER BY created_at DESC').all();
-    return { projects, authenticated: true };
+    const result = await db.execute('SELECT * FROM projects ORDER BY created_at DESC');
+    return { projects: result.rows, authenticated: true };
 };
 
 export const actions: Actions = {
@@ -52,9 +52,10 @@ export const actions: Actions = {
         }
 
         try {
-            db.prepare(
-                'INSERT INTO projects (title, category, description, tech, link, featured) VALUES (?, ?, ?, ?, ?, 0)'
-            ).run(title, category, description, tech, link);
+            await db.execute(
+                'INSERT INTO projects (title, category, description, tech, link, featured) VALUES (?, ?, ?, ?, ?, 0)',
+                [title, category, description, tech, link]
+            );
             return { success: true };
         } catch (e) {
             return fail(500, { error: 'Gagal menyimpan ke database' });
@@ -72,7 +73,7 @@ export const actions: Actions = {
         if (!id) return fail(400, { error: 'ID tidak ditemukan' });
 
         try {
-            db.prepare('UPDATE projects SET featured = ? WHERE id = ?').run(featured, id as string);
+            await db.execute('UPDATE projects SET featured = ? WHERE id = ?', [featured, id as string]);
             return { success: true };
         } catch (e) {
             return fail(500, { error: 'Gagal mengubah status' });
@@ -96,9 +97,10 @@ export const actions: Actions = {
         }
 
         try {
-            db.prepare(
-                'UPDATE projects SET title = ?, category = ?, description = ?, tech = ?, link = ? WHERE id = ?'
-            ).run(title, category, description, tech, link, id as string);
+            await db.execute(
+                'UPDATE projects SET title = ?, category = ?, description = ?, tech = ?, link = ? WHERE id = ?',
+                [title, category, description, tech, link, id as string]
+            );
             return { success: true };
         } catch (e) {
             return fail(500, { error: 'Gagal memperbarui project' });
@@ -115,7 +117,7 @@ export const actions: Actions = {
         if (!id) return fail(400, { error: 'ID tidak ditemukan' });
 
         try {
-            db.prepare('DELETE FROM projects WHERE id = ?').run(id as string);
+            await db.execute('DELETE FROM projects WHERE id = ?', [id as string]);
             return { success: true };
         } catch (e) {
             return fail(500, { error: 'Gagal menghapus project' });
