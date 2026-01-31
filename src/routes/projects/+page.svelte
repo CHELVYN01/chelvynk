@@ -1,7 +1,22 @@
 <script lang="ts">
+    import { ExternalLink } from "lucide-svelte";
     let { data } = $props();
     const projects = $derived(data.projects);
+
+    const formatUrl = (url: string) => {
+        if (!url) return "#";
+        if (url.startsWith("http://") || url.startsWith("https://")) return url;
+        return `https://${url}`;
+    };
 </script>
+
+<svelte:head>
+    <title>Project | Chelvyn Kleden</title>
+    <meta
+        name="description"
+        content="Kumpulan project dan karya digital oleh Blasius Chelvyn Kera Kleden."
+    />
+</svelte:head>
 
 <div class="projects-page">
     <section class="page-header container">
@@ -30,9 +45,17 @@
                                 <span>{t}</span>
                             {/each}
                         </div>
-                        <a href={project.link} class="project-link"
-                            >Lihat Demo →</a
+                        <a
+                            href={formatUrl(project.link)}
+                            class="project-link"
+                            target="_blank"
+                            rel="noopener noreferrer"
                         >
+                            Kunjungi Website <ExternalLink
+                                size={14}
+                                style="margin-left: 4px;"
+                            />
+                        </a>
                     </div>
                 </div>
             {/each}

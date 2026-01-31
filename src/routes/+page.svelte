@@ -1,7 +1,14 @@
 <script lang="ts">
-  import { Mail, Send } from "lucide-svelte";
+  import { Mail, Send, ExternalLink } from "lucide-svelte";
   let { data } = $props();
   const projects = $derived(data.projects);
+
+  // Helper untuk memastikan link diawali http/https
+  const formatUrl = (url: string) => {
+    if (!url) return "#";
+    if (url.startsWith("http://") || url.startsWith("https://")) return url;
+    return `https://${url}`;
+  };
 </script>
 
 <section id="home" class="hero-section">
@@ -124,7 +131,17 @@
                 <span>{t}</span>
               {/each}
             </div>
-            <a href={project.link} class="project-link">Lihat Demo →</a>
+            <a
+              href={formatUrl(project.link)}
+              class="project-link"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Kunjungi Website <ExternalLink
+                size={14}
+                style="margin-left: 4px;"
+              />
+            </a>
           </div>
         </div>
       {/each}
