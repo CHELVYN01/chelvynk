@@ -607,12 +607,6 @@
     border: 1px solid var(--border);
   }
 
-  .project-link {
-    font-weight: 600;
-    color: var(--primary);
-    font-size: 0.9375rem;
-  }
-
   .contact-card-main {
     background: #0f172a;
     padding: 5rem 3rem;

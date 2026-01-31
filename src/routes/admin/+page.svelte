@@ -52,11 +52,11 @@
     let projectToDelete = $state<any | null>(null);
     let isPresent = $state(false);
     let activeTab = $state("projects");
-    let currentStatus = $state(data.settings.status || "");
+    let currentStatus = $state("");
 
     // Keep currentStatus in sync with server data
     $effect(() => {
-        if (data.settings.status) {
+        if (data?.settings?.status) {
             currentStatus = data.settings.status;
         }
     });
