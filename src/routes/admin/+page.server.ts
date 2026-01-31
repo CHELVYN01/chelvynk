@@ -206,5 +206,24 @@ export const actions: Actions = {
         } catch (e) {
             return fail(500, { error: 'Gagal menghapus pengalaman' });
         }
+    },
+
+    updateSocialLinks: async ({ request, cookies }) => {
+        const auth = cookies.get('admin_auth');
+        if (auth !== 'true') return fail(403, { error: 'Tidak diijinkan' });
+
+        const formData = await request.formData();
+        const github = formData.get('github') as string;
+        const linkedin = formData.get('linkedin') as string;
+        const twitter = formData.get('twitter') as string;
+
+        try {
+            await db.execute("UPDATE settings SET value = ? WHERE key = 'github'", [github]);
+            await db.execute("UPDATE settings SET value = ? WHERE key = 'linkedin'", [linkedin]);
+            await db.execute("UPDATE settings SET value = ? WHERE key = 'twitter'", [twitter]);
+            return { success: true, message: 'Social links berhasil diperbarui' };
+        } catch (e) {
+            return fail(500, { error: 'Gagal memperbarui social links' });
+        }
     }
 };

@@ -68,6 +68,15 @@ async function init() {
             await client.execute("INSERT INTO settings (key, value) VALUES ('status', 'Tersedia untuk Project Baru')");
         }
 
+        // Default Social Links
+        const socialKeys = ['github', 'linkedin', 'twitter'];
+        for (const key of socialKeys) {
+            const check = await client.execute("SELECT key FROM settings WHERE key = ?", [key]);
+            if (check.rows.length === 0) {
+                await client.execute("INSERT INTO settings (key, value) VALUES (?, ?)", [key, '#']);
+            }
+        }
+
         _initialized = true;
         console.log('[DB] Database initialized successfully');
     } catch (e) {

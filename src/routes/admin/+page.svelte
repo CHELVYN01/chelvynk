@@ -542,6 +542,70 @@
                                 </div>
                             </form>
                         </div>
+
+                        <div
+                            class="settings-section"
+                            style="border-top: 1px solid var(--border);"
+                        >
+                            <h3>Social Media Links</h3>
+                            <p>
+                                Tautkan akun media sosial bapak yang akan muncul
+                                di footer.
+                            </p>
+
+                            <form
+                                method="POST"
+                                action="?/updateSocialLinks"
+                                use:enhance
+                                class="status-form"
+                                style="max-width: 800px;"
+                            >
+                                <div class="form-grid">
+                                    <div class="form-group">
+                                        <label for="github">GitHub URL</label>
+                                        <input
+                                            type="text"
+                                            id="github"
+                                            name="github"
+                                            value={data.settings.github || "#"}
+                                            placeholder="https://github.com/username"
+                                        />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="linkedin"
+                                            >LinkedIn URL</label
+                                        >
+                                        <input
+                                            type="text"
+                                            id="linkedin"
+                                            name="linkedin"
+                                            value={data.settings.linkedin ||
+                                                "#"}
+                                            placeholder="https://linkedin.com/in/username"
+                                        />
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="twitter"
+                                            >Twitter / X URL</label
+                                        >
+                                        <input
+                                            type="text"
+                                            id="twitter"
+                                            name="twitter"
+                                            value={data.settings.twitter || "#"}
+                                            placeholder="https://twitter.com/username"
+                                        />
+                                    </div>
+                                </div>
+                                <button
+                                    type="submit"
+                                    class="btn btn-primary"
+                                    style="margin-top: 1.5rem;"
+                                >
+                                    Simpan Social Links
+                                </button>
+                            </form>
+                        </div>
                     </div>
                 {/if}
             </div>

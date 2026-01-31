@@ -3,7 +3,7 @@
 	import "../app.css";
 	import favicon from "$lib/assets/favicon.svg";
 
-	let { children } = $props();
+	let { children, data } = $props();
 	let isMobileMenuOpen = $state(false);
 
 	const isAdmin = $derived(page.url.pathname.startsWith("/admin"));
@@ -101,9 +101,21 @@
 			<div class="footer-content">
 				<div class="footer-logo">CK<span>.</span></div>
 				<div class="footer-links">
-					<a href="https://github.com" target="_blank">GitHub</a>
-					<a href="https://linkedin.com" target="_blank">LinkedIn</a>
-					<a href="https://twitter.com" target="_blank">Twitter</a>
+					<a
+						href={data.settings?.github || "https://github.com"}
+						target="_blank"
+						rel="noopener noreferrer">GitHub</a
+					>
+					<a
+						href={data.settings?.linkedin || "https://linkedin.com"}
+						target="_blank"
+						rel="noopener noreferrer">LinkedIn</a
+					>
+					<a
+						href={data.settings?.twitter || "https://twitter.com"}
+						target="_blank"
+						rel="noopener noreferrer">Twitter</a
+					>
 				</div>
 				<p class="copyright">
 					&copy; 2026 Chelvyn Kleden. Membangun solusi digital yang
