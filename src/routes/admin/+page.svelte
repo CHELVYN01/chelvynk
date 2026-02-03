@@ -99,6 +99,21 @@
             {/if}
 
             <form method="POST" action="?/login" use:enhance class="admin-form">
+                <!-- Honeypot field - invisible to humans, bots will fill this -->
+                <div
+                    style="position: absolute; left: -9999px; opacity: 0;"
+                    aria-hidden="true"
+                >
+                    <label for="website">Website</label>
+                    <input
+                        type="text"
+                        id="website"
+                        name="website"
+                        tabindex="-1"
+                        autocomplete="off"
+                    />
+                </div>
+
                 <div class="form-group">
                     <label for="pin" class="pin-label">PIN Keamanan</label>
                     <input
@@ -107,7 +122,9 @@
                         name="pin"
                         placeholder="****"
                         required
-                        maxlength="4"
+                        maxlength="8"
+                        pattern="[0-9]*"
+                        inputmode="numeric"
                         class="pin-input"
                     />
                 </div>
