@@ -150,7 +150,7 @@
     </div>
 
     <div class="project-grid">
-      {#each projects as project}
+      {#each projects as project (project.id)}
         <div class="card project-card fade-in">
           <div class="project-info">
             <div class="project-tags">
