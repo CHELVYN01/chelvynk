@@ -8,6 +8,22 @@
 	<link rel="mask-icon" href="/favicon.svg" color="#f97316" />
 	<link rel="apple-touch-icon" href="/favicon.svg" />
 	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<script>
+		// Prevent FOUC (Flash of Unstyled Content) for Dark Mode
+		(function () {
+			try {
+				const localTheme = localStorage.getItem('theme');
+				const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
+				if (localTheme === 'dark' || (!localTheme && systemTheme)) {
+					document.documentElement.classList.add('dark');
+				} else {
+					document.documentElement.classList.remove('dark');
+				}
+			} catch (e) {
+				console.error('Theme detection failed', e);
+			}
+		})();
+	</script>
 	%sveltekit.head%
 </head>
 

@@ -273,7 +273,15 @@
     min-height: 80vh;
     display: flex;
     align-items: center;
-    background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
+    background: linear-gradient(
+      135deg,
+      var(--bg-white) 0%,
+      var(--bg-soft) 100%
+    );
+  }
+
+  :global(.dark) .hero-section {
+    background: transparent;
   }
 
   /* Decorative Patterns */
@@ -302,11 +310,17 @@
     left: 0;
     width: 100%;
     height: 400px;
-    background-image: linear-gradient(#f1f5f9 1px, transparent 1px),
-      linear-gradient(90deg, #f1f5f9 1px, transparent 1px);
+    background-image: linear-gradient(#e2e8f0 1px, transparent 1px),
+      linear-gradient(90deg, #e2e8f0 1px, transparent 1px);
     background-size: 60px 60px;
-    opacity: 0.5;
+    opacity: 0.6;
     mask-image: radial-gradient(circle at top left, black, transparent 70%);
+  }
+
+  :global(.dark) .pattern-grid {
+    opacity: 0.2;
+    background-image: linear-gradient(#334155 1px, transparent 1px),
+      linear-gradient(90deg, #334155 1px, transparent 1px);
   }
 
   .pattern-waves {

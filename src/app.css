@@ -177,3 +177,74 @@ section {
 .delay-3 {
     animation-delay: 0.6s;
 }
+
+.dark {
+    --bg-white: #020617;
+    --bg-soft: #0f172a;
+    --bg-card: #0f172a;
+    --text-main: #f1f5f9;
+    --text-muted: #94a3b8;
+    --border: #1e293b;
+    --primary: #fb923c;
+    --primary-hover: #f97316;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5);
+    --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.5);
+}
+
+/* Dark mode specific adjustments */
+.dark body {
+    background-color: var(--bg-white);
+}
+
+.dark h1,
+.dark h2,
+.dark h3 {
+    color: var(--text-main);
+}
+
+.dark .btn-outline {
+    background: transparent;
+    border-color: var(--border);
+    color: var(--text-main);
+}
+
+.dark .btn-outline:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+.dark .contact-card-main {
+    background: #1e293b;
+    border: 1px solid var(--border);
+}
+
+.dark .hero-section {
+    background: transparent;
+}
+
+/* Dark mode specific patterns */
+.dark .pattern-dots {
+    opacity: 0.1;
+    background-image: radial-gradient(#fb923c 1.5px, transparent 1.5px);
+}
+
+.dark .pattern-grid {
+    opacity: 0.05;
+    background-image: linear-gradient(#f1f5f9 1px, transparent 1px),
+        linear-gradient(90deg, #f1f5f9 1px, transparent 1px);
+}
+
+.dark .pattern-waves {
+    opacity: 0.03;
+    filter: invert(1);
+}
+
+/* Image swap mechanism */
+.hero-img {
+    content: url("/hero-dev-2.png");
+}
+
+.dark .hero-img {
+    content: url("/hero-dev-dark.png");
+}
