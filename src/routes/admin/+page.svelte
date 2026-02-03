@@ -20,7 +20,10 @@
         Clock,
         Github,
         Play,
+        Sun,
+        Moon,
     } from "lucide-svelte";
+    import { theme } from "$lib/theme.svelte";
     import { fade, slide, fly } from "svelte/transition";
 
     let {
@@ -179,6 +182,22 @@
             </nav>
 
             <div class="sidebar-footer">
+                <button
+                    class="logout-btn"
+                    onclick={() => theme.toggle()}
+                    title="Toggle Theme"
+                    style="margin-bottom: 0.5rem; justify-content: center;"
+                >
+                    {#if theme.isDark}
+                        <Sun size={20} />
+                    {:else}
+                        <Moon size={20} />
+                    {/if}
+                    <span style="margin-left: 0.5rem;"
+                        >{theme.isDark ? "Light Mode" : "Dark Mode"}</span
+                    >
+                </button>
+
                 <form method="POST" action="?/logout" use:enhance>
                     <button type="submit" class="logout-btn">
                         <LogOut size={20} />
@@ -1210,7 +1229,8 @@
 
 <style>
     :global(body) {
-        background-color: #f8fafc;
+        background-color: var(--bg-soft);
+        color: var(--text-main);
     }
 
     .admin-layout {
@@ -1221,14 +1241,15 @@
 
     /* SIDEBAR */
     .sidebar {
-        background: #0f172a;
-        color: white;
+        background: var(--bg-card);
+        color: var(--text-main);
         padding: 2rem 1.5rem;
         display: flex;
         flex-direction: column;
         position: sticky;
         top: 0;
         height: 100vh;
+        border-right: 1px solid var(--border);
     }
 
     .sidebar-brand {
@@ -1242,11 +1263,11 @@
     .sidebar-brand .logo {
         font-size: 1.5rem;
         font-weight: 800;
-        color: white;
+        color: var(--text-main);
     }
     .sidebar-brand span.brand-text {
         font-weight: 600;
-        color: #94a3b8;
+        color: var(--text-muted);
         font-size: 0.875rem;
         text-transform: uppercase;
         letter-spacing: 0.05em;
@@ -1267,7 +1288,7 @@
         border-radius: 0.75rem;
         background: transparent;
         border: none;
-        color: #94a3b8;
+        color: var(--text-muted);
         cursor: pointer;
         transition: all 0.2s;
         width: 100%;
@@ -1276,8 +1297,8 @@
     }
 
     .nav-item:hover {
-        background: rgba(255, 255, 255, 0.05);
-        color: white;
+        background: var(--bg-soft);
+        color: var(--primary);
     }
 
     .nav-item.active {
@@ -1288,14 +1309,14 @@
 
     .sidebar-footer {
         padding-top: 2rem;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        border-top: 1px solid var(--border);
     }
 
     .logout-btn {
         display: flex;
         align-items: center;
         gap: 1rem;
-        color: #fca5a5;
+        color: var(--text-muted);
         background: transparent;
         border: none;
         padding: 0.875rem 1.25rem;
@@ -1307,7 +1328,8 @@
     }
 
     .logout-btn:hover {
-        background: rgba(239, 68, 68, 0.1);
+        background: var(--bg-soft);
+        color: #ef4444;
     }
 
     /* MAIN CONTENT */
@@ -1327,11 +1349,11 @@
         font-size: 2.25rem;
         font-weight: 800;
         margin-bottom: 0.25rem;
-        color: #0f172a;
+        color: var(--text-main);
     }
 
     .content-header p {
-        color: #64748b;
+        color: var(--text-muted);
         font-weight: 500;
     }
 
@@ -1351,17 +1373,18 @@
         transition: background 0.2s;
     }
     .project-item:hover {
-        background: #fcfcfd;
+        background: var(--bg-soft);
     }
     .project-item.editing {
         display: block;
-        background: #fcfcfd;
+        background: var(--bg-soft);
     }
 
     .project-main-info h3 {
         margin-bottom: 0.5rem;
         font-size: 1.25rem;
         font-weight: 700;
+        color: var(--text-main);
     }
     .project-tags {
         display: flex;
@@ -1372,7 +1395,7 @@
     .tag {
         font-size: 0.7rem;
         font-weight: 800;
-        background: #f9f2ed;
+        background: var(--bg-soft);
         color: var(--primary);
         padding: 0.25rem 0.75rem;
         border-radius: 0.5rem;
@@ -1380,14 +1403,14 @@
     }
     .tag-tech {
         font-size: 0.75rem;
-        background: #f1f5f9;
-        color: #64748b;
+        background: var(--bg-soft);
+        color: var(--text-muted);
         padding: 0.15rem 0.5rem;
         border-radius: 0.4rem;
         border: 1px solid var(--border);
     }
     .project-desc {
-        color: #64748b;
+        color: var(--text-muted);
         max-width: 800px;
         line-height: 1.6;
     }
@@ -1404,21 +1427,21 @@
         justify-content: center;
         border: 1px solid var(--border);
         border-radius: 0.875rem;
-        background: white;
+        background: var(--bg-card);
         cursor: pointer;
         transition: all 0.2s;
-        color: #64748b;
+        color: var(--text-muted);
     }
     .action-btn:hover {
-        background: #f8fafc;
+        background: var(--bg-soft);
         transform: translateY(-3px);
-        color: #0f172a;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        color: var(--text-main);
+        box-shadow: var(--shadow-sm);
     }
     .action-btn.active {
         color: var(--primary);
         border-color: var(--primary);
-        background: #fff7ed;
+        background: var(--bg-soft);
     }
 
     /* Settings Styles */

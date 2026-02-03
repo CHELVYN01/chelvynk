@@ -1,11 +1,19 @@
 <script lang="ts">
 	import { page } from "$app/state";
+	import { onMount } from "svelte";
+	import { Sun, Moon } from "lucide-svelte";
+	import { theme } from "$lib/theme.svelte";
 	import "../app.css";
 
 	let { children, data } = $props();
+
 	let isMobileMenuOpen = $state(false);
 
 	const isAdmin = $derived(page.url.pathname.startsWith("/admin"));
+
+	onMount(() => {
+		theme.init();
+	});
 
 	function toggleMenu() {
 		isMobileMenuOpen = !isMobileMenuOpen;
@@ -84,6 +92,19 @@
 							onclick={() => (isMobileMenuOpen = false)}>Kontak</a
 						>
 					</li>
+					<li>
+						<button
+							class="theme-toggle"
+							onclick={() => theme.toggle()}
+							aria-label="Toggle Dark Mode"
+						>
+							{#if theme.isDark}
+								<Sun size={20} />
+							{:else}
+								<Moon size={20} />
+							{/if}
+						</button>
+					</li>
 				</ul>
 			</nav>
 		</div>
@@ -133,7 +154,15 @@
 		backdrop-filter: blur(12px);
 		-webkit-backdrop-filter: blur(12px);
 		z-index: 1000;
+		z-index: 1000;
 		border-bottom: 1px solid var(--border);
+		transition:
+			background-color 0.3s,
+			border-color 0.3s;
+	}
+
+	:global(.dark) .header {
+		background: rgba(2, 6, 23, 0.9);
 	}
 
 	.nav-container {
@@ -232,7 +261,7 @@
 			width: 80%;
 			max-width: 300px;
 			height: 100vh;
-			background: white;
+			background: var(--bg-card);
 			flex-direction: column;
 			justify-content: center;
 			padding: 2rem;
@@ -260,7 +289,7 @@
 
 	.footer {
 		padding: 4rem 0;
-		background: #f8fafc;
+		background: var(--bg-soft);
 		border-top: 1px solid var(--border);
 	}
 
@@ -300,5 +329,24 @@
 		color: var(--text-muted);
 		font-size: 0.8125rem;
 		text-align: center;
+	}
+
+	.theme-toggle {
+		background: transparent;
+		border: 1px solid var(--border);
+		color: var(--text-muted);
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0.5rem;
+		border-radius: 0.5rem;
+		transition: all 0.2s;
+	}
+
+	.theme-toggle:hover {
+		color: var(--primary);
+		border-color: var(--primary);
+		background: var(--bg-soft);
 	}
 </style>
