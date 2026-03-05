@@ -86,13 +86,11 @@ export function getFailedLogins(): typeof failedLogins {
 export function sanitizeInput(input: string | null | undefined): string {
     if (!input) return '';
 
+    // Svelte automatically escapes outputs by default.
+    // We only sanitize strict HTML tags < and > to prevent raw HTML injection.
     return input
-        .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#x27;')
-        .replace(/\//g, '&#x2F;')
         .trim();
 }
 
