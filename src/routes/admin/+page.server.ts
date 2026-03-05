@@ -10,6 +10,8 @@ import {
     validatePin,
     generateToken
 } from '$lib/server/security';
+import { writeFileSync, mkdirSync, existsSync } from 'fs';
+import { join } from 'path';
 
 // PIN dari environment variable (WAJIB)
 const getAdminPin = () => {
@@ -33,6 +35,7 @@ export const load: PageServerLoad = async ({ cookies, getClientAddress }) => {
     const projectsResult = await db.execute('SELECT * FROM projects ORDER BY created_at DESC');
     const settingsResult = await db.execute('SELECT * FROM settings');
     const experienceResult = await db.execute('SELECT * FROM experiences ORDER BY start_date DESC');
+    const appsResult = await db.execute('SELECT * FROM store_apps ORDER BY created_at DESC');
 
     // Fetch Traffic Stats
     const totalVisits = await db.execute('SELECT COUNT(*) as count FROM traffic');
@@ -50,6 +53,7 @@ export const load: PageServerLoad = async ({ cookies, getClientAddress }) => {
         projects: projectsResult.rows,
         settings,
         experiences: experienceResult.rows,
+        apps: appsResult.rows,
         stats: {
             total: totalVisits.rows[0].count,
             human: humanVisits.rows[0].count,
@@ -348,6 +352,83 @@ export const actions: Actions = {
         } catch (e) {
             console.error('[DB Error] updateSocialLinks:', e);
             return fail(500, { error: 'Gagal memperbarui social links' });
+        }
+    },
+
+    addApp: async ({ request, cookies }) => {
+        const auth = cookies.get('admin_auth');
+        const token = cookies.get('admin_token');
+        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+
+        const formData = await request.formData();
+        const title = sanitizeInput(formData.get('title') as string);
+        const developer = sanitizeInput(formData.get('developer') as string);
+        const description = sanitizeInput(formData.get('description') as string);
+        let icon_url = sanitizeUrl(formData.get('icon_url') as string);
+        let download_url = sanitizeUrl(formData.get('download_url') as string);
+        const version = sanitizeInput(formData.get('version') as string);
+        let size = sanitizeInput(formData.get('size') as string);
+
+        const iconFile = formData.get('icon_file') as File | null;
+        const appFile = formData.get('app_file') as File | null;
+
+        const uploadDir = join(process.cwd(), 'static', 'uploads');
+        if (!existsSync(uploadDir)) {
+            mkdirSync(uploadDir, { recursive: true });
+        }
+
+        if (iconFile && iconFile.size > 0 && iconFile.name) {
+            const buffer = Buffer.from(await iconFile.arrayBuffer());
+            const fileName = `icon_${Date.now()}_${iconFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+            writeFileSync(join(uploadDir, fileName), buffer);
+            icon_url = `/uploads/${fileName}`;
+        }
+
+        if (appFile && appFile.size > 0 && appFile.name) {
+            const buffer = Buffer.from(await appFile.arrayBuffer());
+            const fileName = `app_${Date.now()}_${appFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+            writeFileSync(join(uploadDir, fileName), buffer);
+            download_url = `/uploads/${fileName}`;
+            
+            // Auto calculate size if empty
+            if (!size) {
+                const mb = (appFile.size / (1024 * 1024)).toFixed(1);
+                size = `${mb} MB`;
+            }
+        }
+
+        if (!title || !download_url) {
+            return fail(400, { error: 'Judul dan File/URL Download wajib diisi' });
+        }
+
+        try {
+            await db.execute(
+                'INSERT INTO store_apps (title, developer, description, icon_url, download_url, version, size) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [title, developer || 'Unknown', description || '', icon_url || '', download_url, version || '1.0', size || 'Unknown']
+            );
+            return { success: true, message: 'App berhasil ditambahkan' };
+        } catch (e) {
+            console.error('[DB Error] addApp:', e);
+            return fail(500, { error: 'Gagal menambah App' });
+        }
+    },
+
+    deleteApp: async ({ request, cookies }) => {
+        const auth = cookies.get('admin_auth');
+        const token = cookies.get('admin_token');
+        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+
+        const formData = await request.formData();
+        const id = formData.get('id');
+
+        if (!id || isNaN(Number(id))) return fail(400, { error: 'ID tidak valid' });
+
+        try {
+            await db.execute('DELETE FROM store_apps WHERE id = ?', [Number(id)]);
+            return { success: true, message: 'App berhasil dihapus' };
+        } catch (e) {
+            console.error('[DB Error] deleteApp:', e);
+            return fail(500, { error: 'Gagal menghapus App' });
         }
     }
 };
