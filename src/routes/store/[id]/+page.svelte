@@ -64,9 +64,6 @@
           <p class="developer-name">{app.developer || "Chelvyn"}</p>
 
           <div class="app-badges">
-            <span class="badge"
-              ><Star size={14} fill="var(--primary)" color="var(--primary)" /> 4.5</span
-            >
             <span class="badge">Gratis</span>
           </div>
         </div>

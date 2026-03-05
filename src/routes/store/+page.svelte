@@ -58,12 +58,7 @@
               <h3>{app.title}</h3>
               <p class="app-developer">{app.developer || "Chelvyn"}</p>
               <div class="app-rating">
-                <Star size={14} fill="currentColor" />
-                <Star size={14} fill="currentColor" />
-                <Star size={14} fill="currentColor" />
-                <Star size={14} fill="currentColor" />
-                <StarHalf size={14} fill="currentColor" />
-                <span>Free</span>
+                <span style="margin-left: 0;">Gratis</span>
               </div>
             </div>
           </div>
