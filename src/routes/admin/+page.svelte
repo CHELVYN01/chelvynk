@@ -51,6 +51,10 @@
   let editingProject = $derived(
     editingId ? data.projects.find((p) => p.id === editingId) : null,
   );
+  let editingAppId = $state<number | null>(null);
+  let editingApp = $derived(
+    editingAppId ? data.apps.find((a) => a.id === editingAppId) : null,
+  );
   let isAddModalOpen = $state(false);
   let isAddExpModalOpen = $state(false);
   let isAddAppModalOpen = $state(false);
@@ -58,6 +62,10 @@
   let appDragging = $state(false);
   let iconFileName = $state("");
   let appFileName = $state("");
+  let editIconDragging = $state(false);
+  let editAppDragging = $state(false);
+  let editIconFileName = $state("");
+  let editAppFileName = $state("");
   let projectToDelete = $state<any | null>(null);
   let isPresent = $state(false);
   let activeTab = $state("projects");
@@ -489,6 +497,15 @@
                   </div>
 
                   <div class="project-item-actions">
+                    <button
+                      type="button"
+                      class="action-btn"
+                      onclick={() => (editingAppId = app.id)}
+                      title="Edit App"
+                    >
+                      <Pencil size={18} />
+                    </button>
+
                     <form
                       method="POST"
                       action="?/deleteApp"
@@ -1368,6 +1385,273 @@
             type="button"
             class="btn btn-outline"
             onclick={() => (editingId = null)}>Batal</button
+          >
+          <button type="submit" class="btn btn-primary">Simpan Perubahan</button
+          >
+        </div>
+      </form>
+    </div>
+  </div>
+{/if}
+
+<!-- Modal Edit App -->
+{#if editingApp}
+  <div
+    class="modal-overlay"
+    role="button"
+    tabindex="-1"
+    transition:fade={{ duration: 200 }}
+    onclick={(e) => {
+      if (e.target === e.currentTarget) {
+        editingAppId = null;
+        editIconFileName = "";
+        editAppFileName = "";
+      }
+    }}
+    onkeydown={(e) => {
+      if (e.key === "Escape") {
+        editingAppId = null;
+        editIconFileName = "";
+        editAppFileName = "";
+      }
+    }}
+  >
+    <div class="modal-content card" transition:fly={{ y: 20, duration: 300 }}>
+      <div class="modal-header">
+        <h2>Edit App</h2>
+        <button
+          class="close-btn"
+          onclick={() => {
+            editingAppId = null;
+            editIconFileName = "";
+            editAppFileName = "";
+          }}
+        >
+          <X size={20} />
+        </button>
+      </div>
+      <form
+        method="POST"
+        action="?/updateApp"
+        enctype="multipart/form-data"
+        use:enhance={() => {
+          return async ({ result, update }) => {
+            if (result.type === "success") {
+              editingAppId = null;
+              editIconFileName = "";
+              editAppFileName = "";
+              showToast("Perubahan berhasil disimpan!");
+            }
+            await update();
+          };
+        }}
+        class="admin-form"
+      >
+        <input type="hidden" name="id" value={editingApp.id} />
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+          <!-- Kolom Kiri: Input Teks -->
+          <div style="display: flex; flex-direction: column; gap: 1.25rem;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="edit_app_title">Judul App</label>
+              <input
+                type="text"
+                id="edit_app_title"
+                name="title"
+                value={editingApp.title}
+                required
+              />
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="edit_app_developer">Developer</label>
+              <input
+                type="text"
+                id="edit_app_developer"
+                name="developer"
+                value={editingApp.developer}
+                required
+              />
+            </div>
+
+            <div
+              style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;"
+            >
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="edit_app_version">Versi</label>
+                <input
+                  type="text"
+                  id="edit_app_version"
+                  name="version"
+                  value={editingApp.version}
+                />
+              </div>
+              <div class="form-group" style="margin-bottom: 0;">
+                <label for="edit_app_size">Ukuran (Size)</label>
+                <input
+                  type="text"
+                  id="edit_app_size"
+                  name="size"
+                  value={editingApp.size}
+                />
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="edit_app_description">Deskripsi</label>
+              <textarea
+                id="edit_app_description"
+                name="description"
+                rows="3"
+                required>{editingApp.description}</textarea
+              >
+            </div>
+          </div>
+
+          <!-- Kolom Kanan: Dropzones -->
+          <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="edit_icon_url">URL Icon Saat Ini</label>
+              <input
+                type="text"
+                id="edit_icon_url"
+                name="icon_url"
+                value={editingApp.icon_url}
+              />
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label for="edit_download_url">URL Download Saat Ini</label>
+              <input
+                type="text"
+                id="edit_download_url"
+                name="download_url"
+                value={editingApp.download_url}
+              />
+            </div>
+
+            <div
+              class="form-group"
+              style="margin-bottom: 0; flex: 1; display: flex; flex-direction: column;"
+            >
+              <label for="edit_icon_file"
+                >Ganti Icon Aplikasi Baru (Opsional)</label
+              >
+              <div
+                class="dropzone {editIconDragging ? 'dragging' : ''}"
+                style="flex: 1; display: flex; flex-direction: column; justify-content: center; min-height: 120px;"
+                role="button"
+                tabindex="0"
+                ondragover={(e) => {
+                  e.preventDefault();
+                  editIconDragging = true;
+                }}
+                ondragleave={(e) => {
+                  e.preventDefault();
+                  editIconDragging = false;
+                }}
+                ondrop={(e) => {
+                  e.preventDefault();
+                  editIconDragging = false;
+                  if (e.dataTransfer?.files?.length) {
+                    const fileInput = document.getElementById(
+                      "edit_icon_file",
+                    ) as HTMLInputElement;
+                    fileInput.files = e.dataTransfer.files;
+                    editIconFileName = e.dataTransfer.files[0].name;
+                  }
+                }}
+              >
+                <input
+                  type="file"
+                  id="edit_icon_file"
+                  name="icon_file"
+                  accept="image/*"
+                  class="file-input-hidden"
+                  onchange={(e) => {
+                    const target = e.currentTarget as HTMLInputElement;
+                    if (target.files?.length)
+                      editIconFileName = target.files[0].name;
+                  }}
+                />
+                <div class="dropzone-content">
+                  <div class="drop-icon">🖼️</div>
+                  {#if editIconFileName}
+                    <p class="file-name">{editIconFileName}</p>
+                  {:else}
+                    <p style="font-size: 0.875rem;">
+                      Tarik & lepas file icon<br />atau
+                      <span style="color: var(--primary); font-weight: 500;"
+                        >Pilih File</span
+                      >
+                    </p>
+                  {/if}
+                </div>
+              </div>
+            </div>
+
+            <div
+              class="form-group"
+              style="margin-bottom: 0; flex: 1; display: flex; flex-direction: column;"
+            >
+              <label for="edit_app_file">Ganti File App Baru (Opsional)</label>
+              <div
+                class="dropzone {editAppDragging ? 'dragging' : ''}"
+                style="flex: 1; display: flex; flex-direction: column; justify-content: center; min-height: 120px;"
+                role="button"
+                tabindex="0"
+                ondragover={(e) => {
+                  e.preventDefault();
+                  editAppDragging = true;
+                }}
+                ondragleave={(e) => {
+                  e.preventDefault();
+                  editAppDragging = false;
+                }}
+                ondrop={(e) => {
+                  e.preventDefault();
+                  editAppDragging = false;
+                  if (e.dataTransfer?.files?.length) {
+                    const fileInput = document.getElementById(
+                      "edit_app_file",
+                    ) as HTMLInputElement;
+                    fileInput.files = e.dataTransfer.files;
+                    editAppFileName = e.dataTransfer.files[0].name;
+                  }
+                }}
+              >
+                <input
+                  type="file"
+                  id="edit_app_file"
+                  name="app_file"
+                  accept=".apk,.exe,.zip,.tar,.gz,.rar"
+                  class="file-input-hidden"
+                  onchange={(e) => {
+                    const target = e.currentTarget as HTMLInputElement;
+                    if (target.files?.length)
+                      editAppFileName = target.files[0].name;
+                  }}
+                />
+                <div class="dropzone-content">
+                  <div class="drop-icon">📦</div>
+                  {#if editAppFileName}
+                    <p class="file-name">{editAppFileName}</p>
+                  {:else}
+                    <p style="font-size: 0.875rem;">
+                      Tarik & lepas file app<br />atau
+                      <span style="color: var(--primary); font-weight: 500;"
+                        >Pilih File</span
+                      >
+                    </p>
+                  {/if}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-outline"
+            onclick={() => (editingAppId = null)}>Batal</button
           >
           <button type="submit" class="btn btn-primary">Simpan Perubahan</button
           >

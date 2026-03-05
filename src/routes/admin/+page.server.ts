@@ -413,6 +413,74 @@ export const actions: Actions = {
         }
     },
 
+    updateApp: async ({ request, cookies }) => {
+        const auth = cookies.get('admin_auth');
+        const token = cookies.get('admin_token');
+        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+
+        const formData = await request.formData();
+        const id = formData.get('id');
+        const title = sanitizeInput(formData.get('title') as string);
+        const developer = sanitizeInput(formData.get('developer') as string);
+        const description = sanitizeInput(formData.get('description') as string);
+        let icon_url = sanitizeUrl(formData.get('icon_url') as string);
+        let download_url = sanitizeUrl(formData.get('download_url') as string);
+        const version = sanitizeInput(formData.get('version') as string);
+        let size = sanitizeInput(formData.get('size') as string);
+
+        const iconFile = formData.get('icon_file') as File | null;
+        const appFile = formData.get('app_file') as File | null;
+
+        const uploadDir = join(process.cwd(), 'static', 'uploads');
+        if (!existsSync(uploadDir)) {
+            try {
+                mkdirSync(uploadDir, { recursive: true });
+            } catch (e) {
+                console.error('[Storage Error]', e);
+            }
+        }
+
+        try {
+            if (iconFile && iconFile.size > 0 && iconFile.name) {
+                const buffer = Buffer.from(await iconFile.arrayBuffer());
+                const fileName = `icon_${Date.now()}_${iconFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+                writeFileSync(join(uploadDir, fileName), buffer);
+                icon_url = `/uploads/${fileName}`;
+            }
+
+            if (appFile && appFile.size > 0 && appFile.name) {
+                const buffer = Buffer.from(await appFile.arrayBuffer());
+                const fileName = `app_${Date.now()}_${appFile.name.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
+                writeFileSync(join(uploadDir, fileName), buffer);
+                download_url = `/uploads/${fileName}`;
+                
+                // Auto calculate size if empty
+                if (!size) {
+                    const mb = (appFile.size / (1024 * 1024)).toFixed(1);
+                    size = `${mb} MB`;
+                }
+            }
+        } catch (e) {
+            console.error('[Upload Error]', e);
+            // Non-fatal, let it pass if upload fails (e.g. Vercel read-only system)
+        }
+
+        if (!id || isNaN(Number(id)) || !title || !download_url) {
+            return fail(400, { error: 'ID, Judul dan URL Download wajib diisi' });
+        }
+
+        try {
+            await db.execute(
+                'UPDATE store_apps SET title = ?, developer = ?, description = ?, icon_url = ?, download_url = ?, version = ?, size = ? WHERE id = ?',
+                [title, developer || 'Unknown', description || '', icon_url || '', download_url, version || '1.0', size || 'Unknown', Number(id)]
+            );
+            return { success: true, message: 'App berhasil diperbarui' };
+        } catch (e) {
+            console.error('[DB Error] updateApp:', e);
+            return fail(500, { error: 'Gagal memperbarui App' });
+        }
+    },
+
     deleteApp: async ({ request, cookies }) => {
         const auth = cookies.get('admin_auth');
         const token = cookies.get('admin_token');
