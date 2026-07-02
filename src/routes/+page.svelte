@@ -849,6 +849,9 @@
     width: 100%;
     max-width: 650px;
     margin-right: -10%;
+    aspect-ratio: 4 / 5;
+    overflow: hidden;
+    border-radius: 1.5rem;
   }
 
   /* Cahaya lembut di belakang ilustrasi */
@@ -866,7 +869,9 @@
 
   .hero-img {
     width: 100%;
-    height: auto;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 15%;
     display: block;
     mix-blend-mode: multiply;
     position: relative;
