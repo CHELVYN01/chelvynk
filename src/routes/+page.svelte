@@ -1,7 +1,79 @@
 <script lang="ts">
-  import { Mail, Send, ExternalLink, Github, Play, Globe } from "lucide-svelte";
+  import {
+    Mail,
+    Send,
+    Github,
+    Play,
+    Globe,
+    X,
+    ArrowUpRight,
+    ArrowRight,
+    Code2,
+    Layers,
+    Server,
+    MapPin,
+  } from "lucide-svelte";
+  import { fade, scale } from "svelte/transition";
+  import { quintOut } from "svelte/easing";
+  import type { Action } from "svelte/action";
   let { data } = $props();
   const projects = $derived(data.projects);
+
+  // Scroll-reveal (progressive enhancement: tanpa JS elemen tetap tampil)
+  const reveal: Action<HTMLElement, { delay?: number } | undefined> = (
+    node,
+    params,
+  ) => {
+    node.classList.add("reveal");
+    if (params?.delay) node.style.transitionDelay = `${params.delay}ms`;
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            node.classList.add("reveal-in");
+            io.unobserve(node);
+          }
+        }
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -8% 0px" },
+    );
+    io.observe(node);
+    return { destroy: () => io.disconnect() };
+  };
+
+  // Tech stack untuk pita berjalan (marquee)
+  const techMarquee = [
+    "Odoo ERP",
+    "Laravel",
+    "CodeIgniter 4",
+    "Svelte",
+    "Next.js",
+    "Tauri",
+    "React Native",
+    "Rust",
+    "Python",
+    "Git",
+    "Docker",
+  ];
+
+  // Kapabilitas terkelompok untuk section About
+  const skillGroups = [
+    {
+      icon: Layers,
+      title: "Odoo & ERP",
+      items: ["Odoo (Custom Module)", "Odoo API", "PostgreSQL", "Python"],
+    },
+    {
+      icon: Server,
+      title: "Backend & Web",
+      items: ["Laravel", "CodeIgniter 4", "Rust", "PHP"],
+    },
+    {
+      icon: Code2,
+      title: "Frontend & Mobile",
+      items: ["Svelte", "Next.js", "React Native", "Tauri"],
+    },
+  ];
 
   const formatUrl = (url: string) => {
     if (!url) return "#";
@@ -9,19 +81,74 @@
     return `https://${url}`;
   };
 
+  // --- Project Detail Modal ---
+  let selectedProject = $state<any>(null);
+
+  function openProject(project: any) {
+    selectedProject = project;
+  }
+
+  function closeProject() {
+    selectedProject = null;
+  }
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === "Escape") closeProject();
+  }
+
+  // Kunci scroll body saat modal terbuka
+  $effect(() => {
+    if (typeof document === "undefined") return;
+    document.body.style.overflow = selectedProject ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  });
+
   // Structured Data for Google
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Person",
     name: "Blasius Chelvyn Kera Kleden",
-    alternateName: "Chelvyn Kleden",
+    alternateName: ["Chelvyn Kleden", "Kleden Chelvyn"],
     url: "https://chelvynkleden.com",
-    jobTitle: "Fullstack Developer & Odoo Consultant",
+    image: "https://chelvynkleden.com/hero-dev-2.png",
+    jobTitle: "Odoo Technical Consultant & Fullstack Developer",
     description:
-      "Fullstack Developer spesialis Odoo, Svelte, dan Next.js berbasis di Indonesia.",
+      "Blasius Chelvyn Kera Kleden (Chelvyn Kleden) — Odoo Technical Consultant & Odoo Developer freelance di Indonesia. Spesialis kustomisasi modul Odoo ERP, integrasi Odoo API, Laravel, CodeIgniter 4, Svelte, dan Next.js.",
+    nationality: "Indonesian",
+    address: {
+      "@type": "PostalAddress",
+      addressCountry: "ID",
+    },
+    hasOccupation: {
+      "@type": "Occupation",
+      name: "Odoo Technical Consultant",
+      occupationalCategory: "Software Developer / ERP Consultant",
+      occupationLocation: {
+        "@type": "Country",
+        name: "Indonesia",
+      },
+    },
+    knowsAbout: [
+      "Odoo ERP",
+      "Odoo Development",
+      "Odoo Custom Module",
+      "Odoo API Integration",
+      "Laravel",
+      "CodeIgniter 4",
+      "PHP",
+      "Svelte",
+      "Next.js",
+      "React Native",
+      "Rust",
+      "Python",
+      "Docker",
+    ],
     sameAs: [
       "https://github.com/CHELVYN01",
       "https://linkedin.com/in/chelvynkleden",
+      "https://t.me/kledenvin",
     ],
   };
 </script>
@@ -31,6 +158,8 @@
     {@html JSON.stringify(structuredData)}
   </script>
 </svelte:head>
+
+<svelte:window onkeydown={handleKeydown} />
 
 <section id="home" class="hero-section">
   <!-- Decorative Patterns -->
@@ -50,21 +179,31 @@
 
   <div class="container hero-grid">
     <div class="hero-content fade-in">
-      <div class="badge">{data.siteStatus}</div>
+      <div class="badge">
+        <span class="badge-dot"></span>
+        {data.siteStatus}
+      </div>
       <h1>
-        Membangun <span class="text-orange">Pengalaman Digital</span> yang Berdampak.
+        Membangun <span class="text-gradient">Pengalaman Digital</span> yang Berdampak.
       </h1>
       <p>
         Halo, saya Chelvyn. Seorang Full-stack Developer yang mendedikasikan
         diri untuk merancang aplikasi web yang cepat, aman, dan mudah digunakan.
       </p>
       <div class="hero-btns">
-        <a href="/projects" class="btn btn-primary">Lihat Pekerjaan</a>
-        <!-- <a href="#about" class="btn btn-outline">Tentang Saya</a> -->
+        <a href="/projects" class="btn btn-primary">
+          Lihat Pekerjaan <ArrowRight size={18} />
+        </a>
+        <a href="#contact" class="btn btn-ghost">Hubungi Saya</a>
+      </div>
+      <div class="hero-meta">
+        <MapPin size={16} />
+        <span>Berbasis di Indonesia · Remote-friendly</span>
       </div>
     </div>
     <div class="hero-visual fade-in delay-1">
       <div class="illustration-container">
+        <div class="visual-glow"></div>
         <img
           src="/hero-dev-2.png"
           alt="Blasius Chelvyn Kera Kleden - Fullstack Developer Portfolio Illustration"
@@ -73,22 +212,73 @@
       </div>
     </div>
   </div>
+
+  <!-- Tech marquee: pita tech berjalan -->
+  <div class="tech-marquee" aria-hidden="true">
+    <div class="marquee-track">
+      {#each [...techMarquee, ...techMarquee] as tech}
+        <span class="marquee-item">{tech}</span>
+        <span class="marquee-sep">•</span>
+      {/each}
+    </div>
+  </div>
 </section>
 
 <section id="about" class="about-section">
-  <div class="container grid-2">
-    <div class="fade-in delay-1">
+  <div class="container about-grid">
+    <div class="about-main" use:reveal>
       <span class="section-tag">Tentang Saya</span>
       <h2>
-        Membangun Karir di <span class="text-orange">Dunia Teknologi.</span>
+        <span class="text-orange">Odoo Technical Consultant</span> & Fullstack
+        Developer.
       </h2>
 
-      <div class="experience-list">
+      <div class="about-text">
+        <p>
+          Fokus utama saya adalah <strong>Odoo Technical Consultant</strong> —
+          merancang, mengkustomisasi, dan mengintegrasikan modul
+          <strong>ERP Odoo</strong> agar benar-benar pas dengan proses bisnis
+          klien. Mulai dari <strong>custom module</strong>, workflow &
+          automation, hingga integrasi <strong>Odoo API</strong> dengan sistem
+          eksternal.
+        </p>
+        <p>
+          Di luar Odoo, saya membangun aplikasi web dengan
+          <strong>Laravel</strong> dan <strong>CodeIgniter 4</strong>, frontend
+          modern <strong>Svelte</strong> & <strong>Next.js</strong>, aplikasi
+          desktop <strong>Tauri</strong>, hingga mobile
+          <strong>React Native</strong> — ditopang <strong>Rust</strong>,
+          <strong>Python</strong>, <strong>Docker</strong>, dan CI/CD untuk
+          backend yang handal dan mudah dideploy.
+        </p>
+      </div>
+
+      <div class="skill-cards">
+        {#each skillGroups as group, i}
+          {@const Icon = group.icon}
+          <div class="skill-card" use:reveal={{ delay: i * 90 }}>
+            <div class="skill-icon"><Icon size={20} /></div>
+            <h3>{group.title}</h3>
+            <div class="skill-tags">
+              {#each group.items as item}
+                <span>{item}</span>
+              {/each}
+            </div>
+          </div>
+        {/each}
+      </div>
+    </div>
+
+    <aside class="about-side" use:reveal={{ delay: 120 }}>
+      <span class="section-tag">Perjalanan</span>
+      <h3 class="side-title">Pengalaman</h3>
+      <div class="timeline">
         {#each data.experiences as exp}
-          <div class="exp-item">
-            <div class="exp-date">{exp.period}</div>
-            <div class="exp-info">
-              <h3>{exp.role}</h3>
+          <div class="timeline-item">
+            <span class="timeline-dot"></span>
+            <div class="timeline-content">
+              <span class="timeline-date">{exp.period}</span>
+              <h4>{exp.role}</h4>
               <p class="company">{exp.company}</p>
             </div>
           </div>
@@ -98,47 +288,13 @@
           <p class="text-muted">Riwayat pengalaman akan segera ditambahkan.</p>
         {/if}
       </div>
-    </div>
-
-    <div class="about-text fade-in delay-2">
-      <p>
-        Saya adalah pengembang perangkat lunak yang berpengalaman dalam
-        membangun ekosistem digital yang kompleks. Dengan latar belakang yang
-        kuat di berbagai platform, saya berfokus pada solusi yang efisien dan
-        skalabel.
-      </p>
-      <p>
-        Keahlian saya mencakup implementasi ERP menggunakan <strong>Odoo</strong
-        >, pengembangan web modern dengan <strong>Svelte</strong> dan
-        <strong>Next.js</strong>, hingga solusi aplikasi desktop berbasis
-        <strong>Tauri</strong>
-        dan mobile dengan <strong>React Native</strong>.
-      </p>
-      <p>
-        Di sisi infrastruktur dan CI/CD, saya mengandalkan <strong>Rust</strong
-        >, <strong>Python</strong>, <strong>Git</strong>, serta
-        <strong>Docker</strong> untuk membangun backend yang performan, handal, dan
-        mudah dideploy secara otomatis.
-      </p>
-
-      <div class="stack-tags">
-        <span class="tag">Odoo ERP</span>
-        <span class="tag">Svelte</span>
-        <span class="tag">Next.js</span>
-        <span class="tag">Tauri (Desktop)</span>
-        <span class="tag">React Native</span>
-        <span class="tag">Rust</span>
-        <span class="tag">Python</span>
-        <span class="tag">Git</span>
-        <span class="tag">Docker</span>
-      </div>
-    </div>
+    </aside>
   </div>
 </section>
 
 <section id="projects" class="project-section">
   <div class="container">
-    <div class="section-header">
+    <div class="section-header" use:reveal>
       <div>
         <span class="section-tag">Portofolio</span>
         <h2>Project <span class="text-orange">Terpilih</span></h2>
@@ -150,8 +306,24 @@
     </div>
 
     <div class="project-grid">
-      {#each projects as project (project.id)}
-        <div class="card project-card fade-in">
+      {#each projects as project, i (project.id)}
+        <div
+          class="card project-card"
+          use:reveal={{ delay: i * 70 }}
+          role="button"
+          tabindex="0"
+          aria-label={`Lihat detail project ${project.title}`}
+          onclick={() => openProject(project)}
+          onkeydown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              openProject(project);
+            }
+          }}
+        >
+          <span class="project-index" aria-hidden="true"
+            >{String(i + 1).padStart(2, "0")}</span
+          >
           <div class="project-info">
             <div class="project-tags">
               {#each project.categories as cat}
@@ -159,13 +331,16 @@
               {/each}
             </div>
             <h3>{project.title}</h3>
-            <p>{project.description}</p>
+            <p class="project-desc">{project.description}</p>
             <div class="project-tech">
-              {#each project.tech as t}
+              {#each project.tech.slice(0, 4) as t}
                 <span>{t}</span>
               {/each}
+              {#if project.tech.length > 4}
+                <span class="tech-more">+{project.tech.length - 4}</span>
+              {/if}
             </div>
-            <div class="project-actions-links">
+            <div class="project-footer">
               <div class="project-mini-links">
                 {#if project.link}
                   <a
@@ -174,6 +349,7 @@
                     target="_blank"
                     rel="noopener noreferrer"
                     title="Kunjungi Website"
+                    onclick={(e) => e.stopPropagation()}
                   >
                     <Globe size={18} />
                   </a>
@@ -186,6 +362,7 @@
                     target="_blank"
                     rel="noopener noreferrer"
                     title="Lihat Source Code"
+                    onclick={(e) => e.stopPropagation()}
                   >
                     <Github size={18} />
                   </a>
@@ -198,11 +375,15 @@
                     target="_blank"
                     rel="noopener noreferrer"
                     title="Lihat Demo"
+                    onclick={(e) => e.stopPropagation()}
                   >
                     <Play size={18} />
                   </a>
                 {/if}
               </div>
+              <span class="detail-cta">
+                Detail <ArrowUpRight size={16} />
+              </span>
             </div>
           </div>
         </div>
@@ -211,9 +392,90 @@
   </div>
 </section>
 
+{#if selectedProject}
+  <div class="modal-backdrop" transition:fade={{ duration: 200 }}>
+    <button
+      class="modal-overlay-btn"
+      aria-label="Tutup detail"
+      onclick={closeProject}
+    ></button>
+    <div
+      class="modal-panel"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+      tabindex="-1"
+      transition:scale={{ duration: 280, start: 0.94, opacity: 0, easing: quintOut }}
+    >
+      <button class="modal-close" onclick={closeProject} aria-label="Tutup detail">
+        <X size={20} />
+      </button>
+
+      <div class="modal-tags">
+        {#each selectedProject.categories as cat}
+          <span class="project-cat">{cat}</span>
+        {/each}
+      </div>
+
+      <h3 id="modal-title" class="modal-title">{selectedProject.title}</h3>
+
+      <div class="modal-body">
+        <p class="modal-desc">{selectedProject.description}</p>
+
+        {#if selectedProject.tech.length > 0}
+          <div class="modal-section">
+            <h4>Teknologi</h4>
+            <div class="project-tech">
+              {#each selectedProject.tech as t}
+                <span>{t}</span>
+              {/each}
+            </div>
+          </div>
+        {/if}
+      </div>
+
+      {#if selectedProject.link || selectedProject.github || selectedProject.demo}
+        <div class="modal-actions">
+          {#if selectedProject.link}
+            <a
+              href={formatUrl(selectedProject.link)}
+              class="btn btn-primary"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Globe size={18} /> Kunjungi Website
+            </a>
+          {/if}
+          {#if selectedProject.github}
+            <a
+              href={formatUrl(selectedProject.github)}
+              class="btn btn-outline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Github size={18} /> Source Code
+            </a>
+          {/if}
+          {#if selectedProject.demo}
+            <a
+              href={formatUrl(selectedProject.demo)}
+              class="btn btn-outline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Play size={18} /> Demo
+            </a>
+          {/if}
+        </div>
+      {/if}
+    </div>
+  </div>
+{/if}
+
 <section id="contact" class="contact-section">
   <div class="container">
-    <div class="contact-card-main fade-in">
+    <div class="contact-card-main" use:reveal>
+      <div class="contact-glow"></div>
       <span class="section-tag">Kontak</span>
       <h2 class="contact-title">
         <span>Mari Mulai</span>
@@ -223,6 +485,11 @@
         Punya ide project atau ingin diskusi tentang Odoo & Fullstack
         development? Saya selalu terbuka untuk kolaborasi baru.
       </p>
+
+      <div class="contact-status">
+        <span class="badge-dot"></span>
+        {data.siteStatus}
+      </div>
 
       <div class="contact-options">
         <a href="mailto:kledenchelvyn@gmail.com" class="contact-box">
@@ -254,8 +521,17 @@
     color: var(--primary);
   }
 
+  .text-gradient {
+    background: linear-gradient(120deg, var(--primary), #fbbf24 55%, var(--primary));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
   .badge {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
     padding: 0.5rem 1rem;
     background: #fff7ed;
     color: var(--primary);
@@ -266,12 +542,76 @@
     margin-bottom: 1.5rem;
   }
 
+  :global(.dark) .badge {
+    background: rgba(251, 146, 60, 0.12);
+    border-color: rgba(251, 146, 60, 0.25);
+  }
+
+  /* Titik status berdenyut */
+  .badge-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--primary);
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .badge-dot::after {
+    content: "";
+    position: absolute;
+    inset: -4px;
+    border-radius: 50%;
+    background: var(--primary);
+    opacity: 0.4;
+    animation: pulse-ring 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  @keyframes pulse-ring {
+    0% {
+      transform: scale(0.6);
+      opacity: 0.5;
+    }
+    70% {
+      transform: scale(1.6);
+      opacity: 0;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
+  /* Scroll reveal */
+  :global(.reveal) {
+    opacity: 0;
+    transform: translateY(26px);
+    transition:
+      opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: opacity, transform;
+  }
+
+  :global(.reveal-in) {
+    opacity: 1;
+    transform: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :global(.reveal) {
+      opacity: 1;
+      transform: none;
+      transition: none;
+    }
+  }
+
   .hero-section {
     position: relative;
-    padding: 8rem 0 6rem;
+    padding: 8rem 0 0;
     overflow: hidden;
     min-height: 80vh;
     display: flex;
+    flex-direction: column;
+    justify-content: center;
     align-items: center;
     background: linear-gradient(
       135deg,
@@ -447,9 +787,40 @@
 
   .hero-btns {
     display: flex;
+    flex-wrap: wrap;
     gap: 1rem;
     position: relative;
     z-index: 10;
+  }
+
+  .hero-btns .btn {
+    gap: 0.5rem;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-main);
+  }
+
+  .btn-ghost:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: translateY(-1px);
+  }
+
+  .hero-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 2rem;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+
+  .hero-meta :global(svg) {
+    color: var(--primary);
   }
 
   .hero-visual {
@@ -463,9 +834,23 @@
   }
 
   .illustration-container {
+    position: relative;
     width: 100%;
     max-width: 650px;
     margin-right: -10%;
+  }
+
+  /* Cahaya lembut di belakang ilustrasi */
+  .visual-glow {
+    position: absolute;
+    inset: 8% 8% 8% 8%;
+    background: radial-gradient(
+      circle,
+      rgba(249, 115, 22, 0.18),
+      transparent 65%
+    );
+    filter: blur(40px);
+    z-index: -1;
   }
 
   .hero-img {
@@ -473,6 +858,83 @@
     height: auto;
     display: block;
     mix-blend-mode: multiply;
+    position: relative;
+    z-index: 1;
+  }
+
+  :global(.dark) .hero-img {
+    mix-blend-mode: normal;
+  }
+
+  /* ===== Tech Marquee ===== */
+  .tech-marquee {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    margin-top: 4rem;
+    padding: 1.25rem 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(
+      90deg,
+      transparent,
+      black 12%,
+      black 88%,
+      transparent
+    );
+    mask-image: linear-gradient(
+      90deg,
+      transparent,
+      black 12%,
+      black 88%,
+      transparent
+    );
+  }
+
+  .marquee-track {
+    display: inline-flex;
+    align-items: center;
+    gap: 1.5rem;
+    white-space: nowrap;
+    animation: marquee 32s linear infinite;
+  }
+
+  .tech-marquee:hover .marquee-track {
+    animation-play-state: paused;
+  }
+
+  .marquee-item {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-main);
+    opacity: 0.55;
+    transition: opacity 0.3s ease;
+  }
+
+  .marquee-item:hover {
+    opacity: 1;
+    color: var(--primary);
+  }
+
+  .marquee-sep {
+    color: var(--primary);
+    opacity: 0.5;
+  }
+
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .marquee-track {
+      animation: none;
+    }
   }
   .project-tags {
     display: flex;
@@ -490,10 +952,11 @@
     }
   }
 
-  .grid-2 {
+  .about-grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1.35fr 1fr;
     gap: 4rem;
+    align-items: start;
   }
 
   .section-tag {
@@ -506,57 +969,164 @@
     margin-bottom: 0.75rem;
   }
 
-  .about-text p {
+  .about-main h2 {
     margin-bottom: 1.5rem;
-    color: var(--text-muted);
   }
 
-  .experience-list {
+  .about-text p {
+    margin-bottom: 1.25rem;
+    color: var(--text-muted);
+    line-height: 1.7;
+  }
+
+  .about-text strong {
+    color: var(--text-main);
+    font-weight: 600;
+  }
+
+  /* Kartu kapabilitas */
+  .skill-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1rem;
     margin-top: 2.5rem;
+  }
+
+  .skill-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    padding: 1.5rem;
+    transition:
+      transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+      border-color 0.3s ease,
+      box-shadow 0.3s ease;
+  }
+
+  .skill-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--primary);
+    box-shadow: var(--shadow-md);
+  }
+
+  .skill-icon {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.75rem;
+    background: #fff7ed;
+    color: var(--primary);
+    border: 1px solid #ffedd5;
+    margin-bottom: 1rem;
+  }
+
+  :global(.dark) .skill-icon {
+    background: rgba(251, 146, 60, 0.12);
+    border-color: rgba(251, 146, 60, 0.2);
+  }
+
+  .skill-card h3 {
+    font-size: 1rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .skill-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .skill-tags span {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    padding: 0.2rem 0.6rem;
+    border-radius: 0.5rem;
+  }
+
+  /* Sidebar pengalaman + timeline */
+  .about-side {
+    position: sticky;
+    top: 6rem;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 1.5rem;
+    padding: 2rem;
+  }
+
+  :global(.dark) .about-side {
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .side-title {
+    font-size: 1.5rem;
+    margin-bottom: 1.75rem;
+  }
+
+  .timeline {
+    position: relative;
     display: flex;
     flex-direction: column;
-    gap: 2rem;
+    gap: 1.75rem;
+    padding-left: 1.5rem;
   }
 
-  .exp-item {
-    display: flex;
-    gap: 1.5rem;
+  /* Garis vertikal timeline */
+  .timeline::before {
+    content: "";
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    left: 4px;
+    width: 2px;
+    background: linear-gradient(
+      to bottom,
+      var(--primary),
+      var(--border) 90%
+    );
   }
 
-  .exp-date {
-    font-size: 0.8125rem;
+  .timeline-item {
+    position: relative;
+  }
+
+  .timeline-dot {
+    position: absolute;
+    left: calc(-1.5rem + 4px);
+    top: 6px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--primary);
+    border: 2px solid var(--bg-soft);
+    transform: translateX(-50%);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.15);
+  }
+
+  .timeline-date {
+    font-size: 0.75rem;
     font-weight: 700;
     color: var(--primary);
     text-transform: uppercase;
-    min-width: 140px;
-    padding-top: 0.25rem;
+    letter-spacing: 0.03em;
+    display: block;
+    margin-bottom: 0.35rem;
   }
 
-  .exp-info h3 {
-    font-size: 1.125rem;
-    margin-bottom: 0.25rem;
+  .timeline-content h4 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 0.2rem;
+    line-height: 1.3;
   }
 
-  .exp-info .company {
+  .timeline-content .company {
     color: var(--text-muted);
-    font-size: 0.9375rem;
-  }
-
-  .stack-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
-    margin-top: 2rem;
-  }
-
-  .tag {
-    background: #fff7ed;
-    color: var(--primary);
-    padding: 0.4rem 1rem;
-    border-radius: 2rem;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    border: 1px solid #ffedd5;
+    font-size: 0.9rem;
   }
 
   .section-header {
@@ -578,29 +1148,105 @@
   }
 
   .project-card {
-    padding: 2.5rem;
+    position: relative;
+    padding: 2rem;
+    display: flex;
+    cursor: pointer;
+    overflow: hidden;
+    outline: none;
+  }
+
+  /* Garis aksen gradient di atas kartu, muncul saat hover */
+  .project-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .project-card:hover::before,
+  .project-card:focus-visible::before {
+    transform: scaleX(1);
+  }
+
+  .project-card:focus-visible {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.25);
+  }
+
+  .project-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    z-index: 1;
+  }
+
+  /* Nomor index dekoratif di pojok kanan atas */
+  .project-index {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.5rem;
+    font-size: 2.75rem;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--text-main);
+    opacity: 0.06;
+    letter-spacing: -0.03em;
+    transition: opacity 0.3s ease, color 0.3s ease;
+    pointer-events: none;
+  }
+
+  .project-card:hover .project-index,
+  .project-card:focus-visible .project-index {
+    opacity: 0.14;
+    color: var(--primary);
   }
 
   .project-cat {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     font-weight: 700;
     color: var(--primary);
     text-transform: uppercase;
-    margin-bottom: 1rem;
-    display: block;
+    letter-spacing: 0.04em;
+    padding: 0.25rem 0.65rem;
+    background: #fff7ed;
+    border: 1px solid #ffedd5;
+    border-radius: 2rem;
+    display: inline-block;
+  }
+
+  :global(.dark) .project-cat {
+    background: rgba(251, 146, 60, 0.12);
+    border-color: rgba(251, 146, 60, 0.2);
   }
 
   .project-card h3 {
-    margin-bottom: 1rem;
+    margin-bottom: 0.75rem;
+    padding-right: 2.5rem;
+    font-size: 1.35rem;
+    transition: color 0.25s ease;
   }
 
-  .project-card p {
+  .project-card:hover h3,
+  .project-card:focus-visible h3 {
+    color: var(--primary);
+  }
+
+  .project-desc {
     color: var(--text-muted);
     font-size: 0.9375rem;
+    line-height: 1.65;
     margin-bottom: 1.5rem;
-    height: 4.5rem;
     display: -webkit-box;
     -webkit-line-clamp: 3;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
@@ -621,13 +1267,66 @@
     border: 1px solid var(--border);
   }
 
+  :global(.dark) .project-tech span {
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .project-tech span.tech-more {
+    background: transparent;
+    border-color: transparent;
+    color: var(--primary);
+    font-weight: 700;
+  }
+
   .contact-card-main {
-    background: #0f172a;
+    position: relative;
+    overflow: hidden;
+    background: radial-gradient(
+        circle at 50% 0%,
+        #1e293b,
+        #0f172a 60%
+      );
     padding: 5rem 3rem;
     border-radius: 2.5rem;
     text-align: center;
     color: white;
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  }
+
+  /* Cahaya oranye dekoratif di kartu kontak */
+  .contact-glow {
+    position: absolute;
+    top: -120px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 480px;
+    height: 320px;
+    background: radial-gradient(
+      circle,
+      rgba(249, 115, 22, 0.35),
+      transparent 70%
+    );
+    filter: blur(60px);
+    pointer-events: none;
+  }
+
+  .contact-card-main > :global(*:not(.contact-glow)) {
+    position: relative;
+    z-index: 1;
+  }
+
+  .contact-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4rem 1rem;
+    margin-bottom: 3rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 2rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #e2e8f0;
   }
 
   .contact-title {
@@ -651,7 +1350,7 @@
   .contact-card-main p {
     color: #94a3b8;
     max-width: 550px;
-    margin: 0 auto 3.5rem;
+    margin: 0 auto 1.75rem;
     font-size: 1.05rem;
     line-height: 1.6;
   }
@@ -765,9 +1464,13 @@
       display: none; /* Hide complex visual on small mobile to avoid overflow */
     }
 
-    .grid-2 {
+    .about-grid {
       grid-template-columns: 1fr;
-      gap: 2rem;
+      gap: 2.5rem;
+    }
+
+    .about-side {
+      position: static;
     }
 
     .section-header {
@@ -820,30 +1523,52 @@
     .badge {
       font-size: 0.75rem;
     }
-    .tag {
-      padding: 0.3rem 0.75rem;
-      font-size: 0.75rem;
+    .about-side {
+      padding: 1.5rem;
     }
-    .exp-item {
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-    .exp-date {
-      min-width: unset;
+    .skill-cards {
+      grid-template-columns: 1fr;
     }
   }
-  .project-actions-links {
+  .project-footer {
     margin-top: auto;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
     display: flex;
-    justify-content: flex-start;
+    justify-content: space-between;
     align-items: center;
-    gap: 1.5rem;
+    gap: 1rem;
   }
 
   .project-mini-links {
     display: flex;
     gap: 0.75rem;
     align-items: center;
+  }
+
+  .detail-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+  }
+
+  .detail-cta :global(svg) {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .project-card:hover .detail-cta,
+  .project-card:focus-visible .detail-cta {
+    color: var(--primary);
+  }
+
+  .project-card:hover .detail-cta :global(svg),
+  .project-card:focus-visible .detail-cta :global(svg) {
+    transform: translate(2px, -2px);
   }
 
   .mini-link-btn {
@@ -867,11 +1592,147 @@
     border-color: var(--primary);
   }
 
+  :global(.dark) .mini-link-btn {
+    background: rgba(251, 146, 60, 0.1);
+    border-color: rgba(251, 146, 60, 0.2);
+  }
+
+  /* ===== Project Detail Modal ===== */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+  }
+
+  .modal-overlay-btn {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+    cursor: pointer;
+  }
+
+  .modal-panel {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 620px;
+    max-height: 88vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 1.75rem;
+    padding: 2.5rem;
+    box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4);
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--border);
+    background: var(--bg-soft);
+    color: var(--text-muted);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.25s ease;
+  }
+
+  .modal-close:hover {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    transform: rotate(90deg);
+  }
+
+  .modal-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+    padding-right: 3rem;
+  }
+
+  .modal-title {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    margin-bottom: 1.5rem;
+    padding-right: 2rem;
+    line-height: 1.2;
+  }
+
+  .modal-body {
+    flex: 1;
+    overflow-y: auto;
+    margin: 0 -0.5rem;
+    padding: 0 0.5rem;
+  }
+
+  .modal-desc {
+    color: var(--text-muted);
+    font-size: 1rem;
+    line-height: 1.75;
+    white-space: pre-line;
+    margin-bottom: 2rem;
+  }
+
+  .modal-section h4 {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-main);
+    margin-bottom: 0.85rem;
+  }
+
+  .modal-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-top: 2rem;
+    padding-top: 1.75rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .modal-actions .btn {
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 150px;
+  }
+
+  /* Scrollbar halus untuk modal */
+  .modal-body::-webkit-scrollbar {
+    width: 6px;
+  }
+  .modal-body::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 3px;
+  }
+
   @media (max-width: 480px) {
-    .project-actions-links {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 1.25rem;
+    .modal-panel {
+      padding: 1.75rem 1.25rem;
+      border-radius: 1.25rem;
+      max-height: 90vh;
+    }
+    .modal-actions .btn {
+      flex: 1 1 100%;
     }
   }
 </style>

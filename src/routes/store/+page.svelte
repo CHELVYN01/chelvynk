@@ -25,11 +25,7 @@
 </script>
 
 <svelte:head>
-  <title>Store | Chelvyn Kleden</title>
-  <meta
-    name="description"
-    content="App Store oleh Chelvyn. Temukan dan unduh aplikasi keren secara gratis."
-  />
+  <title>Store | Chelvyn Kleden — Aplikasi oleh Chelvyn Kleden</title>
 </svelte:head>
 
 <div class="store-page">
