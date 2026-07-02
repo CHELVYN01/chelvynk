@@ -557,12 +557,13 @@
     border-color: rgba(251, 146, 60, 0.25);
   }
 
-  /* Titik status berdenyut */
+  /* Titik status berdenyut (hijau = tersedia/available) */
   .badge-dot {
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: var(--primary);
+    background: #22c55e;
+    box-shadow: 0 0 6px rgba(34, 197, 94, 0.7);
     position: relative;
     flex-shrink: 0;
   }
@@ -572,7 +573,7 @@
     position: absolute;
     inset: -4px;
     border-radius: 50%;
-    background: var(--primary);
+    background: #22c55e;
     opacity: 0.4;
     animation: pulse-ring 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
