@@ -10,6 +10,9 @@
   let isMobileMenuOpen = $state(false);
 
   const isAdmin = $derived(page.url.pathname.startsWith("/admin"));
+  const canonicalUrl = $derived(
+    `https://chelvynkleden.com${page.url.pathname}`,
+  );
 
   onMount(() => {
     theme.init();
@@ -28,25 +31,56 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
     rel="stylesheet"
   />
-  <title>Chelvyn Kleden | Portfolio</title>
+  <!-- prettier-ignore -->
+  <title>Blasius Chelvyn Kera Kleden — Odoo Technical Consultant & Freelance Developer</title>
   <meta
     name="description"
-    content="Portfolio Blasius Chelvyn Kera Kleden - Fullstack Developer & Odoo Expert. Spesialis dalam membangun aplikasi web modern yang responsif dan berdampak."
+    content="Blasius Chelvyn Kera Kleden (Chelvyn Kleden) — Odoo Technical Consultant & Odoo Developer freelance di Indonesia. Spesialis kustomisasi modul Odoo ERP, integrasi Odoo API, Laravel, CodeIgniter 4, Svelte, dan Next.js."
   />
   <meta
     name="keywords"
-    content="BLASIUS CHELVYN KERA KLEDEN, Kleden kelvin, kelvin kleden, chelvyn Kleden, Fullstack Developer, Odoo Indonesia, Web Developer, Svelte Indonesia"
+    content="Blasius Chelvyn Kera Kleden, Chelvyn Kleden, Kleden Chelvyn, Teknikal Odoo, Odoo Technical Consultant, Odoo Developer, Odoo Development, Odoo Freelance, Freelance Odoo Developer, Konsultan Odoo, Odoo Indonesia, Laravel Developer, CodeIgniter 4, Fullstack Developer Indonesia"
   />
   <meta name="author" content="Blasius Chelvyn Kera Kleden" />
+  <meta
+    name="robots"
+    content={isAdmin ? "noindex, nofollow" : "index, follow"}
+  />
+  <meta name="theme-color" content="#f97316" />
+  <link rel="canonical" href={canonicalUrl} />
 
   <!-- Open Graph / Social Media -->
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Chelvyn Kleden | Portfolio" />
+  <meta property="og:url" content={canonicalUrl} />
+  <meta
+    property="og:title"
+    content="Blasius Chelvyn Kera Kleden — Odoo Technical Consultant & Freelance Developer"
+  />
   <meta
     property="og:description"
-    content="Portfolio Blasius Chelvyn Kera Kleden - Fullstack Developer & Odoo Expert."
+    content="Odoo Technical Consultant & Odoo Developer freelance di Indonesia. Spesialis kustomisasi modul Odoo ERP, integrasi Odoo API, Laravel, CodeIgniter 4, Svelte, dan Next.js."
   />
-  <meta property="og:site_name" content="Chelvyn Kleden Portfolio" />
+  <meta property="og:site_name" content="Chelvyn Kleden" />
+  <meta property="og:locale" content="id_ID" />
+  <meta
+    property="og:image"
+    content="https://chelvynkleden.com/hero-dev-2.png"
+  />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta
+    name="twitter:title"
+    content="Blasius Chelvyn Kera Kleden — Odoo Technical Consultant"
+  />
+  <meta
+    name="twitter:description"
+    content="Odoo Technical Consultant & Odoo Developer freelance di Indonesia. Spesialis Odoo ERP, Laravel, CodeIgniter 4, Svelte & Next.js."
+  />
+  <meta
+    name="twitter:image"
+    content="https://chelvynkleden.com/hero-dev-2.png"
+  />
 </svelte:head>
 
 {#if !isAdmin}
