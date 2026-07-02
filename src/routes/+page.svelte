@@ -11,6 +11,7 @@
     Code2,
     Layers,
     Server,
+    Terminal,
     MapPin,
   } from "lucide-svelte";
   import { fade, scale } from "svelte/transition";
@@ -52,8 +53,11 @@
     "React Native",
     "Rust",
     "Python",
-    "Git",
     "Docker",
+    "CI/CD",
+    "VPS / Linux",
+    "Nginx",
+    "Git",
   ];
 
   // Kapabilitas terkelompok untuk section About
@@ -72,6 +76,11 @@
       icon: Code2,
       title: "Frontend & Mobile",
       items: ["Svelte", "Next.js", "React Native", "Tauri"],
+    },
+    {
+      icon: Terminal,
+      title: "DevOps & Infra",
+      items: ["Docker", "CI/CD", "VPS / Linux", "Nginx", "Git"],
     },
   ];
 
@@ -247,9 +256,10 @@
           <strong>Laravel</strong> dan <strong>CodeIgniter 4</strong>, frontend
           modern <strong>Svelte</strong> & <strong>Next.js</strong>, aplikasi
           desktop <strong>Tauri</strong>, hingga mobile
-          <strong>React Native</strong> — ditopang <strong>Rust</strong>,
-          <strong>Python</strong>, <strong>Docker</strong>, dan CI/CD untuk
-          backend yang handal dan mudah dideploy.
+          <strong>React Native</strong> — ditopang <strong>Rust</strong> &
+          <strong>Python</strong>. Sisi <strong>DevOps &amp; infrastruktur</strong>
+          saya urus sendiri: <strong>Docker</strong>, <strong>CI/CD</strong>, dan
+          deployment di <strong>VPS</strong> agar rilis cepat dan handal.
         </p>
       </div>
 
