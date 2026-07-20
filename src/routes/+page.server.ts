@@ -23,9 +23,14 @@ export const load: PageServerLoad = async () => {
 
         const expResult = await db.execute('SELECT * FROM experiences ORDER BY start_date DESC');
 
-        return { projects, siteStatus, experiences: expResult.rows };
+        // Testimoni klien yang sudah di-approve.
+        const reviewsResult = await db.execute(
+            "SELECT rating, testimonial, reviewer_name, reviewer_role FROM reviews WHERE status = 'approved' ORDER BY created_at DESC"
+        );
+
+        return { projects, siteStatus, experiences: expResult.rows, reviews: reviewsResult.rows };
     } catch (e) {
         console.error('[Home Load Error]:', e);
-        return { projects: [], siteStatus: 'Tersedia untuk Project Baru', experiences: [] };
+        return { projects: [], siteStatus: 'Tersedia untuk Project Baru', experiences: [], reviews: [] };
     }
 };

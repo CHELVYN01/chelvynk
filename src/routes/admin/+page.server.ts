@@ -37,6 +37,15 @@ export const load: PageServerLoad = async ({ cookies, getClientAddress }) => {
     const experienceResult = await db.execute('SELECT * FROM experiences ORDER BY start_date DESC');
     const appsResult = await db.execute('SELECT * FROM store_apps ORDER BY created_at DESC');
 
+    // Review: daftar link yang dibuat + review yang masuk (join biar tahu klien mana).
+    const tokensResult = await db.execute('SELECT * FROM review_tokens ORDER BY created_at DESC');
+    const reviewsResult = await db.execute(`
+        SELECT r.*, t.client_name, t.project_name
+        FROM reviews r
+        LEFT JOIN review_tokens t ON r.token_id = t.id
+        ORDER BY r.created_at DESC
+    `);
+
     // Fetch Traffic Stats
     const totalVisits = await db.execute('SELECT COUNT(*) as count FROM traffic');
     const humanVisits = await db.execute('SELECT COUNT(*) as count FROM traffic WHERE is_bot = 0');
@@ -54,6 +63,8 @@ export const load: PageServerLoad = async ({ cookies, getClientAddress }) => {
         settings,
         experiences: experienceResult.rows,
         apps: appsResult.rows,
+        reviewTokens: tokensResult.rows,
+        reviews: reviewsResult.rows,
         stats: {
             total: totalVisits.rows[0].count,
             human: humanVisits.rows[0].count,
@@ -497,6 +508,94 @@ export const actions: Actions = {
         } catch (e) {
             console.error('[DB Error] deleteApp:', e);
             return fail(500, { error: 'Gagal menghapus App' });
+        }
+    },
+
+    // ==================== REVIEW KLIEN ====================
+
+    generateReviewLink: async ({ request, cookies }) => {
+        const auth = cookies.get('admin_auth');
+        const token = cookies.get('admin_token');
+        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+
+        const formData = await request.formData();
+        const clientName = sanitizeInput(formData.get('client_name') as string);
+        const projectName = sanitizeInput(formData.get('project_name') as string);
+
+        if (!clientName || !projectName) {
+            return fail(400, { error: 'Nama klien dan nama proyek wajib diisi' });
+        }
+
+        // Token random unguessable (32 char, crypto.getRandomValues) — bukan angka urut.
+        const reviewToken = generateToken(32);
+        // Expiry 30 hari.
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+        try {
+            await db.execute(
+                'INSERT INTO review_tokens (token, client_name, project_name, expires_at) VALUES (?, ?, ?, ?)',
+                [reviewToken, clientName, projectName, expiresAt]
+            );
+            return { success: true, message: 'Link review berhasil dibuat', reviewToken };
+        } catch (e) {
+            console.error('[DB Error] generateReviewLink:', e);
+            return fail(500, { error: 'Gagal membuat link review' });
+        }
+    },
+
+    approveReview: async ({ request, cookies }) => {
+        const auth = cookies.get('admin_auth');
+        const token = cookies.get('admin_token');
+        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+
+        const formData = await request.formData();
+        const id = formData.get('id');
+        if (!id || isNaN(Number(id))) return fail(400, { error: 'ID tidak valid' });
+
+        try {
+            await db.execute("UPDATE reviews SET status = 'approved' WHERE id = ?", [Number(id)]);
+            return { success: true, message: 'Review disetujui' };
+        } catch (e) {
+            console.error('[DB Error] approveReview:', e);
+            return fail(500, { error: 'Gagal menyetujui review' });
+        }
+    },
+
+    rejectReview: async ({ request, cookies }) => {
+        const auth = cookies.get('admin_auth');
+        const token = cookies.get('admin_token');
+        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+
+        const formData = await request.formData();
+        const id = formData.get('id');
+        if (!id || isNaN(Number(id))) return fail(400, { error: 'ID tidak valid' });
+
+        try {
+            await db.execute("UPDATE reviews SET status = 'rejected' WHERE id = ?", [Number(id)]);
+            return { success: true, message: 'Review ditolak' };
+        } catch (e) {
+            console.error('[DB Error] rejectReview:', e);
+            return fail(500, { error: 'Gagal menolak review' });
+        }
+    },
+
+    deleteReviewToken: async ({ request, cookies }) => {
+        const auth = cookies.get('admin_auth');
+        const token = cookies.get('admin_token');
+        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+
+        const formData = await request.formData();
+        const id = formData.get('id');
+        if (!id || isNaN(Number(id))) return fail(400, { error: 'ID tidak valid' });
+
+        try {
+            // Hapus review terkait dulu, baru token-nya.
+            await db.execute('DELETE FROM reviews WHERE token_id = ?', [Number(id)]);
+            await db.execute('DELETE FROM review_tokens WHERE id = ?', [Number(id)]);
+            return { success: true, message: 'Link review dihapus' };
+        } catch (e) {
+            console.error('[DB Error] deleteReviewToken:', e);
+            return fail(500, { error: 'Gagal menghapus link review' });
         }
     }
 };
