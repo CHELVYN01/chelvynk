@@ -86,16 +86,32 @@
   const pendingReviews = $derived(
     (data.reviews ?? []).filter((r) => r.status === "pending"),
   );
-  async function copyLink(link: string) {
+  async function copyLink(text: string) {
     try {
-      await navigator.clipboard.writeText(link);
-      copiedLink = link;
+      await navigator.clipboard.writeText(text);
+      copiedLink = text;
       setTimeout(() => {
-        if (copiedLink === link) copiedLink = "";
+        if (copiedLink === text) copiedLink = "";
       }, 2000);
     } catch {
       // Clipboard API bisa gagal (non-HTTPS/permission) — abaikan diam-diam.
     }
+  }
+
+  // Bangun template pesan WA santai & personal, siap copy-paste ke klien.
+  // Edit teks di sini kalau mau ganti gaya bahasanya.
+  function buildWaMessage(clientName: string, link: string): string {
+    const nama = clientName?.trim() || "Kak";
+    return `Halo ${nama} 🙏
+
+Terima kasih banyak sudah mempercayakan project-nya ke saya. Senang bisa kerja sama 🙌
+
+Kalau ada waktu sebentar, boleh minta tolong isi review singkat soal pengalaman kerja samanya? Cukup 1–2 menit dan sangat membantu saya ke depannya.
+
+Link-nya di sini ya (khusus buat ${nama}):
+${link}
+
+Sekali lagi makasih banyak! 🚀`;
   }
 
   // Keep currentStatus in sync with server data
@@ -864,25 +880,23 @@
 
                 {#if form?.reviewToken}
                   {@const link = `${origin}/review/${form.reviewToken}`}
+                  {@const waMsg = buildWaMessage(form.clientName ?? "", link)}
                   <div class="link-result">
                     <div class="link-result-label">
-                      <Check size={16} /> Link berhasil dibuat — copy & kirim ke WA klien:
+                      <Check size={16} /> Link berhasil dibuat! Salin pesan di bawah, lalu paste ke WA klien 👇
                     </div>
-                    <div class="link-box">
-                      <input type="text" readonly value={link} />
-                      <button
-                        type="button"
-                        class="copy-btn"
-                        onclick={() => copyLink(link)}
-                        title="Salin link"
-                      >
-                        {#if copiedLink === link}
-                          <Check size={16} /> Tersalin
-                        {:else}
-                          <Copy size={16} /> Salin
-                        {/if}
-                      </button>
-                    </div>
+                    <textarea class="wa-template" readonly rows="9">{waMsg}</textarea>
+                    <button
+                      type="button"
+                      class="copy-btn wa-copy-btn"
+                      onclick={() => copyLink(waMsg)}
+                    >
+                      {#if copiedLink === waMsg}
+                        <Check size={16} /> Pesan Tersalin — tinggal paste ke WA
+                      {:else}
+                        <Copy size={16} /> Salin Pesan WA
+                      {/if}
+                    </button>
                   </div>
                 {/if}
               </div>
@@ -965,16 +979,20 @@
                       </div>
                       <div class="token-controls">
                         {#if !t.used && !expired}
-                          {@const link = `${origin}/review/${t.token}`}
+                          {@const waMsg = buildWaMessage(
+                            t.client_name,
+                            `${origin}/review/${t.token}`,
+                          )}
                           <button
                             type="button"
                             class="copy-btn"
-                            onclick={() => copyLink(link)}
+                            title="Salin pesan WA untuk klien ini"
+                            onclick={() => copyLink(waMsg)}
                           >
-                            {#if copiedLink === link}
-                              <Check size={15} />
+                            {#if copiedLink === waMsg}
+                              <Check size={15} /> Tersalin
                             {:else}
-                              <Copy size={15} />
+                              <Copy size={15} /> Salin Pesan
                             {/if}
                           </button>
                         {/if}
@@ -2614,19 +2632,26 @@
     color: #16a34a;
     margin-bottom: 0.6rem;
   }
-  .link-box {
-    display: flex;
-    gap: 0.5rem;
-  }
-  .link-box input {
-    flex: 1;
-    padding: 0.6rem 0.75rem;
+  .wa-template {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.85rem 1rem;
     border: 1px solid var(--border);
-    border-radius: 0.5rem;
+    border-radius: 0.6rem;
     background: var(--bg-card);
     color: var(--text-main);
-    font-size: 0.85rem;
-    font-family: monospace;
+    font-size: 0.9rem;
+    font-family: inherit;
+    line-height: 1.55;
+    resize: vertical;
+    white-space: pre-wrap;
+  }
+  .wa-copy-btn {
+    margin-top: 0.75rem;
+    width: 100%;
+    justify-content: center;
+    padding: 0.7rem 1rem;
+    font-size: 0.9rem;
   }
   .copy-btn {
     display: inline-flex;
