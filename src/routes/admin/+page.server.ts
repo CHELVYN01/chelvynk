@@ -536,7 +536,8 @@ export const actions: Actions = {
                 'INSERT INTO review_tokens (token, client_name, project_name, expires_at) VALUES (?, ?, ?, ?)',
                 [reviewToken, clientName, projectName, expiresAt]
             );
-            return { success: true, message: 'Link review berhasil dibuat', reviewToken };
+            // clientName dikembalikan untuk mengisi template pesan WA di UI.
+            return { success: true, message: 'Link review berhasil dibuat', reviewToken, clientName };
         } catch (e) {
             console.error('[DB Error] generateReviewLink:', e);
             return fail(500, { error: 'Gagal membuat link review' });
