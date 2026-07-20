@@ -9,7 +9,11 @@
 
   let isMobileMenuOpen = $state(false);
 
-  const isAdmin = $derived(page.url.pathname.startsWith("/admin"));
+  // Halaman tanpa header/footer: admin & halaman review klien (standalone).
+  const isAdmin = $derived(
+    page.url.pathname.startsWith("/admin") ||
+      page.url.pathname.startsWith("/review"),
+  );
   const canonicalUrl = $derived(
     `https://chelvynkleden.com${page.url.pathname}`,
   );

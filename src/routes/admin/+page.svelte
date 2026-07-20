@@ -22,6 +22,10 @@
     Play,
     Sun,
     Moon,
+    MessageSquare,
+    Copy,
+    Check,
+    XCircle,
   } from "lucide-svelte";
   import { theme } from "$lib/theme.svelte";
   import { fade, slide, fly } from "svelte/transition";
@@ -35,6 +39,8 @@
       settings: any;
       experiences: any[];
       apps: any[];
+      reviewTokens: any[];
+      reviews: any[];
       stats: {
         total: number;
         human: number;
@@ -70,6 +76,27 @@
   let isPresent = $state(false);
   let activeTab = $state("projects");
   let currentStatus = $state("");
+
+  // Base URL untuk membangun link review (dipakai di tab Reviews).
+  let origin = $state("");
+  $effect(() => {
+    origin = window.location.origin;
+  });
+  let copiedLink = $state("");
+  const pendingReviews = $derived(
+    (data.reviews ?? []).filter((r) => r.status === "pending"),
+  );
+  async function copyLink(link: string) {
+    try {
+      await navigator.clipboard.writeText(link);
+      copiedLink = link;
+      setTimeout(() => {
+        if (copiedLink === link) copiedLink = "";
+      }, 2000);
+    } catch {
+      // Clipboard API bisa gagal (non-HTTPS/permission) — abaikan diam-diam.
+    }
+  }
 
   // Keep currentStatus in sync with server data
   $effect(() => {
@@ -195,6 +222,14 @@
         </button>
         <button
           class="nav-item"
+          class:active={activeTab === "reviews"}
+          onclick={() => (activeTab = "reviews")}
+        >
+          <MessageSquare size={20} />
+          <span>Reviews</span>
+        </button>
+        <button
+          class="nav-item"
           class:active={activeTab === "settings"}
           onclick={() => (activeTab = "settings")}
         >
@@ -242,6 +277,8 @@
               Kelola Store Apps
             {:else if activeTab === "analytics"}
               Analitik Trafik
+            {:else if activeTab === "reviews"}
+              Review Klien
             {:else}
               Pengaturan Situs
             {/if}
@@ -255,6 +292,8 @@
               Kelola aplikasi Store yang dibagikan.
             {:else if activeTab === "analytics"}
               Pantau pengunjung website bapak secara real-time.
+            {:else if activeTab === "reviews"}
+              Buat link review unik untuk klien & moderasi testimoni.
             {:else}
               Sesuaikan informasi publik di website.
             {/if}
@@ -768,6 +807,188 @@
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        {:else if activeTab === "reviews"}
+          <!-- REVIEWS UI -->
+          <div class="reviews-container fade-in">
+            <!-- Generate link -->
+            <div class="review-block">
+              <div>
+                <h3 class="review-block-title" style="margin-bottom: 0.4rem;">
+                  Buat Link Review Baru
+                </h3>
+                <p class="review-block-desc">
+                  Isi nama klien & proyek, lalu kirim link yang dihasilkan ke WA
+                  klien. Link berlaku 30 hari & hanya bisa dipakai sekali.
+                </p>
+
+                <form
+                  method="POST"
+                  action="?/generateReviewLink"
+                  use:enhance
+                  class="admin-form"
+                >
+                  <div class="review-gen-grid">
+                    <div class="form-group">
+                      <label for="client_name">Nama Klien</label>
+                      <input
+                        type="text"
+                        id="client_name"
+                        name="client_name"
+                        placeholder="mis. Budi Santoso"
+                        maxlength="100"
+                        required
+                      />
+                    </div>
+                    <div class="form-group">
+                      <label for="project_name">Nama Proyek</label>
+                      <input
+                        type="text"
+                        id="project_name"
+                        name="project_name"
+                        placeholder="mis. Implementasi Odoo ERP"
+                        maxlength="120"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="submit"
+                    class="btn btn-primary"
+                    style="gap: 0.5rem;"
+                  >
+                    <PlusCircle size={18} /> Generate Link
+                  </button>
+                </form>
+
+                {#if form?.reviewToken}
+                  {@const link = `${origin}/review/${form.reviewToken}`}
+                  <div class="link-result">
+                    <div class="link-result-label">
+                      <Check size={16} /> Link berhasil dibuat — copy & kirim ke WA klien:
+                    </div>
+                    <div class="link-box">
+                      <input type="text" readonly value={link} />
+                      <button
+                        type="button"
+                        class="copy-btn"
+                        onclick={() => copyLink(link)}
+                        title="Salin link"
+                      >
+                        {#if copiedLink === link}
+                          <Check size={16} /> Tersalin
+                        {:else}
+                          <Copy size={16} /> Salin
+                        {/if}
+                      </button>
+                    </div>
+                  </div>
+                {/if}
+              </div>
+            </div>
+
+            <!-- Pending reviews -->
+            <div class="review-block">
+              <h3 class="review-block-title">
+                Menunggu Persetujuan
+                {#if pendingReviews.length > 0}
+                  <span class="pending-badge">{pendingReviews.length}</span>
+                {/if}
+              </h3>
+              {#if pendingReviews.length === 0}
+                <p class="empty-hint">Belum ada review yang menunggu persetujuan.</p>
+              {:else}
+                <div class="review-list">
+                  {#each pendingReviews as r (r.id)}
+                    <div class="review-item">
+                      <div class="review-item-head">
+                        <div>
+                          <strong>{r.reviewer_name}</strong>
+                          {#if r.reviewer_role}<span class="review-role">— {r.reviewer_role}</span>{/if}
+                          <div class="review-stars">
+                            {#each Array(5) as _, i}
+                              <Star
+                                size={15}
+                                fill={i < Number(r.rating) ? "#f59e0b" : "none"}
+                                color={i < Number(r.rating) ? "#f59e0b" : "#cbd5e1"}
+                              />
+                            {/each}
+                          </div>
+                        </div>
+                        <span class="review-project">{r.project_name}</span>
+                      </div>
+                      <p class="review-text">"{r.testimonial}"</p>
+                      <div class="review-actions">
+                        <form method="POST" action="?/approveReview" use:enhance>
+                          <input type="hidden" name="id" value={r.id} />
+                          <button type="submit" class="btn-mini approve">
+                            <Check size={15} /> Setujui
+                          </button>
+                        </form>
+                        <form method="POST" action="?/rejectReview" use:enhance>
+                          <input type="hidden" name="id" value={r.id} />
+                          <button type="submit" class="btn-mini reject">
+                            <XCircle size={15} /> Tolak
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+                  {/each}
+                </div>
+              {/if}
+            </div>
+
+            <!-- Daftar link -->
+            <div class="review-block">
+              <h3 class="review-block-title">Semua Link Review</h3>
+              {#if data.reviewTokens.length === 0}
+                <p class="empty-hint">Belum ada link review yang dibuat.</p>
+              {:else}
+                <div class="token-list">
+                  {#each data.reviewTokens as t (t.id)}
+                    {@const expired =
+                      t.expires_at && new Date(t.expires_at).getTime() < Date.now()}
+                    <div class="token-item">
+                      <div class="token-info">
+                        <strong>{t.client_name}</strong>
+                        <span class="token-project">{t.project_name}</span>
+                        <div class="token-meta">
+                          {#if t.used}
+                            <span class="chip used">Sudah direview</span>
+                          {:else if expired}
+                            <span class="chip expired">Kadaluarsa</span>
+                          {:else}
+                            <span class="chip active">Aktif</span>
+                          {/if}
+                        </div>
+                      </div>
+                      <div class="token-controls">
+                        {#if !t.used && !expired}
+                          {@const link = `${origin}/review/${t.token}`}
+                          <button
+                            type="button"
+                            class="copy-btn"
+                            onclick={() => copyLink(link)}
+                          >
+                            {#if copiedLink === link}
+                              <Check size={15} />
+                            {:else}
+                              <Copy size={15} />
+                            {/if}
+                          </button>
+                        {/if}
+                        <form method="POST" action="?/deleteReviewToken" use:enhance>
+                          <input type="hidden" name="id" value={t.id} />
+                          <button type="submit" class="btn-mini reject" title="Hapus">
+                            <Trash2 size={15} />
+                          </button>
+                        </form>
+                      </div>
+                    </div>
+                  {/each}
+                </div>
+              {/if}
             </div>
           </div>
         {/if}
@@ -2346,5 +2567,238 @@
     padding: 0.25rem 0.75rem;
     border-radius: 0.5rem;
     border: 1px solid var(--primary);
+  }
+
+  /* ===== Reviews Tab ===== */
+  .reviews-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  .review-block {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    padding: 2rem;
+  }
+  .review-block-desc {
+    color: var(--text-muted);
+    font-size: 0.92rem;
+    line-height: 1.6;
+    margin: 0 0 1.5rem;
+  }
+  .review-gen-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+  }
+  @media (max-width: 640px) {
+    .review-gen-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+  .link-result {
+    margin-top: 1.5rem;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    background: color-mix(in srgb, #22c55e 8%, transparent);
+    border: 1px solid color-mix(in srgb, #22c55e 30%, transparent);
+  }
+  .link-result-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #16a34a;
+    margin-bottom: 0.6rem;
+  }
+  .link-box {
+    display: flex;
+    gap: 0.5rem;
+  }
+  .link-box input {
+    flex: 1;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background: var(--bg-card);
+    color: var(--text-main);
+    font-size: 0.85rem;
+    font-family: monospace;
+  }
+  .copy-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.5rem 0.9rem;
+    border: 1px solid var(--primary);
+    border-radius: 0.5rem;
+    background: var(--primary);
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+  }
+  .copy-btn:hover {
+    background: var(--primary-hover);
+  }
+  .review-block-title {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 1.1rem;
+    margin: 0 0 1.25rem;
+    color: var(--text-main);
+  }
+  .pending-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.4rem;
+    height: 1.4rem;
+    padding: 0 0.45rem;
+    border-radius: 999px;
+    background: var(--primary);
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  .empty-hint {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin: 0;
+  }
+  .review-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .review-item {
+    padding: 1.1rem;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    background: var(--bg-soft);
+  }
+  .review-item-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 0.6rem;
+  }
+  .review-role {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+  .review-stars {
+    display: flex;
+    gap: 2px;
+    margin-top: 0.35rem;
+  }
+  .review-project {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    background: var(--bg-card);
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .review-text {
+    color: var(--text-main);
+    font-size: 0.92rem;
+    line-height: 1.55;
+    font-style: italic;
+    margin: 0 0 0.9rem;
+  }
+  .review-actions {
+    display: flex;
+    gap: 0.6rem;
+  }
+  .btn-mini {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.45rem 0.85rem;
+    border-radius: 0.5rem;
+    border: 1px solid var(--border);
+    background: var(--bg-card);
+    color: var(--text-main);
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-mini.approve {
+    border-color: #22c55e;
+    color: #16a34a;
+  }
+  .btn-mini.approve:hover {
+    background: #22c55e;
+    color: #fff;
+  }
+  .btn-mini.reject {
+    border-color: #ef4444;
+    color: #dc2626;
+  }
+  .btn-mini.reject:hover {
+    background: #ef4444;
+    color: #fff;
+  }
+  .token-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  .token-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    background: var(--bg-soft);
+  }
+  .token-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+  }
+  .token-project {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+  .token-meta {
+    margin-top: 0.3rem;
+  }
+  .chip {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+  }
+  .chip.active {
+    background: color-mix(in srgb, #22c55e 15%, transparent);
+    color: #16a34a;
+  }
+  .chip.used {
+    background: color-mix(in srgb, #64748b 15%, transparent);
+    color: var(--text-muted);
+  }
+  .chip.expired {
+    background: color-mix(in srgb, #ef4444 15%, transparent);
+    color: #dc2626;
+  }
+  .token-controls {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
   }
 </style>

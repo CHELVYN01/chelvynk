@@ -13,12 +13,15 @@
     Server,
     Terminal,
     MapPin,
+    Star,
+    Quote,
   } from "lucide-svelte";
   import { fade, scale } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import type { Action } from "svelte/action";
   let { data } = $props();
   const projects = $derived(data.projects);
+  const reviews = $derived(data.reviews ?? []);
 
   // Scroll-reveal (progressive enhancement: tanpa JS elemen tetap tampil)
   const reveal: Action<HTMLElement, { delay?: number } | undefined> = (
@@ -480,6 +483,52 @@
       {/if}
     </div>
   </div>
+{/if}
+
+{#if reviews.length > 0}
+  <section id="testimoni" class="testimoni-section">
+    <div class="container">
+      <div class="section-header" use:reveal>
+        <div>
+          <span class="section-tag">Testimoni</span>
+          <h2>Apa Kata <span class="text-orange">Klien</span></h2>
+        </div>
+        <p>
+          Umpan balik langsung dari klien yang telah mempercayakan proyeknya
+          kepada saya.
+        </p>
+      </div>
+
+      <div class="testimoni-grid">
+        {#each reviews as review, i (i)}
+          <div class="card testimoni-card" use:reveal={{ delay: i * 70 }}>
+            <div class="testimoni-quote"><Quote size={28} /></div>
+            <div class="testimoni-stars">
+              {#each Array(5) as _, s}
+                <Star
+                  size={16}
+                  fill={s < Number(review.rating) ? "#f59e0b" : "none"}
+                  color={s < Number(review.rating) ? "#f59e0b" : "#cbd5e1"}
+                />
+              {/each}
+            </div>
+            <p class="testimoni-text">"{review.testimonial}"</p>
+            <div class="testimoni-author">
+              <div class="testimoni-avatar">
+                {review.reviewer_name.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <strong>{review.reviewer_name}</strong>
+                {#if review.reviewer_role}
+                  <span>{review.reviewer_role}</span>
+                {/if}
+              </div>
+            </div>
+          </div>
+        {/each}
+      </div>
+    </div>
+  </section>
 {/if}
 
 <section id="contact" class="contact-section">
@@ -1749,6 +1798,81 @@
     }
     .modal-actions .btn {
       flex: 1 1 100%;
+    }
+  }
+
+  /* ===== Testimoni ===== */
+  .testimoni-section {
+    padding: 6rem 0;
+    background: var(--bg-soft);
+  }
+  .testimoni-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+    margin-top: 3rem;
+  }
+  .testimoni-card {
+    position: relative;
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+  }
+  .testimoni-quote {
+    color: var(--primary);
+    opacity: 0.25;
+    margin-bottom: 0.75rem;
+  }
+  .testimoni-stars {
+    display: flex;
+    gap: 3px;
+    margin-bottom: 1rem;
+  }
+  .testimoni-text {
+    color: var(--text-main);
+    font-size: 1rem;
+    line-height: 1.7;
+    font-style: italic;
+    margin: 0 0 1.5rem;
+    flex: 1;
+  }
+  .testimoni-author {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+  }
+  .testimoni-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+  .testimoni-author strong {
+    display: block;
+    color: var(--text-main);
+    font-size: 0.95rem;
+  }
+  .testimoni-author span {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    margin-top: 0.1rem;
+  }
+  @media (max-width: 640px) {
+    .testimoni-section {
+      padding: 4rem 0;
+    }
+    .testimoni-grid {
+      grid-template-columns: 1fr;
     }
   }
 </style>

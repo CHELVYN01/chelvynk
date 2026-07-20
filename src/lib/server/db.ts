@@ -87,6 +87,33 @@ async function init() {
           )
         `);
 
+        // Link review unik per klien. token = string random unguessable (bukan angka urut, cegah IDOR).
+        await client.execute(`
+          CREATE TABLE IF NOT EXISTS review_tokens (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            token TEXT NOT NULL UNIQUE,
+            client_name TEXT NOT NULL,
+            project_name TEXT NOT NULL,
+            used INTEGER DEFAULT 0,
+            expires_at DATETIME,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+
+        // Hasil review dari klien. status: pending -> approved/rejected (moderasi admin).
+        await client.execute(`
+          CREATE TABLE IF NOT EXISTS reviews (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            token_id INTEGER NOT NULL,
+            rating INTEGER NOT NULL,
+            testimonial TEXT NOT NULL,
+            reviewer_name TEXT NOT NULL,
+            reviewer_role TEXT,
+            status TEXT DEFAULT 'pending',
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+
         // Migrations
         console.log('[DB] Checking migrations...');
         try {
