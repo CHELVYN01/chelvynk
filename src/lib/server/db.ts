@@ -145,6 +145,15 @@ async function init() {
             await client.execute("ALTER TABLE experiences ADD COLUMN start_date TEXT");
         } catch (e) { }
 
+        // Kaitkan link review ke project tertentu (opsional).
+        // project_name tetap dipertahankan sebagai fallback: token lama tidak
+        // punya project_id, dan admin masih boleh mengetik nama project manual
+        // untuk pekerjaan yang belum terdaftar di tabel projects.
+        try {
+            await client.execute("ALTER TABLE review_tokens ADD COLUMN project_id INTEGER");
+            console.log('[DB] Migration: Added project_id column to review_tokens');
+        } catch (e) { }
+
         // Insert default status if not exists
         const checkStatus = await client.execute("SELECT key FROM settings WHERE key = 'status'");
         if (checkStatus.rows.length === 0) {

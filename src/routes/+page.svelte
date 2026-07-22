@@ -517,6 +517,9 @@
               {/each}
             </div>
             <p class="testimoni-text">"{review.testimonial}"</p>
+            {#if review.project_title}
+              <span class="testimoni-project">{review.project_title}</span>
+            {/if}
             <div class="testimoni-author">
               <div class="testimoni-avatar">
                 {review.reviewer_name.charAt(0).toUpperCase()}
@@ -1618,6 +1621,22 @@
     font-style: italic;
     margin: 0 0 1.5rem;
     flex: 1;
+  }
+  /* Judul project asal testimoni ini. */
+  .testimoni-project {
+    align-self: flex-start;
+    max-width: 100%;
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
+    color: var(--primary);
+    border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+    border-radius: 999px;
+    padding: 0.3rem 0.85rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .testimoni-author {
     display: flex;
