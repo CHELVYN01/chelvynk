@@ -73,6 +73,37 @@ export function recordLoginAttempt(ip: string, success: boolean, userAgent: stri
     console.warn(`[SECURITY] Failed login attempt from IP: ${ip}`);
 }
 
+// Rate limit khusus form kontak — SENGAJA dipisah dari loginAttempts.
+// Kalau digabung, orang yang spam form kontak bisa ikut memblokir login admin
+// dari IP yang sama (self-DoS). Batas: 3 pesan per 30 menit per IP.
+const contactAttempts: Map<string, { count: number; firstAttempt: number }> = new Map();
+const CONTACT_MAX = 3;
+const CONTACT_WINDOW = 30 * 60 * 1000;
+
+/**
+ * Cek + catat percobaan kirim pesan kontak untuk IP tertentu.
+ * Memanggil fungsi ini sekaligus menambah hitungan (dipanggil sekali per submit).
+ */
+export function checkContactRateLimit(ip: string): { allowed: boolean; resetIn: number } {
+    const now = Date.now();
+    const record = contactAttempts.get(ip);
+
+    if (!record || now - record.firstAttempt > CONTACT_WINDOW) {
+        contactAttempts.set(ip, { count: 1, firstAttempt: now });
+        return { allowed: true, resetIn: 0 };
+    }
+
+    record.count++;
+    contactAttempts.set(ip, record);
+
+    if (record.count > CONTACT_MAX) {
+        const resetIn = Math.ceil((CONTACT_WINDOW - (now - record.firstAttempt)) / 1000 / 60);
+        return { allowed: false, resetIn: Math.max(1, resetIn) };
+    }
+
+    return { allowed: true, resetIn: 0 };
+}
+
 /**
  * Get recent failed logins (untuk analytics)
  */

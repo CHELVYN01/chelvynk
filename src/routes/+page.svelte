@@ -1,6 +1,6 @@
 <script lang="ts">
   import {
-    Mail,
+    CheckCircle2,
     Send,
     Github,
     Play,
@@ -19,9 +19,13 @@
   import { fade, scale } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import type { Action } from "svelte/action";
-  let { data } = $props();
+  import { enhance } from "$app/forms";
+  let { data, form } = $props();
   const projects = $derived(data.projects);
   const reviews = $derived(data.reviews ?? []);
+
+  // Status kirim form kontak (untuk disable tombol & ubah labelnya).
+  let sending = $state(false);
 
   // Scroll-reveal (progressive enhancement: tanpa JS elemen tetap tampil)
   const reveal: Action<HTMLElement, { delay?: number } | undefined> = (
@@ -550,18 +554,110 @@
         {data.siteStatus}
       </div>
 
-      <div class="contact-options">
-        <a href="mailto:kledenchelvyn@gmail.com" class="contact-box">
-          <div class="contact-icon">
-            <Mail size={24} />
-          </div>
-          <div class="contact-info">
-            <h3>Email</h3>
-            <p>kledenchelvyn@gmail.com</p>
-          </div>
-        </a>
+      {#if form?.success}
+        <div class="contact-success" role="status">
+          <CheckCircle2 size={40} />
+          <h3>Pesan Terkirim!</h3>
+          <p>
+            Terima kasih sudah menghubungi. Saya akan membalas ke email kamu
+            secepatnya.
+          </p>
+        </div>
+      {:else}
+        <form
+          class="contact-form"
+          method="POST"
+          action="?/contact"
+          use:enhance={() => {
+            sending = true;
+            return async ({ update }) => {
+              await update();
+              sending = false;
+            };
+          }}
+        >
+          {#if form?.error}
+            <div class="contact-alert" role="alert">{form.error}</div>
+          {/if}
 
-        <a href="https://t.me/kledenvin" target="_blank" class="contact-box">
+          <!-- Honeypot: disembunyikan dari user, hanya diisi bot. -->
+          <div class="hp-field" aria-hidden="true">
+            <label for="website">Website</label>
+            <input
+              type="text"
+              id="website"
+              name="website"
+              tabindex="-1"
+              autocomplete="off"
+            />
+          </div>
+
+          <div class="form-row">
+            <div class="form-field">
+              <label for="contact-name">Nama</label>
+              <input
+                type="text"
+                id="contact-name"
+                name="name"
+                placeholder="Nama kamu"
+                required
+                maxlength="100"
+                value={form?.name ?? ""}
+              />
+            </div>
+
+            <div class="form-field">
+              <label for="contact-email">Email</label>
+              <input
+                type="email"
+                id="contact-email"
+                name="email"
+                placeholder="email@kamu.com"
+                required
+                maxlength="150"
+                value={form?.email ?? ""}
+              />
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label for="contact-subject">Subjek</label>
+            <input
+              type="text"
+              id="contact-subject"
+              name="subject"
+              placeholder="Misalnya: Kebutuhan implementasi Odoo"
+              maxlength="200"
+              value={form?.subject ?? ""}
+            />
+          </div>
+
+          <div class="form-field">
+            <label for="contact-message">Pesan</label>
+            <textarea
+              id="contact-message"
+              name="message"
+              rows="5"
+              placeholder="Ceritakan sedikit tentang project atau ide kamu..."
+              required
+              maxlength="3000">{form?.message ?? ""}</textarea
+            >
+          </div>
+
+          <button type="submit" class="contact-submit" disabled={sending}>
+            {sending ? "Mengirim..." : "Kirim Pesan"}
+            {#if !sending}<Send size={18} />{/if}
+          </button>
+        </form>
+      {/if}
+
+      <div class="contact-options">
+        <a
+          href="https://t.me/kledenvin"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="contact-box"
+        >
           <div class="contact-icon">
             <Send size={24} />
           </div>
@@ -1420,11 +1516,135 @@
     line-height: 1.6;
   }
 
+  /* ===== Form kontak ===== */
+  .contact-form {
+    max-width: 640px;
+    margin: 0 auto 2.5rem;
+    text-align: left;
+    display: flex;
+    flex-direction: column;
+    gap: 1.15rem;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.15rem;
+  }
+
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .form-field label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #cbd5e1;
+    letter-spacing: 0.02em;
+  }
+
+  .contact-form input,
+  .contact-form textarea {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 0.85rem;
+    padding: 0.85rem 1rem;
+    color: inherit;
+    font-family: inherit;
+    font-size: 0.95rem;
+    transition: border-color 0.25s ease, background 0.25s ease;
+  }
+
+  .contact-form textarea {
+    resize: vertical;
+    min-height: 130px;
+    line-height: 1.6;
+  }
+
+  .contact-form input::placeholder,
+  .contact-form textarea::placeholder {
+    color: #64748b;
+  }
+
+  .contact-form input:focus,
+  .contact-form textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  .contact-submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 0.85rem;
+    padding: 0.9rem 1.75rem;
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: transform 0.25s ease, opacity 0.25s ease;
+  }
+
+  .contact-submit:hover:not(:disabled) {
+    transform: translateY(-3px);
+  }
+
+  .contact-submit:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .contact-alert {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    color: #fca5a5;
+    border-radius: 0.85rem;
+    padding: 0.8rem 1rem;
+    font-size: 0.9rem;
+  }
+
+  .contact-success {
+    max-width: 640px;
+    margin: 0 auto 2.5rem;
+    padding: 2.5rem 2rem;
+    background: rgba(34, 197, 94, 0.07);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    border-radius: 1.5rem;
+    color: #4ade80;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .contact-success h3 {
+    font-size: 1.35rem;
+    font-weight: 800;
+    margin: 0.25rem 0 0;
+  }
+
+  /* Honeypot: harus tetap ada di DOM (bot mengisinya), tapi tak terlihat user. */
+  .hp-field {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+  }
+
   .contact-options {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 2rem;
-    max-width: 900px;
+    max-width: 420px;
     margin: 0 auto;
     align-items: stretch;
   }
@@ -1566,6 +1786,11 @@
     .contact-options {
       grid-template-columns: 1fr;
       width: 100%;
+    }
+
+    /* Nama & email jadi satu kolom di layar kecil. */
+    .form-row {
+      grid-template-columns: 1fr;
     }
 
     .contact-box {
