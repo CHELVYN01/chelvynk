@@ -114,6 +114,21 @@ async function init() {
           )
         `);
 
+        // Pesan masuk dari form kontak di halaman depan.
+        // Email pribadi tidak ditampilkan di HTML -> tidak bisa di-scrape bot.
+        await client.execute(`
+          CREATE TABLE IF NOT EXISTS contact_messages (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL,
+            subject TEXT,
+            message TEXT NOT NULL,
+            ip TEXT,
+            is_read INTEGER DEFAULT 0,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+
         // Migrations
         console.log('[DB] Checking migrations...');
         try {

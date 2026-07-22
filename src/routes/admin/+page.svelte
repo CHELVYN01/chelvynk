@@ -26,6 +26,7 @@
     Copy,
     Check,
     XCircle,
+    Mail,
   } from "lucide-svelte";
   import { theme } from "$lib/theme.svelte";
   import { fade, slide, fly } from "svelte/transition";
@@ -41,6 +42,7 @@
       apps: any[];
       reviewTokens: any[];
       reviews: any[];
+      messages: any[];
       stats: {
         total: number;
         human: number;
@@ -86,6 +88,8 @@
   const pendingReviews = $derived(
     (data.reviews ?? []).filter((r) => r.status === "pending"),
   );
+  const messages = $derived(data.messages ?? []);
+  const unreadMessages = $derived(messages.filter((m) => m.is_read !== 1));
   async function copyLink(text: string) {
     try {
       await navigator.clipboard.writeText(text);
@@ -246,6 +250,17 @@ Sekali lagi makasih banyak! 🚀`;
         </button>
         <button
           class="nav-item"
+          class:active={activeTab === "messages"}
+          onclick={() => (activeTab = "messages")}
+        >
+          <Mail size={20} />
+          <span>Pesan</span>
+          {#if unreadMessages.length > 0}
+            <span class="nav-badge">{unreadMessages.length}</span>
+          {/if}
+        </button>
+        <button
+          class="nav-item"
           class:active={activeTab === "settings"}
           onclick={() => (activeTab = "settings")}
         >
@@ -295,6 +310,8 @@ Sekali lagi makasih banyak! 🚀`;
               Analitik Trafik
             {:else if activeTab === "reviews"}
               Review Klien
+            {:else if activeTab === "messages"}
+              Pesan Masuk
             {:else}
               Pengaturan Situs
             {/if}
@@ -310,6 +327,8 @@ Sekali lagi makasih banyak! 🚀`;
               Pantau pengunjung website bapak secara real-time.
             {:else if activeTab === "reviews"}
               Buat link review unik untuk klien & moderasi testimoni.
+            {:else if activeTab === "messages"}
+              Pesan yang dikirim lewat form kontak di halaman depan.
             {:else}
               Sesuaikan informasi publik di website.
             {/if}
@@ -1008,6 +1027,77 @@ Sekali lagi makasih banyak! 🚀`;
                 </div>
               {/if}
             </div>
+          </div>
+        {:else if activeTab === "messages"}
+          <div class="messages-container fade-in">
+            {#if messages.length === 0}
+              <p class="empty-hint">Belum ada pesan masuk.</p>
+            {:else}
+              <div class="message-list">
+                {#each messages as m (m.id)}
+                  <div class="message-card" class:unread={m.is_read !== 1}>
+                    <div class="message-head">
+                      <div>
+                        <h4>
+                          {m.name}
+                          {#if m.is_read !== 1}
+                            <span class="pending-badge">Baru</span>
+                          {/if}
+                        </h4>
+                        <a class="message-email" href="mailto:{m.email}"
+                          >{m.email}</a
+                        >
+                      </div>
+                      <span class="message-date"
+                        >{new Date(m.created_at).toLocaleString("id-ID")}</span
+                      >
+                    </div>
+
+                    {#if m.subject}
+                      <p class="message-subject">{m.subject}</p>
+                    {/if}
+                    <p class="message-body">{m.message}</p>
+
+                    <div class="message-actions">
+                      <a
+                        class="btn-mini"
+                        href="mailto:{m.email}?subject=Re: {encodeURIComponent(
+                          m.subject || 'Pesan dari portfolio',
+                        )}"
+                      >
+                        <Mail size={15} /> Balas
+                      </a>
+                      {#if m.is_read !== 1}
+                        <form
+                          method="POST"
+                          action="?/markMessageRead"
+                          use:enhance
+                        >
+                          <input type="hidden" name="id" value={m.id} />
+                          <button
+                            type="submit"
+                            class="btn-mini"
+                            title="Tandai sudah dibaca"
+                          >
+                            <Check size={15} /> Tandai Dibaca
+                          </button>
+                        </form>
+                      {/if}
+                      <form method="POST" action="?/deleteMessage" use:enhance>
+                        <input type="hidden" name="id" value={m.id} />
+                        <button
+                          type="submit"
+                          class="btn-mini reject"
+                          title="Hapus pesan"
+                        >
+                          <Trash2 size={15} />
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                {/each}
+              </div>
+            {/if}
           </div>
         {/if}
       </div>
@@ -2593,6 +2683,86 @@ Sekali lagi makasih banyak! 🚀`;
     flex-direction: column;
     gap: 1.5rem;
   }
+
+  /* ===== Tab Pesan Masuk ===== */
+  .nav-badge {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.35rem;
+    height: 1.35rem;
+    padding: 0 0.4rem;
+    border-radius: 999px;
+    background: var(--primary);
+    color: #fff;
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+  .message-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .message-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    padding: 1.5rem;
+  }
+  .message-card.unread {
+    border-color: color-mix(in srgb, var(--primary) 45%, transparent);
+    background: color-mix(in srgb, var(--primary) 5%, var(--bg-card));
+  }
+  .message-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.85rem;
+  }
+  .message-head h4 {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 0.2rem;
+    font-size: 1rem;
+    color: var(--text-main);
+  }
+  .message-email {
+    font-size: 0.87rem;
+    color: var(--primary);
+    text-decoration: none;
+  }
+  .message-email:hover {
+    text-decoration: underline;
+  }
+  .message-date {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+  .message-subject {
+    font-weight: 600;
+    color: var(--text-main);
+    margin: 0 0 0.4rem;
+    font-size: 0.93rem;
+  }
+  .message-body {
+    color: var(--text-muted);
+    font-size: 0.92rem;
+    line-height: 1.7;
+    margin: 0 0 1.15rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .message-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
   .review-block {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -2756,6 +2926,7 @@ Sekali lagi makasih banyak! 🚀`;
     font-size: 0.82rem;
     font-weight: 600;
     cursor: pointer;
+    text-decoration: none;
     transition: all 0.15s;
   }
   .btn-mini.approve {

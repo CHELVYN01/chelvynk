@@ -46,6 +46,9 @@ export const load: PageServerLoad = async ({ cookies, getClientAddress }) => {
         ORDER BY r.created_at DESC
     `);
 
+    // Pesan masuk dari form kontak di halaman depan.
+    const messagesResult = await db.execute('SELECT * FROM contact_messages ORDER BY created_at DESC LIMIT 200');
+
     // Fetch Traffic Stats
     const totalVisits = await db.execute('SELECT COUNT(*) as count FROM traffic');
     const humanVisits = await db.execute('SELECT COUNT(*) as count FROM traffic WHERE is_bot = 0');
@@ -65,6 +68,7 @@ export const load: PageServerLoad = async ({ cookies, getClientAddress }) => {
         apps: appsResult.rows,
         reviewTokens: tokensResult.rows,
         reviews: reviewsResult.rows,
+        messages: messagesResult.rows,
         stats: {
             total: totalVisits.rows[0].count,
             human: humanVisits.rows[0].count,
@@ -597,6 +601,42 @@ export const actions: Actions = {
         } catch (e) {
             console.error('[DB Error] deleteReviewToken:', e);
             return fail(500, { error: 'Gagal menghapus link review' });
+        }
+    },
+
+    markMessageRead: async ({ request, cookies }) => {
+        const auth = cookies.get('admin_auth');
+        const token = cookies.get('admin_token');
+        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+
+        const formData = await request.formData();
+        const id = formData.get('id');
+        if (!id || isNaN(Number(id))) return fail(400, { error: 'ID tidak valid' });
+
+        try {
+            await db.execute('UPDATE contact_messages SET is_read = 1 WHERE id = ?', [Number(id)]);
+            return { success: true, message: 'Pesan ditandai sudah dibaca' };
+        } catch (e) {
+            console.error('[DB Error] markMessageRead:', e);
+            return fail(500, { error: 'Gagal menandai pesan' });
+        }
+    },
+
+    deleteMessage: async ({ request, cookies }) => {
+        const auth = cookies.get('admin_auth');
+        const token = cookies.get('admin_token');
+        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+
+        const formData = await request.formData();
+        const id = formData.get('id');
+        if (!id || isNaN(Number(id))) return fail(400, { error: 'ID tidak valid' });
+
+        try {
+            await db.execute('DELETE FROM contact_messages WHERE id = ?', [Number(id)]);
+            return { success: true, message: 'Pesan dihapus' };
+        } catch (e) {
+            console.error('[DB Error] deleteMessage:', e);
+            return fail(500, { error: 'Gagal menghapus pesan' });
         }
     }
 };
