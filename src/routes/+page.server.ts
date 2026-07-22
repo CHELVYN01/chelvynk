@@ -24,9 +24,17 @@ export const load: PageServerLoad = async () => {
         const expResult = await db.execute('SELECT * FROM experiences ORDER BY start_date DESC');
 
         // Testimoni klien yang sudah di-approve.
-        const reviewsResult = await db.execute(
-            "SELECT rating, testimonial, reviewer_name, reviewer_role FROM reviews WHERE status = 'approved' ORDER BY created_at DESC"
-        );
+        // Judul project diambil dari tabel projects kalau token-nya tertaut
+        // (project_id), kalau tidak pakai project_name yang diketik manual.
+        const reviewsResult = await db.execute(`
+            SELECT r.rating, r.testimonial, r.reviewer_name, r.reviewer_role,
+                   COALESCE(p.title, t.project_name) AS project_title
+            FROM reviews r
+            LEFT JOIN review_tokens t ON r.token_id = t.id
+            LEFT JOIN projects p ON t.project_id = p.id
+            WHERE r.status = 'approved'
+            ORDER BY r.created_at DESC
+        `);
 
         return { projects, siteStatus, experiences: expResult.rows, reviews: reviewsResult.rows };
     } catch (e) {

@@ -524,10 +524,26 @@ export const actions: Actions = {
 
         const formData = await request.formData();
         const clientName = sanitizeInput(formData.get('client_name') as string);
-        const projectName = sanitizeInput(formData.get('project_name') as string);
+        const projectIdRaw = formData.get('project_id') as string;
+        let projectName = sanitizeInput(formData.get('project_name') as string);
+        let projectId: number | null = null;
+
+        // Kalau admin memilih project dari dropdown, ambil judulnya dari DB —
+        // jangan percaya judul yang dikirim form (bisa dimanipulasi).
+        if (projectIdRaw && projectIdRaw !== 'manual') {
+            if (isNaN(Number(projectIdRaw))) {
+                return fail(400, { error: 'Project tidak valid' });
+            }
+            const p = await db.execute('SELECT title FROM projects WHERE id = ?', [Number(projectIdRaw)]);
+            if (p.rows.length === 0) {
+                return fail(400, { error: 'Project tidak ditemukan' });
+            }
+            projectId = Number(projectIdRaw);
+            projectName = p.rows[0].title as string;
+        }
 
         if (!clientName || !projectName) {
-            return fail(400, { error: 'Nama klien dan nama proyek wajib diisi' });
+            return fail(400, { error: 'Nama klien dan project wajib diisi' });
         }
 
         // Token random unguessable (32 char, crypto.getRandomValues) — bukan angka urut.
@@ -537,14 +553,50 @@ export const actions: Actions = {
 
         try {
             await db.execute(
-                'INSERT INTO review_tokens (token, client_name, project_name, expires_at) VALUES (?, ?, ?, ?)',
-                [reviewToken, clientName, projectName, expiresAt]
+                'INSERT INTO review_tokens (token, client_name, project_name, project_id, expires_at) VALUES (?, ?, ?, ?, ?)',
+                [reviewToken, clientName, projectName, projectId, expiresAt]
             );
             // clientName dikembalikan untuk mengisi template pesan WA di UI.
             return { success: true, message: 'Link review berhasil dibuat', reviewToken, clientName };
         } catch (e) {
             console.error('[DB Error] generateReviewLink:', e);
             return fail(500, { error: 'Gagal membuat link review' });
+        }
+    },
+
+    // Tautkan (atau lepas) link review lama ke sebuah project.
+    // Berguna kalau klien sudah review duluan sebelum project-nya didaftarkan.
+    linkTokenProject: async ({ request, cookies }) => {
+        const auth = cookies.get('admin_auth');
+        const token = cookies.get('admin_token');
+        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+
+        const formData = await request.formData();
+        const id = formData.get('id');
+        const projectIdRaw = formData.get('project_id') as string;
+        if (!id || isNaN(Number(id))) return fail(400, { error: 'ID tidak valid' });
+
+        try {
+            // Kosong = lepas tautan, project_name yang lama tetap dipertahankan.
+            if (!projectIdRaw) {
+                await db.execute('UPDATE review_tokens SET project_id = NULL WHERE id = ?', [Number(id)]);
+                return { success: true, message: 'Tautan project dilepas' };
+            }
+
+            if (isNaN(Number(projectIdRaw))) return fail(400, { error: 'Project tidak valid' });
+
+            // Judul diambil dari DB, bukan dari form — jangan percaya input client.
+            const p = await db.execute('SELECT title FROM projects WHERE id = ?', [Number(projectIdRaw)]);
+            if (p.rows.length === 0) return fail(400, { error: 'Project tidak ditemukan' });
+
+            await db.execute(
+                'UPDATE review_tokens SET project_id = ?, project_name = ? WHERE id = ?',
+                [Number(projectIdRaw), p.rows[0].title as string, Number(id)]
+            );
+            return { success: true, message: 'Link review berhasil ditautkan ke project' };
+        } catch (e) {
+            console.error('[DB Error] linkTokenProject:', e);
+            return fail(500, { error: 'Gagal menautkan project' });
         }
     },
 

@@ -85,6 +85,8 @@
     origin = window.location.origin;
   });
   let copiedLink = $state("");
+  // Project yang dipilih saat generate link review ("manual" = ketik sendiri).
+  let selectedProjectId = $state("");
   const pendingReviews = $derived(
     (data.reviews ?? []).filter((r) => r.status === "pending"),
   );
@@ -861,7 +863,13 @@ Sekali lagi makasih banyak! 🚀`;
                 <form
                   method="POST"
                   action="?/generateReviewLink"
-                  use:enhance
+                  use:enhance={() => {
+                    return async ({ result, update }) => {
+                      await update();
+                      // Reset pilihan supaya form siap untuk klien berikutnya.
+                      if (result.type === "success") selectedProjectId = "";
+                    };
+                  }}
                   class="admin-form"
                 >
                   <div class="review-gen-grid">
@@ -877,7 +885,26 @@ Sekali lagi makasih banyak! 🚀`;
                       />
                     </div>
                     <div class="form-group">
-                      <label for="project_name">Nama Proyek</label>
+                      <label for="project_id">Project</label>
+                      <select
+                        id="project_id"
+                        name="project_id"
+                        bind:value={selectedProjectId}
+                        required
+                      >
+                        <option value="" disabled>— Pilih project —</option>
+                        {#each data.projects as p (p.id)}
+                          <option value={String(p.id)}>{p.title}</option>
+                        {/each}
+                        <option value="manual">Lainnya (ketik manual)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <!-- Fallback untuk pekerjaan yang belum terdaftar di /admin projects. -->
+                  {#if selectedProjectId === "manual"}
+                    <div class="form-group" style="margin-bottom: 1.25rem;">
+                      <label for="project_name">Nama Project (manual)</label>
                       <input
                         type="text"
                         id="project_name"
@@ -887,7 +914,7 @@ Sekali lagi makasih banyak! 🚀`;
                         required
                       />
                     </div>
-                  </div>
+                  {/if}
                   <button
                     type="submit"
                     class="btn btn-primary"
@@ -994,6 +1021,9 @@ Sekali lagi makasih banyak! 🚀`;
                           {:else}
                             <span class="chip active">Aktif</span>
                           {/if}
+                          {#if t.project_id}
+                            <span class="chip linked">Terhubung ke project</span>
+                          {/if}
                         </div>
                       </div>
                       <div class="token-controls">
@@ -1015,6 +1045,30 @@ Sekali lagi makasih banyak! 🚀`;
                             {/if}
                           </button>
                         {/if}
+                        <!-- Tautkan ke project. Berguna kalau klien review
+                             duluan sebelum project-nya didaftarkan. -->
+                        <form
+                          method="POST"
+                          action="?/linkTokenProject"
+                          use:enhance
+                          class="token-link-form"
+                        >
+                          <input type="hidden" name="id" value={t.id} />
+                          <select
+                            name="project_id"
+                            class="token-project-select"
+                            title="Hubungkan link ini ke project"
+                            value={t.project_id ? String(t.project_id) : ""}
+                            onchange={(e) =>
+                              e.currentTarget.form?.requestSubmit()}
+                          >
+                            <option value="">— Belum ditautkan —</option>
+                            {#each data.projects as p (p.id)}
+                              <option value={String(p.id)}>{p.title}</option>
+                            {/each}
+                          </select>
+                        </form>
+
                         <form method="POST" action="?/deleteReviewToken" use:enhance>
                           <input type="hidden" name="id" value={t.id} />
                           <button type="submit" class="btn-mini reject" title="Hapus">
@@ -2385,6 +2439,7 @@ Sekali lagi makasih banyak! 🚀`;
   }
 
   .admin-form input,
+  .admin-form select,
   .admin-form textarea {
     width: 100%;
     padding: 0.875rem 1.25rem;
@@ -2397,7 +2452,19 @@ Sekali lagi makasih banyak! 🚀`;
     transition: all 0.2s;
   }
 
+  .admin-form select {
+    font-family: inherit;
+    cursor: pointer;
+    appearance: none;
+    /* Panah dropdown custom (SVG inline) supaya konsisten lintas browser. */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.75rem;
+  }
+
   .admin-form input:focus,
+  .admin-form select:focus,
   .admin-form textarea:focus {
     background: white;
     border-color: var(--primary);
@@ -2972,6 +3039,9 @@ Sekali lagi makasih banyak! 🚀`;
   }
   .token-meta {
     margin-top: 0.3rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
   }
   .chip {
     display: inline-block;
@@ -2992,9 +3062,42 @@ Sekali lagi makasih banyak! 🚀`;
     background: color-mix(in srgb, #ef4444 15%, transparent);
     color: #dc2626;
   }
+  .chip.linked {
+    background: color-mix(in srgb, var(--primary) 15%, transparent);
+    color: var(--primary);
+  }
+  /* Dropdown penaut project di tiap baris link review. */
+  .token-link-form {
+    display: flex;
+  }
+  .token-project-select {
+    max-width: 190px;
+    padding: 0.4rem 2rem 0.4rem 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 0.5rem;
+    background: var(--bg-card);
+    color: var(--text-main);
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.6rem center;
+    transition: border-color 0.15s;
+  }
+  .token-project-select:hover,
+  .token-project-select:focus {
+    border-color: var(--primary);
+    outline: none;
+  }
   .token-controls {
     display: flex;
     gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
     flex-shrink: 0;
   }
 </style>
