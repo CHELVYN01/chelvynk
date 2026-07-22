@@ -122,7 +122,7 @@
           </li>
           <li>
             <a
-              href="/#contact"
+              href="/contact"
               class="btn btn-primary btn-sm"
               onclick={() => (isMobileMenuOpen = false)}>Kontak</a
             >
