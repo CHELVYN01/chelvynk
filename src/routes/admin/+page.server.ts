@@ -23,43 +23,175 @@ const getAdminPin = () => {
     return pin;
 };
 
+// Bentuk stats kosong dipakai saat belum login supaya tipe di UI tetap konsisten.
+const emptyStats = {
+    total: 0,
+    human: 0,
+    bot: 0,
+    today: 0,
+    yesterday: 0,
+    last7: 0,
+    prev7: 0,
+    uniqueVisitors: 0,
+    recent: [] as any[],
+    topPages: [] as any[],
+    daily: [] as { date: string; human: number; bot: number }[],
+    hourly: [] as { hour: number; count: number }[],
+    referrers: [] as { source: string; count: number }[],
+    devices: [] as { device: string; count: number }[]
+};
+
 export const load: PageServerLoad = async ({ cookies, getClientAddress }) => {
     const auth = cookies.get('admin_auth');
     const authToken = cookies.get('admin_token');
 
     // Validate both cookie and token exist
     if (!auth || auth !== 'true' || !authToken) {
-        return { projects: [], settings: {}, experiences: [], stats: { total: 0, human: 0, bot: 0, recent: [], topPages: [] }, authenticated: false };
+        return { projects: [], settings: {}, experiences: [], stats: emptyStats, authenticated: false };
     }
 
-    const projectsResult = await db.execute('SELECT * FROM projects ORDER BY created_at DESC');
-    const settingsResult = await db.execute('SELECT * FROM settings');
-    const experienceResult = await db.execute('SELECT * FROM experiences ORDER BY start_date DESC');
-    const appsResult = await db.execute('SELECT * FROM store_apps ORDER BY created_at DESC');
+    // Semua query dijalankan paralel — sebelumnya berurutan (await satu-satu),
+    // yang bikin load dashboard terasa lemot karena latensi Turso menumpuk.
+    const [
+        projectsResult,
+        settingsResult,
+        experienceResult,
+        appsResult,
+        tokensResult,
+        reviewsResult,
+        messagesResult,
+        summary,
+        recentTraffic,
+        topPages,
+        dailyRaw,
+        hourlyRaw,
+        referrersRaw,
+        devicesRaw
+    ] = await Promise.all([
+        db.execute('SELECT * FROM projects ORDER BY created_at DESC'),
+        db.execute('SELECT * FROM settings'),
+        db.execute('SELECT * FROM experiences ORDER BY start_date DESC'),
+        db.execute('SELECT * FROM store_apps ORDER BY created_at DESC'),
 
-    // Review: daftar link yang dibuat + review yang masuk (join biar tahu klien mana).
-    const tokensResult = await db.execute('SELECT * FROM review_tokens ORDER BY created_at DESC');
-    const reviewsResult = await db.execute(`
-        SELECT r.*, t.client_name, t.project_name
-        FROM reviews r
-        LEFT JOIN review_tokens t ON r.token_id = t.id
-        ORDER BY r.created_at DESC
-    `);
+        // Review: daftar link yang dibuat + review yang masuk (join biar tahu klien mana).
+        db.execute('SELECT * FROM review_tokens ORDER BY created_at DESC'),
+        db.execute(`
+            SELECT r.*, t.client_name, t.project_name
+            FROM reviews r
+            LEFT JOIN review_tokens t ON r.token_id = t.id
+            ORDER BY r.created_at DESC
+        `),
 
-    // Pesan masuk dari form kontak di halaman depan.
-    const messagesResult = await db.execute('SELECT * FROM contact_messages ORDER BY created_at DESC LIMIT 200');
+        // Pesan masuk dari form kontak di halaman depan.
+        db.execute('SELECT * FROM contact_messages ORDER BY created_at DESC LIMIT 200'),
 
-    // Fetch Traffic Stats
-    const totalVisits = await db.execute('SELECT COUNT(*) as count FROM traffic');
-    const humanVisits = await db.execute('SELECT COUNT(*) as count FROM traffic WHERE is_bot = 0');
-    const botVisits = await db.execute('SELECT COUNT(*) as count FROM traffic WHERE is_bot = 1');
-    const recentTraffic = await db.execute('SELECT * FROM traffic ORDER BY timestamp DESC LIMIT 50');
-    const topPages = await db.execute('SELECT path, COUNT(*) as count FROM traffic WHERE is_bot = 0 GROUP BY path ORDER BY count DESC LIMIT 5');
+        // Semua angka ringkasan dihitung dalam satu query agregat (dulu 3 query terpisah).
+        db.execute(`
+            SELECT
+                COUNT(*) AS total,
+                SUM(CASE WHEN is_bot = 0 THEN 1 ELSE 0 END) AS human,
+                SUM(CASE WHEN is_bot = 1 THEN 1 ELSE 0 END) AS bot,
+                COUNT(DISTINCT CASE WHEN is_bot = 0 THEN ip END) AS unique_visitors,
+                SUM(CASE WHEN is_bot = 0 AND date(timestamp) = date('now', 'localtime') THEN 1 ELSE 0 END) AS today,
+                SUM(CASE WHEN is_bot = 0 AND date(timestamp) = date('now', 'localtime', '-1 day') THEN 1 ELSE 0 END) AS yesterday,
+                SUM(CASE WHEN is_bot = 0 AND date(timestamp) >= date('now', 'localtime', '-6 day') THEN 1 ELSE 0 END) AS last7,
+                SUM(CASE WHEN is_bot = 0 AND date(timestamp) >= date('now', 'localtime', '-13 day')
+                         AND date(timestamp) < date('now', 'localtime', '-6 day') THEN 1 ELSE 0 END) AS prev7
+            FROM traffic
+        `),
+        db.execute('SELECT * FROM traffic ORDER BY timestamp DESC LIMIT 50'),
+        db.execute('SELECT path, COUNT(*) as count FROM traffic WHERE is_bot = 0 GROUP BY path ORDER BY count DESC LIMIT 6'),
+
+        // Time-series 14 hari terakhir untuk grafik area.
+        db.execute(`
+            SELECT date(timestamp, 'localtime') AS day,
+                   SUM(CASE WHEN is_bot = 0 THEN 1 ELSE 0 END) AS human,
+                   SUM(CASE WHEN is_bot = 1 THEN 1 ELSE 0 END) AS bot
+            FROM traffic
+            WHERE date(timestamp, 'localtime') >= date('now', 'localtime', '-13 day')
+            GROUP BY day
+        `),
+
+        // Distribusi jam kunjungan (7 hari terakhir) untuk grafik bar.
+        db.execute(`
+            SELECT CAST(strftime('%H', timestamp, 'localtime') AS INTEGER) AS hour, COUNT(*) AS count
+            FROM traffic
+            WHERE is_bot = 0 AND date(timestamp, 'localtime') >= date('now', 'localtime', '-6 day')
+            GROUP BY hour
+        `),
+
+        db.execute(`
+            SELECT referrer, COUNT(*) AS count
+            FROM traffic
+            WHERE is_bot = 0
+            GROUP BY referrer
+            ORDER BY count DESC
+            LIMIT 30
+        `),
+
+        db.execute(`SELECT ua, COUNT(*) AS count FROM traffic WHERE is_bot = 0 GROUP BY ua`)
+    ]);
 
     const settings = settingsResult.rows.reduce((acc: any, row: any) => {
         acc[row.key] = row.value;
         return acc;
     }, {});
+
+    const num = (v: any) => Number(v ?? 0);
+    const s: any = summary.rows[0] ?? {};
+
+    // Isi hari yang kosong dengan 0 supaya garis grafik tidak "loncat".
+    const dailyMap = new Map<string, { human: number; bot: number }>();
+    for (const row of dailyRaw.rows as any[]) {
+        dailyMap.set(String(row.day), { human: num(row.human), bot: num(row.bot) });
+    }
+    const daily: { date: string; human: number; bot: number }[] = [];
+    const today = new Date();
+    for (let i = 13; i >= 0; i--) {
+        const d = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        const hit = dailyMap.get(key);
+        daily.push({ date: key, human: hit?.human ?? 0, bot: hit?.bot ?? 0 });
+    }
+
+    // 24 slot jam, jam tanpa kunjungan tetap ada sebagai 0.
+    const hourMap = new Map<number, number>();
+    for (const row of hourlyRaw.rows as any[]) hourMap.set(num(row.hour), num(row.count));
+    const hourly = Array.from({ length: 24 }, (_, hour) => ({ hour, count: hourMap.get(hour) ?? 0 }));
+
+    // Referrer dikelompokkan per host supaya donut-nya tidak penuh URL panjang.
+    const refMap = new Map<string, number>();
+    for (const row of referrersRaw.rows as any[]) {
+        const raw = String(row.referrer ?? '').trim();
+        let source = 'Langsung';
+        if (raw && raw !== 'direct') {
+            try {
+                source = new URL(raw).hostname.replace(/^www\./, '');
+            } catch {
+                source = raw.slice(0, 30);
+            }
+        }
+        refMap.set(source, (refMap.get(source) ?? 0) + num(row.count));
+    }
+    const referrers = [...refMap.entries()]
+        .map(([source, count]) => ({ source, count }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
+    // Deteksi device sederhana dari user-agent.
+    const deviceMap = new Map<string, number>([['Desktop', 0], ['Mobile', 0], ['Tablet', 0]]);
+    for (const row of devicesRaw.rows as any[]) {
+        const ua = String(row.ua ?? '');
+        const device = /tablet|ipad/i.test(ua)
+            ? 'Tablet'
+            : /mobi|android|iphone|ipod/i.test(ua)
+                ? 'Mobile'
+                : 'Desktop';
+        deviceMap.set(device, (deviceMap.get(device) ?? 0) + num(row.count));
+    }
+    const devices = [...deviceMap.entries()]
+        .map(([device, count]) => ({ device, count }))
+        .filter((d) => d.count > 0);
 
     return {
         projects: projectsResult.rows,
@@ -70,11 +202,20 @@ export const load: PageServerLoad = async ({ cookies, getClientAddress }) => {
         reviews: reviewsResult.rows,
         messages: messagesResult.rows,
         stats: {
-            total: totalVisits.rows[0].count,
-            human: humanVisits.rows[0].count,
-            bot: botVisits.rows[0].count,
+            total: num(s.total),
+            human: num(s.human),
+            bot: num(s.bot),
+            today: num(s.today),
+            yesterday: num(s.yesterday),
+            last7: num(s.last7),
+            prev7: num(s.prev7),
+            uniqueVisitors: num(s.unique_visitors),
             recent: recentTraffic.rows,
-            topPages: topPages.rows
+            topPages: topPages.rows,
+            daily,
+            hourly,
+            referrers,
+            devices
         },
         authenticated: true
     };
