@@ -27,9 +27,20 @@
     Check,
     XCircle,
     Mail,
+    TrendingUp,
+    TrendingDown,
+    Users,
+    Activity,
   } from "lucide-svelte";
   import { theme } from "$lib/theme.svelte";
+  import { navigating } from "$app/state";
   import { fade, slide, fly } from "svelte/transition";
+  import AreaChart from "$lib/components/charts/AreaChart.svelte";
+  import DonutChart from "$lib/components/charts/DonutChart.svelte";
+  import BarChart from "$lib/components/charts/BarChart.svelte";
+  import RankBars from "$lib/components/charts/RankBars.svelte";
+  import Sparkline from "$lib/components/charts/Sparkline.svelte";
+  import { compact } from "$lib/components/charts/chart-utils";
 
   let {
     data,
@@ -47,8 +58,17 @@
         total: number;
         human: number;
         bot: number;
+        today: number;
+        yesterday: number;
+        last7: number;
+        prev7: number;
+        uniqueVisitors: number;
         recent: any[];
         topPages: any[];
+        daily: { date: string; human: number; bot: number }[];
+        hourly: { hour: number; count: number }[];
+        referrers: { source: string; count: number }[];
+        devices: { device: string; count: number }[];
       };
       authenticated: boolean;
     };
@@ -76,8 +96,112 @@
   let editAppFileName = $state("");
   let projectToDelete = $state<any | null>(null);
   let isPresent = $state(false);
-  let activeTab = $state("projects");
+  // Overview jadi tab pembuka: begitu dashboard dibuka langsung tampil
+  // chart ringkasan (pengunjung, project, review) tanpa perlu klik apa pun.
+  let activeTab = $state("overview");
   let currentStatus = $state("");
+
+  // ===== Turunan data analytics =====
+  const stats = $derived(data.stats);
+  const dailySeries = $derived(stats?.daily ?? []);
+  const sparkHuman = $derived(dailySeries.map((d) => d.human));
+
+  /** Persentase perubahan vs periode sebelumnya. null = tidak ada pembanding. */
+  function deltaPct(now: number, before: number): number | null {
+    if (!before) return now > 0 ? 100 : null;
+    return ((now - before) / before) * 100;
+  }
+
+  const deltaToday = $derived(deltaPct(stats?.today ?? 0, stats?.yesterday ?? 0));
+  const deltaWeek = $derived(deltaPct(stats?.last7 ?? 0, stats?.prev7 ?? 0));
+
+  const deviceData = $derived(
+    (stats?.devices ?? []).map((d) => ({ label: d.device, value: d.count })),
+  );
+  const referrerData = $derived(
+    (stats?.referrers ?? []).map((r) => ({ label: r.source, value: r.count })),
+  );
+  const topPageData = $derived(
+    (stats?.topPages ?? []).map((p: any) => ({
+      label: p.path,
+      value: Number(p.count),
+    })),
+  );
+
+  // ===== Data untuk tab Overview (ringkasan seluruh isi dashboard) =====
+  const allReviews = $derived(data.reviews ?? []);
+  const approvedReviews = $derived(
+    allReviews.filter((r) => r.status === "approved"),
+  );
+
+  /** Rata-rata rating dari review yang sudah disetujui. */
+  const avgRating = $derived(
+    approvedReviews.length
+      ? approvedReviews.reduce((s, r) => s + Number(r.rating || 0), 0) /
+          approvedReviews.length
+      : 0,
+  );
+
+  /** Sebaran bintang 1–5 (dari review approved) untuk bar peringkat. */
+  const ratingSpread = $derived(
+    [5, 4, 3, 2, 1].map((star) => ({
+      label: `${star} bintang`,
+      value: approvedReviews.filter((r) => Number(r.rating) === star).length,
+    })),
+  );
+
+  /** Status moderasi review — part-to-whole, cocok untuk donut. */
+  const reviewStatusData = $derived(
+    [
+      { label: "Disetujui", value: approvedReviews.length },
+      {
+        label: "Menunggu",
+        value: allReviews.filter((r) => r.status === "pending").length,
+      },
+      {
+        label: "Ditolak",
+        value: allReviews.filter((r) => r.status === "rejected").length,
+      },
+    ].filter((d) => d.value > 0),
+  );
+
+  /** Komposisi project per kategori. `category` disimpan sebagai CSV. */
+  const projectCategoryData = $derived.by(() => {
+    const map = new Map<string, number>();
+    for (const p of data.projects ?? []) {
+      for (const c of String(p.category ?? "")
+        .split(",")
+        .map((x) => x.trim())
+        .filter(Boolean)) {
+        map.set(c, (map.get(c) ?? 0) + 1);
+      }
+    }
+    return [...map.entries()]
+      .map(([label, value]) => ({ label, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 5);
+  });
+
+  /** Teknologi yang paling sering dipakai lintas project. */
+  const techUsageData = $derived.by(() => {
+    const map = new Map<string, number>();
+    for (const p of data.projects ?? []) {
+      for (const t of String(p.tech ?? "")
+        .split(",")
+        .map((x) => x.trim())
+        .filter(Boolean)) {
+        map.set(t, (map.get(t) ?? 0) + 1);
+      }
+    }
+    return [...map.entries()]
+      .map(([label, value]) => ({ label, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 6);
+  });
+
+  const featuredCount = $derived(
+    (data.projects ?? []).filter((p) => p.featured === 1).length,
+  );
 
   // Base URL untuk membangun link review (dipakai di tab Reviews).
   let origin = $state("");
@@ -127,28 +251,63 @@ Sekali lagi makasih banyak! 🚀`;
     }
   });
 
-  // Loading State
+  // ===== Loading =====
   let isSubmitting = $state(false);
+  // Jumlah request form yang sedang berjalan. Dipakai untuk progress bar
+  // di atas layar, sehingga selalu ada tanda "sedang diproses" —
+  // sebelumnya submit terasa mati total karena tidak ada feedback apa pun.
+  let inflight = $state(0);
+  const busy = $derived(inflight > 0 || !!navigating.to);
 
-  // Toast State
-  let toast = $state({ show: false, message: "", type: "success" });
-
-  function showToast(message: string, type: "success" | "error" = "success") {
-    toast.message = message;
-    toast.type = type;
-    toast.show = true;
-    setTimeout(() => {
-      toast.show = false;
-    }, 3000);
+  /**
+   * Bungkus use:enhance dengan feedback loading + toast.
+   * Dipakai di form-form aksi supaya polanya seragam dan tidak lupa
+   * mematikan indikator saat request selesai/gagal.
+   */
+  function trackedEnhance(opts: { success?: string } = {}) {
+    return () => {
+      inflight++;
+      return async ({ result, update }: any) => {
+        inflight = Math.max(0, inflight - 1);
+        if (result.type === "success" && opts.success) showToast(opts.success);
+        await update();
+      };
+    };
   }
 
-  // Handle form responses with Toast
+  // ===== Toast =====
+  // Antrian (stack), bukan satu slot. Versi lama pakai satu objek + setTimeout
+  // yang tidak pernah di-clear: toast kedua yang muncul <3 detik setelah yang
+  // pertama ikut terhapus oleh timer lama, jadi notifikasi terasa "telat/hilang".
+  type Toast = { id: number; message: string; type: "success" | "error" };
+  let toasts = $state<Toast[]>([]);
+  let toastSeq = 0;
+
+  function showToast(message: string, type: "success" | "error" = "success") {
+    const id = ++toastSeq;
+    toasts.push({ id, message, type });
+    // Tiap toast punya timer sendiri.
+    setTimeout(() => {
+      toasts = toasts.filter((t) => t.id !== id);
+    }, 3200);
+  }
+
+  function dismissToast(id: number) {
+    toasts = toasts.filter((t) => t.id !== id);
+  }
+
+  // Tandai hasil form yang sudah pernah ditoast, supaya $effect tidak
+  // memunculkan notifikasi yang sama dua kali saat state lain berubah.
+  let lastFormShown: any = null;
   $effect(() => {
-    if (form?.success) {
+    if (!form || form === lastFormShown) return;
+    lastFormShown = form;
+
+    if (form.success) {
       showToast(form.message || "Berhasil!");
       isAddModalOpen = false;
       isAddExpModalOpen = false;
-    } else if (form?.error) {
+    } else if (form.error) {
       showToast(form.error, "error");
     }
   });
@@ -201,6 +360,14 @@ Sekali lagi makasih banyak! 🚀`;
     </div>
   </div>
 {:else}
+  <!-- Progress bar global: satu-satunya penanda "sedang loading" yang
+       selalu kelihatan, di mana pun aksinya dipicu. -->
+  {#if busy}
+    <div class="top-progress" transition:fade={{ duration: 120 }}>
+      <div class="top-progress-bar"></div>
+    </div>
+  {/if}
+
   <div class="admin-layout">
     <!-- SIDEBAR -->
     <aside class="sidebar">
@@ -210,6 +377,14 @@ Sekali lagi makasih banyak! 🚀`;
       </div>
 
       <nav class="sidebar-nav">
+        <button
+          class="nav-item"
+          class:active={activeTab === "overview"}
+          onclick={() => (activeTab = "overview")}
+        >
+          <LayoutGrid size={20} />
+          <span>Overview</span>
+        </button>
         <button
           class="nav-item"
           class:active={activeTab === "projects"}
@@ -275,17 +450,14 @@ Sekali lagi makasih banyak! 🚀`;
         <button
           class="logout-btn"
           onclick={() => theme.toggle()}
-          title="Toggle Theme"
-          style="margin-bottom: 0.5rem; justify-content: center;"
+          title="Ganti tema terang/gelap"
         >
           {#if theme.isDark}
-            <Sun size={20} />
+            <Sun size={18} />
           {:else}
-            <Moon size={20} />
+            <Moon size={18} />
           {/if}
-          <span style="margin-left: 0.5rem;"
-            >{theme.isDark ? "Light Mode" : "Dark Mode"}</span
-          >
+          <span>{theme.isDark ? "Light Mode" : "Dark Mode"}</span>
         </button>
 
         <form method="POST" action="?/logout" use:enhance>
@@ -302,7 +474,9 @@ Sekali lagi makasih banyak! 🚀`;
       <div class="content-header">
         <div>
           <h1>
-            {#if activeTab === "projects"}
+            {#if activeTab === "overview"}
+              Ringkasan
+            {:else if activeTab === "projects"}
               Kelola Project
             {:else if activeTab === "experiences"}
               Kelola Pengalaman
@@ -319,7 +493,9 @@ Sekali lagi makasih banyak! 🚀`;
             {/if}
           </h1>
           <p>
-            {#if activeTab === "projects"}
+            {#if activeTab === "overview"}
+              Gambaran menyeluruh: pengunjung, project, dan review klien.
+            {:else if activeTab === "projects"}
               Daftar semua hasil karya bapak.
             {:else if activeTab === "experiences"}
               Daftar riwayat karir bapak.
@@ -368,7 +544,168 @@ Sekali lagi makasih banyak! 🚀`;
       </div>
 
       <div class="content-body">
-        {#if activeTab === "projects"}
+        {#if activeTab === "overview"}
+          <!-- OVERVIEW — halaman pembuka, isinya chart semua -->
+          <div class="analytics-wrapper">
+            <!-- KPI ROW -->
+            <div class="stats-grid stagger">
+              <div class="stat-card is-hero">
+                <div class="stat-top">
+                  <span class="stat-label">Kunjungan hari ini</span>
+                  <div class="stat-icon accent"><Activity size={18} /></div>
+                </div>
+                <span class="stat-value hero">{compact(stats.today)}</span>
+                <div class="stat-foot">
+                  {#if deltaToday !== null}
+                    <span
+                      class="delta"
+                      class:up={deltaToday >= 0}
+                      class:down={deltaToday < 0}
+                    >
+                      {#if deltaToday >= 0}
+                        <TrendingUp size={14} />
+                      {:else}
+                        <TrendingDown size={14} />
+                      {/if}
+                      {Math.abs(deltaToday).toFixed(0)}%
+                    </span>
+                    <span class="delta-note">vs kemarin</span>
+                  {:else}
+                    <span class="delta-note">Belum ada pembanding</span>
+                  {/if}
+                </div>
+                <div class="stat-spark">
+                  <Sparkline values={sparkHuman} accent />
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-top">
+                  <span class="stat-label">Total project</span>
+                  <div class="stat-icon"><Briefcase size={18} /></div>
+                </div>
+                <span class="stat-value">{data.projects.length}</span>
+                <div class="stat-foot">
+                  <span class="delta-note"
+                    >{featuredCount} tampil di halaman depan</span
+                  >
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-top">
+                  <span class="stat-label">Rating rata-rata</span>
+                  <div class="stat-icon"><Star size={18} /></div>
+                </div>
+                <span class="stat-value">
+                  {approvedReviews.length ? avgRating.toFixed(1) : "—"}
+                </span>
+                <div class="stat-foot">
+                  <span class="delta-note">
+                    {approvedReviews.length
+                      ? `dari ${approvedReviews.length} review disetujui`
+                      : "Belum ada review disetujui"}
+                  </span>
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-top">
+                  <span class="stat-label">Perlu ditindak</span>
+                  <div class="stat-icon"><Mail size={18} /></div>
+                </div>
+                <span class="stat-value"
+                  >{pendingReviews.length + unreadMessages.length}</span
+                >
+                <div class="stat-foot">
+                  <span class="delta-note">
+                    {pendingReviews.length} review · {unreadMessages.length} pesan
+                    baru
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- TREN PENGUNJUNG -->
+            <div class="viz-card stagger-2">
+              <div class="viz-head">
+                <div>
+                  <h3>Tren pengunjung</h3>
+                  <p>14 hari terakhir</p>
+                </div>
+                <div class="legend-inline">
+                  <span class="li"><i class="key key-1"></i>Manusia</span>
+                  <span class="li"><i class="key key-2 dashed"></i>Bot</span>
+                </div>
+              </div>
+              <AreaChart data={dailySeries} />
+            </div>
+
+            <!-- KOMPOSISI: PROJECT & REVIEW -->
+            <div class="viz-row stagger-3">
+              <div class="viz-card">
+                <div class="viz-head">
+                  <div>
+                    <h3>Project per kategori</h3>
+                    <p>Komposisi portofolio</p>
+                  </div>
+                </div>
+                <DonutChart data={projectCategoryData} centerLabel="Project" />
+              </div>
+
+              <div class="viz-card">
+                <div class="viz-head">
+                  <div>
+                    <h3>Status review klien</h3>
+                    <p>Hasil moderasi</p>
+                  </div>
+                </div>
+                <DonutChart data={reviewStatusData} centerLabel="Review" />
+              </div>
+            </div>
+
+            <!-- PERINGKAT -->
+            <div class="viz-row stagger-4">
+              <div class="viz-card">
+                <div class="viz-head">
+                  <div>
+                    <h3>Halaman terpopuler</h3>
+                    <p>Berdasarkan kunjungan manusia</p>
+                  </div>
+                </div>
+                <RankBars data={topPageData} />
+              </div>
+
+              <div class="viz-card">
+                <div class="viz-head">
+                  <div>
+                    <h3>Teknologi terbanyak dipakai</h3>
+                    <p>Lintas seluruh project</p>
+                  </div>
+                </div>
+                <RankBars data={techUsageData} />
+              </div>
+            </div>
+
+            <!-- SEBARAN RATING -->
+            <div class="viz-card stagger-4">
+              <div class="viz-head">
+                <div>
+                  <h3>Sebaran rating</h3>
+                  <p>Dari review yang sudah disetujui</p>
+                </div>
+              </div>
+              {#if approvedReviews.length > 0}
+                <RankBars data={ratingSpread} />
+              {:else}
+                <p class="empty-state">
+                  Belum ada review yang disetujui. Buat link review di tab
+                  Reviews untuk mulai mengumpulkan testimoni.
+                </p>
+              {/if}
+            </div>
+          </div>
+        {:else if activeTab === "projects"}
           <!-- PROJECTS LIST -->
           <div class="card projects-container fade-in">
             <div class="project-list">
@@ -410,20 +747,12 @@ Sekali lagi makasih banyak! 🚀`;
                     <form
                       method="POST"
                       action="?/toggleFeatured"
-                      use:enhance={() => {
-                        isSubmitting = true;
-                        return async ({ result, update }) => {
-                          isSubmitting = false;
-                          if (result.type === "success") {
-                            showToast(
-                              project.featured === 1
-                                ? "Dihapus dari Home"
-                                : "Ditampilkan di Home",
-                            );
-                          }
-                          await update();
-                        };
-                      }}
+                      use:enhance={trackedEnhance({
+                        success:
+                          project.featured === 1
+                            ? "Dihapus dari Home"
+                            : "Ditampilkan di Home",
+                      })}
                     >
                       <input type="hidden" name="id" value={project.id} />
                       <input
@@ -436,7 +765,6 @@ Sekali lagi makasih banyak! 🚀`;
                         class="action-btn {project.featured === 1
                           ? 'active'
                           : ''}"
-                        disabled={isSubmitting}
                         title={project.featured === 1
                           ? "Hapus dari Home"
                           : "Tampilkan di Home"}
@@ -499,14 +827,9 @@ Sekali lagi makasih banyak! 🚀`;
                     <form
                       method="POST"
                       action="?/deleteExperience"
-                      use:enhance={() => {
-                        return async ({ result, update }) => {
-                          if (result.type === "success") {
-                            showToast("Pengalaman berhasil dihapus");
-                          }
-                          await update();
-                        };
-                      }}
+                      use:enhance={trackedEnhance({
+                        success: "Pengalaman berhasil dihapus",
+                      })}
                     >
                       <input type="hidden" name="id" value={exp.id} />
                       <button
@@ -583,13 +906,9 @@ Sekali lagi makasih banyak! 🚀`;
                     <form
                       method="POST"
                       action="?/deleteApp"
-                      use:enhance={() => {
-                        return async ({ result, update }) => {
-                          if (result.type === "success")
-                            showToast("App berhasil dihapus");
-                          await update();
-                        };
-                      }}
+                      use:enhance={trackedEnhance({
+                        success: "App berhasil dihapus",
+                      })}
                     >
                       <input type="hidden" name="id" value={app.id} />
                       <button
@@ -613,67 +932,162 @@ Sekali lagi makasih banyak! 🚀`;
           </div>
         {:else if activeTab === "analytics"}
           <!-- ANALYTICS DASHBOARD -->
-          <div class="analytics-wrapper fade-in">
-            <!-- STAT CARDS -->
-            <div class="stats-grid">
-              <div class="stat-card">
-                <div
-                  class="stat-icon"
-                  style="background: #eff6ff; color: #3b82f6;"
-                >
-                  <Eye size={24} />
+          <div class="analytics-wrapper">
+            <!-- KPI ROW -->
+            <div class="stats-grid stagger">
+              <div class="stat-card is-hero">
+                <div class="stat-top">
+                  <span class="stat-label">Kunjungan hari ini</span>
+                  <div class="stat-icon accent"><Activity size={18} /></div>
                 </div>
-                <div class="stat-info">
-                  <span class="stat-label">Total Kunjungan</span>
-                  <span class="stat-value">{data.stats.total}</span>
+                <span class="stat-value hero">{compact(stats.today)}</span>
+                <div class="stat-foot">
+                  {#if deltaToday !== null}
+                    <span
+                      class="delta"
+                      class:up={deltaToday >= 0}
+                      class:down={deltaToday < 0}
+                    >
+                      {#if deltaToday >= 0}
+                        <TrendingUp size={14} />
+                      {:else}
+                        <TrendingDown size={14} />
+                      {/if}
+                      {Math.abs(deltaToday).toFixed(0)}%
+                    </span>
+                    <span class="delta-note">vs kemarin</span>
+                  {:else}
+                    <span class="delta-note">Belum ada pembanding</span>
+                  {/if}
+                </div>
+                <div class="stat-spark">
+                  <Sparkline values={sparkHuman} accent />
                 </div>
               </div>
+
               <div class="stat-card">
-                <div
-                  class="stat-icon"
-                  style="background: #f0fdf4; color: #22c55e;"
-                >
-                  <User size={24} />
+                <div class="stat-top">
+                  <span class="stat-label">7 hari terakhir</span>
+                  <div class="stat-icon"><Eye size={18} /></div>
                 </div>
-                <div class="stat-info">
-                  <span class="stat-label">Pengunjung Manusia</span>
-                  <span class="stat-value">{data.stats.human}</span>
+                <span class="stat-value">{compact(stats.last7)}</span>
+                <div class="stat-foot">
+                  {#if deltaWeek !== null}
+                    <span
+                      class="delta"
+                      class:up={deltaWeek >= 0}
+                      class:down={deltaWeek < 0}
+                    >
+                      {#if deltaWeek >= 0}
+                        <TrendingUp size={14} />
+                      {:else}
+                        <TrendingDown size={14} />
+                      {/if}
+                      {Math.abs(deltaWeek).toFixed(0)}%
+                    </span>
+                    <span class="delta-note">vs 7 hari sebelumnya</span>
+                  {:else}
+                    <span class="delta-note">Belum ada pembanding</span>
+                  {/if}
                 </div>
               </div>
+
               <div class="stat-card">
-                <div
-                  class="stat-icon"
-                  style="background: #fef2f2; color: #ef4444;"
-                >
-                  <Bot size={24} />
+                <div class="stat-top">
+                  <span class="stat-label">Pengunjung unik</span>
+                  <div class="stat-icon"><Users size={18} /></div>
                 </div>
-                <div class="stat-info">
+                <span class="stat-value">{compact(stats.uniqueVisitors)}</span>
+                <div class="stat-foot">
+                  <span class="delta-note"
+                    >dari {compact(stats.human)} kunjungan manusia</span
+                  >
+                </div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-top">
                   <span class="stat-label">Bot / Crawler</span>
-                  <span class="stat-value">{data.stats.bot}</span>
+                  <div class="stat-icon"><Bot size={18} /></div>
+                </div>
+                <span class="stat-value">{compact(stats.bot)}</span>
+                <div class="stat-foot">
+                  <span class="delta-note">
+                    {stats.total > 0
+                      ? `${((stats.bot / stats.total) * 100).toFixed(0)}% dari total trafik`
+                      : "Belum ada trafik"}
+                  </span>
                 </div>
               </div>
             </div>
 
-            <div class="analytics-grid">
-              <!-- TOP PAGES -->
-              <div class="card analytics-card">
-                <div class="card-header">
-                  <h3>Halaman Terpopuler</h3>
+            <!-- TREN 14 HARI -->
+            <div class="viz-card stagger-2">
+              <div class="viz-head">
+                <div>
+                  <h3>Tren kunjungan</h3>
+                  <p>14 hari terakhir</p>
                 </div>
-                <div class="top-pages-list">
-                  {#each data.stats.topPages as page}
-                    <div class="page-item">
-                      <span class="page-path">{page.path}</span>
-                      <span class="page-count">{page.count} hits</span>
-                    </div>
-                  {/each}
+                <!-- Legend wajib ada untuk 2 seri; warna tidak berdiri sendiri -->
+                <div class="legend-inline">
+                  <span class="li"><i class="key key-1"></i>Manusia</span>
+                  <span class="li"><i class="key key-2 dashed"></i>Bot</span>
                 </div>
               </div>
+              <AreaChart data={dailySeries} />
+            </div>
 
+            <!-- DONUT + JAM SIBUK -->
+            <div class="viz-row">
+              <div class="viz-card stagger-3">
+                <div class="viz-head">
+                  <div>
+                    <h3>Perangkat</h3>
+                    <p>Pengunjung manusia</p>
+                  </div>
+                </div>
+                <DonutChart data={deviceData} centerLabel="Total" />
+              </div>
+
+              <div class="viz-card stagger-3">
+                <div class="viz-head">
+                  <div>
+                    <h3>Sumber trafik</h3>
+                    <p>Dari mana mereka datang</p>
+                  </div>
+                </div>
+                <DonutChart data={referrerData} centerLabel="Total" />
+              </div>
+            </div>
+
+            <div class="viz-card stagger-4">
+              <div class="viz-head">
+                <div>
+                  <h3>Jam ramai pengunjung</h3>
+                  <p>Distribusi per jam, 7 hari terakhir</p>
+                </div>
+              </div>
+              <BarChart data={stats.hourly} />
+            </div>
+
+            <div class="viz-card stagger-4">
+              <div class="viz-head">
+                <div>
+                  <h3>Halaman terpopuler</h3>
+                  <p>Berdasarkan kunjungan manusia</p>
+                </div>
+              </div>
+              <RankBars data={topPageData} />
+            </div>
+
+            <div class="analytics-grid">
               <!-- REAL TIME LOG -->
-              <div class="card analytics-card full-width-card">
-                <div class="card-header">
-                  <h3>Kunjungan Terbaru</h3>
+              <div class="viz-card full-width-card">
+                <div class="viz-head">
+                  <div>
+                    <h3>Kunjungan terbaru</h3>
+                    <p>50 request terakhir</p>
+                  </div>
                 </div>
                 <div class="traffic-log">
                   <table class="traffic-table">
@@ -688,6 +1102,8 @@ Sekali lagi makasih banyak! 🚀`;
                     </thead>
                     <tbody>
                       {#each data.stats.recent as visit}
+                        {@const ua = String(visit.ua ?? "")}
+                        {@const ref = String(visit.referrer ?? "direct")}
                         <tr>
                           <td class="text-xs text-muted">
                             {new Date(visit.timestamp).toLocaleString("id-ID", {
@@ -698,10 +1114,8 @@ Sekali lagi makasih banyak! 🚀`;
                             })}
                           </td>
                           <td class="font-bold">{visit.path}</td>
-                          <td class="ua-cell text-xs" title={visit.ua}>
-                            {visit.ua.length > 40
-                              ? visit.ua.substring(0, 40) + "..."
-                              : visit.ua}
+                          <td class="ua-cell text-xs" title={ua}>
+                            {ua.length > 40 ? ua.substring(0, 40) + "..." : ua}
                           </td>
                           <td>
                             <span
@@ -713,16 +1127,20 @@ Sekali lagi makasih banyak! 🚀`;
                             </span>
                           </td>
                           <td class="text-xs"
-                            >{visit.referrer === "direct"
+                            >{ref === "direct"
                               ? "Langsung"
-                              : visit.referrer.length > 20
-                                ? visit.referrer.substring(0, 20) + "..."
-                                : visit.referrer}</td
+                              : ref.length > 20
+                                ? ref.substring(0, 20) + "..."
+                                : ref}</td
                           >
                         </tr>
                       {/each}
                     </tbody>
                   </table>
+
+                  {#if data.stats.recent.length === 0}
+                    <p class="empty-state">Belum ada kunjungan tercatat.</p>
+                  {/if}
                 </div>
               </div>
             </div>
@@ -737,7 +1155,7 @@ Sekali lagi makasih banyak! 🚀`;
               <form
                 method="POST"
                 action="?/updateStatus"
-                use:enhance
+                use:enhance={trackedEnhance()}
                 class="admin-form"
               >
                 <div class="form-group">
@@ -796,7 +1214,7 @@ Sekali lagi makasih banyak! 🚀`;
               <form
                 method="POST"
                 action="?/updateSocialLinks"
-                use:enhance
+                use:enhance={trackedEnhance()}
                 class="admin-form"
                 style="max-width: 900px;"
               >
@@ -980,13 +1398,13 @@ Sekali lagi makasih banyak! 🚀`;
                       </div>
                       <p class="review-text">"{r.testimonial}"</p>
                       <div class="review-actions">
-                        <form method="POST" action="?/approveReview" use:enhance>
+                        <form method="POST" action="?/approveReview" use:enhance={trackedEnhance()}>
                           <input type="hidden" name="id" value={r.id} />
                           <button type="submit" class="btn-mini approve">
                             <Check size={15} /> Setujui
                           </button>
                         </form>
-                        <form method="POST" action="?/rejectReview" use:enhance>
+                        <form method="POST" action="?/rejectReview" use:enhance={trackedEnhance()}>
                           <input type="hidden" name="id" value={r.id} />
                           <button type="submit" class="btn-mini reject">
                             <XCircle size={15} /> Tolak
@@ -1050,7 +1468,7 @@ Sekali lagi makasih banyak! 🚀`;
                         <form
                           method="POST"
                           action="?/linkTokenProject"
-                          use:enhance
+                          use:enhance={trackedEnhance()}
                           class="token-link-form"
                         >
                           <input type="hidden" name="id" value={t.id} />
@@ -1069,7 +1487,7 @@ Sekali lagi makasih banyak! 🚀`;
                           </select>
                         </form>
 
-                        <form method="POST" action="?/deleteReviewToken" use:enhance>
+                        <form method="POST" action="?/deleteReviewToken" use:enhance={trackedEnhance()}>
                           <input type="hidden" name="id" value={t.id} />
                           <button type="submit" class="btn-mini reject" title="Hapus">
                             <Trash2 size={15} />
@@ -1125,7 +1543,7 @@ Sekali lagi makasih banyak! 🚀`;
                         <form
                           method="POST"
                           action="?/markMessageRead"
-                          use:enhance
+                          use:enhance={trackedEnhance()}
                         >
                           <input type="hidden" name="id" value={m.id} />
                           <button
@@ -1137,7 +1555,7 @@ Sekali lagi makasih banyak! 🚀`;
                           </button>
                         </form>
                       {/if}
-                      <form method="POST" action="?/deleteMessage" use:enhance>
+                      <form method="POST" action="?/deleteMessage" use:enhance={trackedEnhance()}>
                         <input type="hidden" name="id" value={m.id} />
                         <button
                           type="submit"
@@ -1184,8 +1602,10 @@ Sekali lagi makasih banyak! 🚀`;
           action="?/addProject"
           use:enhance={() => {
             isSubmitting = true;
+            inflight++;
             return async ({ result, update }) => {
               isSubmitting = false;
+              inflight = Math.max(0, inflight - 1);
               if (result.type === "success") {
                 isAddModalOpen = false;
                 showToast("Project baru berhasil ditambahkan!");
@@ -1316,8 +1736,10 @@ Sekali lagi makasih banyak! 🚀`;
           enctype="multipart/form-data"
           use:enhance={() => {
             isSubmitting = true;
+            inflight++;
             return async ({ result, update }) => {
               isSubmitting = false;
+              inflight = Math.max(0, inflight - 1);
               if (result.type === "success") {
                 isAddAppModalOpen = false;
                 iconFileName = "";
@@ -2109,20 +2531,32 @@ Sekali lagi makasih banyak! 🚀`;
   </div>
 {/if}
 
-<!-- Toast Notification -->
-
-{#if toast.show}
-  <div class="toast-container" transition:fly={{ x: 100, duration: 300 }}>
-    <div class="toast-item {toast.type}">
-      {#if toast.type === "success"}
-        <CheckCircle2 size={18} />
+<!-- Toast Notification (stack — beberapa notifikasi bisa tampil bersamaan) -->
+<div class="toast-container">
+  {#each toasts as t (t.id)}
+    <div
+      class="toast-item {t.type}"
+      transition:fly={{ x: 24, duration: 180 }}
+      role="status"
+    >
+      {#if t.type === "success"}
+        <CheckCircle2 size={18} class="toast-icon-ok" />
       {:else}
-        <AlertCircle size={18} />
+        <AlertCircle size={18} class="toast-icon-err" />
       {/if}
-      <span>{toast.message}</span>
+      <span>{t.message}</span>
+      <button
+        class="toast-close"
+        onclick={() => dismissToast(t.id)}
+        aria-label="Tutup notifikasi"
+      >
+        <X size={14} />
+      </button>
+      <!-- Bar progres = umur toast, jadi jelas kapan bakal hilang -->
+      <span class="toast-progress"></span>
     </div>
-  </div>
-{/if}
+  {/each}
+</div>
 
 <style>
   :global(body) {
@@ -2130,9 +2564,84 @@ Sekali lagi makasih banyak! 🚀`;
     color: var(--text-main);
   }
 
+  /* ===== Progress bar loading (paling atas layar) ===== */
+  .top-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    z-index: 10002;
+    background: color-mix(in srgb, var(--primary) 15%, transparent);
+    overflow: hidden;
+  }
+  .top-progress-bar {
+    height: 100%;
+    width: 40%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--primary),
+      color-mix(in srgb, var(--primary) 40%, transparent)
+    );
+    /* Animasi indeterminate: durasi request tidak diketahui, jadi bar-nya
+       berjalan terus daripada berpura-pura tahu progresnya. */
+    animation: progressSlide 0.9s ease-in-out infinite;
+  }
+  @keyframes progressSlide {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(350%);
+    }
+  }
+
+  /* ===== Animasi masuk konten =====
+     Cepat & bertahap (60ms antar elemen) supaya dashboard terasa "muncul"
+     bukan "menunggu". Semua di-compositor (transform/opacity) → mulus. */
+  .stagger,
+  .stagger-2,
+  .stagger-3,
+  .stagger-4 {
+    animation: riseIn 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .stagger-2 {
+    animation-delay: 0.06s;
+  }
+  .stagger-3 {
+    animation-delay: 0.12s;
+  }
+  .stagger-4 {
+    animation-delay: 0.18s;
+  }
+  @keyframes riseIn {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Hormati preferensi sistem: matikan semua animasi non-esensial. */
+  @media (prefers-reduced-motion: reduce) {
+    .stagger,
+    .stagger-2,
+    .stagger-3,
+    .stagger-4 {
+      animation: none;
+    }
+    .top-progress-bar {
+      animation-duration: 2s;
+    }
+  }
+
   .admin-layout {
     display: grid;
-    grid-template-columns: 280px 1fr;
+    grid-template-columns: 228px 1fr;
     min-height: 100vh;
   }
 
@@ -2140,7 +2649,7 @@ Sekali lagi makasih banyak! 🚀`;
   .sidebar {
     background: var(--bg-card);
     color: var(--text-main);
-    padding: 2rem 1.5rem;
+    padding: 1.5rem 0.875rem 1.25rem;
     display: flex;
     flex-direction: column;
     position: sticky;
@@ -2152,76 +2661,106 @@ Sekali lagi makasih banyak! 🚀`;
   .sidebar-brand {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    margin-bottom: 3rem;
-    padding: 0 0.5rem;
+    gap: 0.6rem;
+    margin-bottom: 1.5rem;
+    padding: 0 0.75rem;
   }
 
   .sidebar-brand .logo {
-    font-size: 1.5rem;
+    font-size: 1.35rem;
     font-weight: 800;
     color: var(--text-main);
+    line-height: 1;
+  }
+  .sidebar-brand .logo span {
+    color: var(--primary);
   }
   .sidebar-brand span.brand-text {
     font-weight: 600;
     color: var(--text-muted);
-    font-size: 0.875rem;
+    font-size: 0.7rem;
     text-transform: uppercase;
-    letter-spacing: 0.05em;
+    letter-spacing: 0.08em;
   }
 
   .sidebar-nav {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    /* Rapat — jarak antar menu cukup 2px, pemisah visualnya sudah dari
+       highlight item aktif, bukan dari ruang kosong. */
+    gap: 0.125rem;
     flex: 1;
+    min-height: 0;
+    overflow-y: auto;
   }
 
   .nav-item {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    padding: 0.875rem 1.25rem;
-    border-radius: 0.75rem;
+    gap: 0.75rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 0.6rem;
     background: transparent;
     border: none;
     color: var(--text-muted);
     cursor: pointer;
-    transition: all 0.2s;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
     width: 100%;
     font-weight: 600;
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
+    text-align: left;
+  }
+
+  .nav-item :global(svg) {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
   }
 
   .nav-item:hover {
     background: var(--bg-soft);
-    color: var(--primary);
+    color: var(--text-main);
   }
 
   .nav-item.active {
     background: var(--primary);
     color: white;
-    box-shadow: 0 10px 15px -3px rgba(249, 115, 22, 0.2);
   }
 
   .sidebar-footer {
-    padding-top: 2rem;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
     border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
   }
 
   .logout-btn {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 0.75rem;
     color: var(--text-muted);
     background: transparent;
     border: none;
-    padding: 0.875rem 1.25rem;
+    padding: 0.6rem 0.75rem;
     width: 100%;
     cursor: pointer;
     font-weight: 600;
-    transition: all 0.2s;
-    border-radius: 0.75rem;
+    font-size: 0.875rem;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
+    border-radius: 0.6rem;
+    text-align: left;
+  }
+
+  .logout-btn :global(svg) {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
   }
 
   .logout-btn:hover {
@@ -2533,102 +3072,282 @@ Sekali lagi makasih banyak! 🚀`;
     margin-top: 1rem;
   }
 
-  /* Toast */
+  /* Toast — muncul instan (180ms), bisa menumpuk, bisa ditutup manual */
   .toast-container {
     position: fixed;
-    top: 2rem;
-    right: 2rem;
+    top: 1.5rem;
+    right: 1.5rem;
     z-index: 10001;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    pointer-events: none;
   }
   .toast-item {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    padding: 1.25rem 2rem;
-    background: white;
-    border-radius: 1.25rem;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-    border-left: 6px solid #10b981;
-    font-weight: 700;
+    gap: 0.7rem;
+    padding: 0.85rem 1rem;
+    padding-right: 2.4rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 0.85rem;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.14);
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: var(--text-main);
+    max-width: 22rem;
+    overflow: hidden;
+    pointer-events: auto;
   }
-  .toast-item.error {
-    border-left-color: #ef4444;
+  .toast-item :global(.toast-icon-ok) {
+    color: #0ca30c;
+    flex-shrink: 0;
+  }
+  .toast-item :global(.toast-icon-err) {
+    color: #d03b3b;
+    flex-shrink: 0;
+  }
+  .toast-close {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 0.2rem;
+    border-radius: 0.35rem;
+    display: flex;
+    line-height: 0;
+  }
+  .toast-close:hover {
+    background: var(--bg-soft);
+    color: var(--text-main);
+  }
+  .toast-progress {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    height: 3px;
+    width: 100%;
+    background: #0ca30c;
+    transform-origin: left;
+    animation: toastLife 3.2s linear forwards;
+  }
+  .toast-item.error .toast-progress {
+    background: #d03b3b;
+  }
+  @keyframes toastLife {
+    from {
+      transform: scaleX(1);
+    }
+    to {
+      transform: scaleX(0);
+    }
   }
 
-  /* Analytics Styles */
+  /* ===== Analytics ===== */
   .analytics-wrapper {
     display: flex;
     flex-direction: column;
-    gap: 2rem;
-  }
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
     gap: 1.5rem;
   }
+
+  /* Token warna chart. Palet ini divalidasi untuk buta warna (CVD) &
+     kontras di kedua mode — jangan diganti sembarangan. */
+  .analytics-wrapper {
+    --viz-1: #eb6834;
+    --viz-2: #2a78d6;
+    --viz-3: #1baf7a;
+    --viz-4: #eda100;
+    --viz-grid: #eef0f4;
+    --viz-track: #f1f5f9;
+    --viz-muted: #94a3b8;
+    --viz-surface: var(--bg-card);
+  }
+  :global(.dark) .analytics-wrapper {
+    --viz-1: #d95926;
+    --viz-2: #3987e5;
+    --viz-3: #199e70;
+    --viz-4: #c98500;
+    --viz-grid: #1e293b;
+    --viz-track: #1e293b;
+    --viz-muted: #64748b;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+  }
   .stat-card {
-    background: white;
-    padding: 1.5rem;
-    border-radius: 1.25rem;
+    position: relative;
+    background: var(--bg-card);
+    padding: 1.25rem;
+    border-radius: 1rem;
     border: 1px solid var(--border);
     display: flex;
-    align-items: center;
-    gap: 1.25rem;
+    flex-direction: column;
+    gap: 0.5rem;
+    overflow: hidden;
+    transition:
+      border-color 0.2s ease,
+      transform 0.2s ease;
+  }
+  .stat-card:hover {
+    border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
+    transform: translateY(-2px);
+  }
+  /* Kartu utama: dibedakan lewat aksen tipis, bukan warna latar penuh */
+  .stat-card.is-hero {
+    border-color: color-mix(in srgb, var(--primary) 30%, var(--border));
+  }
+  .stat-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
   }
   .stat-icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 1rem;
+    width: 32px;
+    height: 32px;
+    border-radius: 0.6rem;
     display: flex;
     align-items: center;
     justify-content: center;
+    background: var(--bg-soft);
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .stat-icon.accent {
+    background: color-mix(in srgb, var(--primary) 12%, transparent);
+    color: var(--primary);
   }
   .stat-label {
-    display: block;
-    font-size: 0.875rem;
-    color: #64748b;
+    font-size: 0.8rem;
+    color: var(--text-muted);
     font-weight: 600;
   }
   .stat-value {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     font-weight: 800;
-    color: #0f172a;
+    color: var(--text-main);
+    line-height: 1.1;
+  }
+  /* Hero figure: satu angka terbesar di dashboard */
+  .stat-value.hero {
+    font-size: 2.75rem;
+  }
+  .stat-foot {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+  }
+  .delta {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 0.1rem 0.4rem;
+    border-radius: 0.4rem;
+  }
+  .delta.up {
+    color: #0a7d0a;
+    background: rgba(12, 163, 12, 0.1);
+  }
+  .delta.down {
+    color: #c23333;
+    background: rgba(208, 59, 59, 0.1);
+  }
+  :global(.dark) .delta.up {
+    color: #4ade80;
+  }
+  :global(.dark) .delta.down {
+    color: #f87171;
+  }
+  .delta-note {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+  .stat-spark {
+    margin-top: 0.35rem;
+    margin-left: -0.25rem;
+    margin-right: -0.25rem;
+  }
+
+  /* Kartu chart */
+  .viz-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 1rem;
+    padding: 1.35rem 1.5rem 1.5rem;
+  }
+  .viz-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+  }
+  .viz-head h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0 0 0.15rem;
+  }
+  .viz-head p {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin: 0;
+  }
+  .legend-inline {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  .legend-inline .li {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+  .legend-inline .key {
+    width: 14px;
+    height: 3px;
+    border-radius: 2px;
+    display: inline-block;
+  }
+  .legend-inline .key-1 {
+    background: var(--viz-1);
+  }
+  .legend-inline .key-2 {
+    background: var(--viz-2);
+  }
+  .legend-inline .key.dashed {
+    background: repeating-linear-gradient(
+      to right,
+      var(--viz-2) 0 4px,
+      transparent 4px 7px
+    );
+  }
+
+  .viz-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
   }
 
   .analytics-grid {
     display: grid;
     grid-template-columns: 1fr;
     gap: 1.5rem;
-  }
-  .analytics-card {
-    padding: 1.5rem;
-  }
-  .card-header h3 {
-    font-size: 1.125rem;
-    font-weight: 700;
-    margin-bottom: 1.5rem;
-    color: #0f172a;
-  }
-
-  .top-pages-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-  .page-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 0.75rem 1rem;
-    background: #f8fafc;
-    border-radius: 0.75rem;
-  }
-  .page-path {
-    font-weight: 700;
-    color: #334155;
-  }
-  .page-count {
-    font-weight: 600;
-    color: var(--primary);
   }
 
   .traffic-log {
@@ -2641,15 +3360,24 @@ Sekali lagi makasih banyak! 🚀`;
   .traffic-table th {
     text-align: left;
     padding: 0.75rem 1rem;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
     text-transform: uppercase;
-    color: #64748b;
+    color: var(--text-muted);
     border-bottom: 1px solid var(--border);
+    white-space: nowrap;
   }
   .traffic-table td {
-    padding: 1rem;
-    border-bottom: 1px solid #f1f5f9;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--border);
     font-size: 0.8125rem;
+    color: var(--text-main);
+  }
+  .traffic-table tbody tr {
+    transition: background 0.15s ease;
+  }
+  .traffic-table tbody tr:hover {
+    background: var(--bg-soft);
   }
 
   .badge-type {
@@ -2677,6 +3405,12 @@ Sekali lagi makasih banyak! 🚀`;
     font-weight: 700;
   }
 
+  @media (max-width: 1280px) {
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
   @media (max-width: 1024px) {
     .admin-layout {
       grid-template-columns: 1fr;
@@ -2684,8 +3418,28 @@ Sekali lagi makasih banyak! 🚀`;
     .sidebar {
       display: none;
     }
+    .viz-row {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 640px) {
     .stats-grid {
       grid-template-columns: 1fr;
+    }
+    .stat-value.hero {
+      font-size: 2.25rem;
+    }
+    .viz-card {
+      padding: 1.15rem 1rem 1.25rem;
+    }
+    .toast-container {
+      left: 1rem;
+      right: 1rem;
+      top: 1rem;
+    }
+    .toast-item {
+      max-width: none;
     }
   }
 
@@ -2757,14 +3511,20 @@ Sekali lagi makasih banyak! 🚀`;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 1.35rem;
-    height: 1.35rem;
-    padding: 0 0.4rem;
+    min-width: 1.15rem;
+    height: 1.15rem;
+    padding: 0 0.35rem;
     border-radius: 999px;
     background: var(--primary);
     color: #fff;
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     font-weight: 700;
+    line-height: 1;
+  }
+  /* Di item aktif latarnya sudah oranye — badge dibalik jadi putih */
+  .nav-item.active .nav-badge {
+    background: #fff;
+    color: var(--primary);
   }
   .message-list {
     display: flex;
