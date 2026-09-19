@@ -104,7 +104,9 @@
               id="contact-subject"
               name="subject"
               placeholder="Misalnya: Kebutuhan implementasi Odoo"
+              minlength="3"
               maxlength="200"
+              required
               value={form?.subject ?? ""}
             />
           </div>
