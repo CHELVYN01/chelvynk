@@ -51,6 +51,12 @@ export const actions: Actions = {
         if (!email || !EMAIL_RE.test(email)) {
             return fail(400, { error: 'Format email tidak valid.', name, email, subject, message });
         }
+        // Subjek WAJIB — mayoritas spam bot mengirim form tanpa subjek sama sekali.
+        // Divalidasi di server, bukan cuma `required` di HTML, karena bot POST langsung
+        // ke endpoint tanpa pernah merender form-nya.
+        if (!subject || subject.length < 3) {
+            return fail(400, { error: 'Subjek wajib diisi (minimal 3 karakter).', name, email, subject, message });
+        }
         if (!message || message.length < 10) {
             return fail(400, { error: 'Pesan wajib diisi (minimal 10 karakter).', name, email, subject, message });
         }
@@ -63,7 +69,7 @@ export const actions: Actions = {
         try {
             await db.execute(
                 'INSERT INTO contact_messages (name, email, subject, message, ip) VALUES (?, ?, ?, ?, ?)',
-                [name, email, subject || '', message, ip]
+                [name, email, subject, message, ip]
             );
         } catch (e) {
             console.error('[DB Error] contact:', e);
