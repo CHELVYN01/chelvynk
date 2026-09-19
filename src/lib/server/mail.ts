@@ -39,7 +39,7 @@ export async function sendContactEmail(payload: ContactMailPayload): Promise<boo
 
     const name = escapeHtml(payload.name);
     const email = escapeHtml(payload.email);
-    const subject = escapeHtml(payload.subject || 'Tanpa subjek');
+    const subject = escapeHtml(payload.subject);
     const message = escapeHtml(payload.message).replace(/\n/g, '<br>');
 
     const html = `
@@ -69,7 +69,7 @@ export async function sendContactEmail(payload: ContactMailPayload): Promise<boo
                 to: [to],
                 // reply_to diisi email pengirim -> tinggal tekan "Reply" untuk balas klien.
                 reply_to: payload.email,
-                subject: `[Portfolio] ${payload.subject || 'Pesan baru'} — ${payload.name}`,
+                subject: `[Portfolio] ${payload.subject} — ${payload.name}`,
                 html
             })
         });
