@@ -111,7 +111,7 @@
             >
           </li>
           <li>
-            <a href="/#about" onclick={() => (isMobileMenuOpen = false)}
+            <a href="/about" onclick={() => (isMobileMenuOpen = false)}
               >About</a
             >
           </li>
