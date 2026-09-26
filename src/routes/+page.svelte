@@ -15,6 +15,8 @@
     MapPin,
     Star,
     Quote,
+    Sparkles,
+    Rocket,
   } from "lucide-svelte";
   import { fade, scale } from "svelte/transition";
   import { quintOut } from "svelte/easing";
@@ -129,7 +131,7 @@
     alternateName: ["Chelvyn Kleden", "Kleden Chelvyn"],
     url: "https://chelvynkleden.com",
     image: "https://chelvynkleden.com/hero-dev-2.png",
-    jobTitle: "Odoo Technical Consultant & Fullstack Developer",
+    jobTitle: "Odoo Technical Consultant & Product Software Engineer",
     description:
       "Blasius Chelvyn Kera Kleden (Chelvyn Kleden) — Odoo Technical Consultant & Odoo Developer freelance di Indonesia. Spesialis kustomisasi modul Odoo ERP, integrasi Odoo API, Laravel, CodeIgniter 4, Svelte, dan Next.js.",
     nationality: "Indonesian",
@@ -178,53 +180,99 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <section id="home" class="hero-section">
-  <!-- Decorative Patterns -->
-  <div class="hero-patterns">
-    <div class="pattern-dots"></div>
-    <div class="pattern-grid"></div>
-    <div class="pattern-waves"></div>
-    <div class="abstract-curves">
-      <div class="curve curve-1"></div>
-      <div class="curve curve-2"></div>
-      <div class="curve curve-3"></div>
-    </div>
-    <div class="shape shape-1"></div>
-    <div class="shape shape-2"></div>
-    <div class="shape shape-3"></div>
+  <!-- Latar: grid halus + aurora -->
+  <div class="hero-bg" aria-hidden="true">
+    <div class="hero-grid-lines"></div>
+    <div class="aurora aurora-1"></div>
+    <div class="aurora aurora-2"></div>
   </div>
 
   <div class="container hero-grid">
     <div class="hero-content fade-in">
-      <div class="badge">
-        <span class="badge-dot"></span>
-        {data.siteStatus}
+      <div class="hero-eyebrow">
+        <div class="badge">
+          <span class="badge-dot"></span>
+          {data.siteStatus}
+        </div>
+        <span class="role-chip">
+          <Sparkles size={13} /> Product Software Engineer
+        </span>
       </div>
+
       <h1>
-        Membangun <span class="text-gradient">Pengalaman Digital</span> yang Berdampak.
+        Dari Ide Menjadi
+        <span class="text-gradient">Produk Digital</span>
+        yang Siap Tumbuh.
       </h1>
-      <p>
-        Halo, saya Chelvyn. Seorang Full-stack Developer yang mendedikasikan
-        diri untuk merancang aplikasi web yang cepat, aman, dan mudah digunakan.
+
+      <p class="hero-lead">
+        Halo, saya <strong>Chelvyn</strong> — Product Software Engineer yang
+        mengubah kebutuhan bisnis menjadi produk software end-to-end: ERP
+        Odoo, aplikasi web, hingga mobile. Dirancang cepat, aman, dan siap
+        diskalakan.
       </p>
+
       <div class="hero-btns">
-        <a href="/projects" class="btn btn-primary">
-          Lihat Pekerjaan <ArrowRight size={18} />
+        <a href="/projects" class="btn btn-primary btn-glow">
+          Lihat Produk & Project <ArrowRight size={18} />
         </a>
-        <a href="/contact" class="btn btn-ghost">Hubungi Saya</a>
+        <a href="/contact" class="btn btn-ghost">Diskusikan Ide Anda</a>
       </div>
-      <div class="hero-meta">
-        <MapPin size={16} />
-        <span>Berbasis di Indonesia · Remote-friendly</span>
-      </div>
+
+      <ul class="hero-pillars">
+        <li>
+          <span class="pillar-icon"><Rocket size={16} /></span>
+          <div>
+            <strong>End-to-end</strong>
+            <span>Discovery → Deploy</span>
+          </div>
+        </li>
+        <li>
+          <span class="pillar-icon"><Layers size={16} /></span>
+          <div>
+            <strong>ERP-ready</strong>
+            <span>Odoo & integrasi API</span>
+          </div>
+        </li>
+        <li>
+          <span class="pillar-icon"><MapPin size={16} /></span>
+          <div>
+            <strong>Indonesia</strong>
+            <span>Remote-friendly</span>
+          </div>
+        </li>
+      </ul>
     </div>
+
     <div class="hero-visual fade-in delay-1">
-      <div class="illustration-container">
-        <div class="visual-glow"></div>
-        <img
-          src="/hero-dev-2.png"
-          alt="Blasius Chelvyn Kera Kleden - Fullstack Developer Portfolio Illustration"
-          class="hero-img"
-        />
+      <div class="photo-frame">
+        <div class="photo-inner">
+          <img
+            src="/hero-dev-2.png"
+            alt="Blasius Chelvyn Kera Kleden - Product Software Engineer"
+            class="hero-img"
+          />
+        </div>
+
+        <!-- Kartu mengambang -->
+        <div class="float-card float-top">
+          <span class="float-icon"><Layers size={16} /></span>
+          <div>
+            <small>Spesialisasi</small>
+            <strong>Odoo ERP Specialist</strong>
+          </div>
+        </div>
+
+        <div class="float-card float-bottom">
+          <small class="mono">// product lifecycle</small>
+          <div class="pipeline">
+            <span class="step done">Ide</span>
+            <span class="line"></span>
+            <span class="step done">Build</span>
+            <span class="line"></span>
+            <span class="step active">Ship</span>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -630,199 +678,189 @@
 
   .hero-section {
     position: relative;
-    padding: 8rem 0 0;
+    padding: 7.5rem 0 0;
     overflow: hidden;
-    min-height: 80vh;
+    min-height: 88vh;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    background: linear-gradient(
-      135deg,
-      var(--bg-white) 0%,
-      var(--bg-soft) 100%
-    );
+    background: var(--bg-white);
   }
 
   :global(.dark) .hero-section {
     background: transparent;
   }
 
-  /* Decorative Patterns */
-  .hero-patterns {
+  /* ===== Latar: grid halus + aurora ===== */
+  .hero-bg {
     position: absolute;
     inset: 0;
     pointer-events: none;
     z-index: 0;
   }
 
-  .pattern-dots {
-    position: absolute;
-    top: 5%;
-    left: -2%;
-    width: 300px;
-    height: 300px;
-    background-image: radial-gradient(#f97316 1.5px, transparent 1.5px);
-    background-size: 24px 24px;
-    opacity: 0.15;
-    mask-image: linear-gradient(to bottom right, black, transparent);
-  }
-
-  .pattern-grid {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 400px;
-    background-image: linear-gradient(#e2e8f0 1px, transparent 1px),
-      linear-gradient(90deg, #e2e8f0 1px, transparent 1px);
-    background-size: 60px 60px;
-    opacity: 0.6;
-    mask-image: radial-gradient(circle at top left, black, transparent 70%);
-  }
-
-  :global(.dark) .pattern-grid {
-    opacity: 0.2;
-    background-image: linear-gradient(#334155 1px, transparent 1px),
-      linear-gradient(90deg, #334155 1px, transparent 1px);
-  }
-
-  .pattern-waves {
-    position: absolute;
-    top: 15%;
-    left: -2%;
-    width: 500px;
-    height: 400px;
-    background-image: radial-gradient(
-        circle at 100% 150%,
-        #e2e8f0 24%,
-        white 25%
-      ),
-      radial-gradient(circle at 0% 150%, #e2e8f0 24%, white 25%),
-      radial-gradient(
-        circle at 50% 100%,
-        white 10%,
-        #e2e8f0 11%,
-        #e2e8f0 23%,
-        white 24%
-      );
-    background-size: 80px 40px;
-    opacity: 0.2; /* Dipertegas biar kelihatan pak */
-    mask-image: linear-gradient(to bottom right, black 40%, transparent);
-    z-index: 0;
-  }
-
-  /* Tambahan abstract curves dari referensi gambar kedua bapak */
-  .abstract-curves {
+  .hero-grid-lines {
     position: absolute;
     inset: 0;
-    overflow: hidden;
-    pointer-events: none;
+    background-image:
+      linear-gradient(to right, rgba(15, 23, 42, 0.06) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(15, 23, 42, 0.06) 1px, transparent 1px);
+    background-size: 56px 56px;
+    -webkit-mask-image: radial-gradient(ellipse 75% 60% at 50% 35%, black 30%, transparent 100%);
+    mask-image: radial-gradient(ellipse 75% 60% at 50% 35%, black 30%, transparent 100%);
   }
 
-  .curve {
-    position: absolute;
-    border: 8px solid transparent;
-    border-radius: 50%;
-    opacity: 0.15;
+  :global(.dark) .hero-grid-lines {
+    background-image:
+      linear-gradient(to right, rgba(241, 245, 249, 0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(241, 245, 249, 0.05) 1px, transparent 1px);
   }
 
-  .curve-1 {
-    width: 200px;
-    height: 200px;
-    border-top-color: #f97316; /* Orange */
-    top: 10%;
-    left: 15%;
-    transform: rotate(-15deg);
-  }
-
-  .curve-2 {
-    width: 150px;
-    height: 150px;
-    border-right-color: #10b981; /* Green */
-    top: 35%;
-    left: 5%;
-    transform: rotate(20deg);
-  }
-
-  .curve-3 {
-    width: 250px;
-    height: 250px;
-    border-bottom-color: #3b82f6; /* Blue */
-    top: -50px;
-    left: 20%;
-    transform: rotate(-45deg);
-  }
-
-  .shape {
+  .aurora {
     position: absolute;
     border-radius: 50%;
-    filter: blur(80px);
-    z-index: 0;
+    filter: blur(90px);
+    animation: aurora-drift 18s ease-in-out infinite alternate;
   }
 
-  .shape-1 {
-    width: 400px;
-    height: 400px;
-    background: rgba(249, 115, 22, 0.08); /* Primary color */
-    left: -100px;
-    top: -100px;
+  .aurora-1 {
+    width: 520px;
+    height: 520px;
+    top: -160px;
+    right: 8%;
+    background: rgba(249, 115, 22, 0.18);
   }
 
-  .shape-2 {
-    width: 300px;
-    height: 300px;
-    background: rgba(16, 185, 129, 0.05); /* Greenish accent */
-    left: 10%;
-    bottom: -50px;
+  .aurora-2 {
+    width: 440px;
+    height: 440px;
+    bottom: -120px;
+    left: -80px;
+    background: rgba(251, 191, 36, 0.14);
+    animation-delay: -9s;
   }
 
-  .shape-3 {
-    width: 350px;
-    height: 350px;
-    background: rgba(59, 130, 246, 0.04); /* Bluish accent */
-    top: 20%;
-    left: 30%;
+  :global(.dark) .aurora-1 {
+    background: rgba(251, 146, 60, 0.16);
   }
 
+  :global(.dark) .aurora-2 {
+    background: rgba(99, 102, 241, 0.12);
+  }
+
+  @keyframes aurora-drift {
+    from {
+      transform: translate(0, 0) scale(1);
+    }
+    to {
+      transform: translate(40px, 30px) scale(1.12);
+    }
+  }
+
+  /* ===== Layout ===== */
   .hero-grid {
     position: relative;
     z-index: 1;
     display: grid;
-    grid-template-columns: 1.1fr 0.9fr;
-    gap: 2rem;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 3.5rem;
     align-items: center;
     width: 100%;
   }
 
+  .hero-eyebrow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.625rem;
+    margin-bottom: 1.75rem;
+  }
+
+  .hero-eyebrow .badge {
+    margin-bottom: 0;
+  }
+
+  .role-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.9rem;
+    border-radius: 2rem;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--bg-card) 70%, transparent);
+    backdrop-filter: blur(8px);
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    color: var(--text-main);
+  }
+
+  .role-chip :global(svg) {
+    color: var(--primary);
+  }
+
   .hero-content h1 {
-    font-size: clamp(2.5rem, 5vw, 4.25rem);
-    line-height: 1.1;
+    font-size: clamp(2.5rem, 4.6vw, 3.85rem);
+    line-height: 1.04;
+    letter-spacing: -0.045em;
     margin-bottom: 1.5rem;
   }
 
-  .hero-content p {
+  .hero-content h1 .text-gradient {
+    display: block;
+    background-size: 200% auto;
+    animation: gradient-shift 6s ease-in-out infinite alternate;
+  }
+
+  @keyframes gradient-shift {
+    to {
+      background-position: 100% center;
+    }
+  }
+
+  .hero-lead {
     font-size: 1.125rem;
     color: var(--text-muted);
-    max-width: 520px;
-    margin-bottom: 2.5rem;
-    line-height: 1.6;
+    max-width: 540px;
+    margin-bottom: 2.25rem;
+    line-height: 1.7;
+  }
+
+  .hero-lead strong {
+    color: var(--text-main);
+    font-weight: 700;
   }
 
   .hero-btns {
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: 0.875rem;
     position: relative;
     z-index: 10;
   }
 
   .hero-btns .btn {
     gap: 0.5rem;
+    padding: 0.9rem 1.5rem;
+  }
+
+  .btn-glow {
+    box-shadow:
+      0 0 0 1px rgba(249, 115, 22, 0.35),
+      0 12px 30px -10px rgba(249, 115, 22, 0.65);
+  }
+
+  .btn-glow:hover {
+    box-shadow:
+      0 0 0 1px rgba(249, 115, 22, 0.5),
+      0 16px 36px -10px rgba(249, 115, 22, 0.75);
   }
 
   .btn-ghost {
-    background: transparent;
+    background: color-mix(in srgb, var(--bg-card) 70%, transparent);
+    backdrop-filter: blur(8px);
     border: 1px solid var(--border);
     color: var(--text-main);
   }
@@ -833,66 +871,216 @@
     transform: translateY(-1px);
   }
 
-  .hero-meta {
+  /* Tiga pilar nilai di bawah CTA */
+  .hero-pillars {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.75rem;
+    margin-top: 2.25rem;
+    padding-top: 1.5rem;
+    border-top: 1px dashed #e2e8f0;
+  }
+
+  :global(.dark) .hero-pillars {
+    border-top-color: var(--border);
+  }
+
+  .hero-pillars li {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    margin-top: 2rem;
-    color: var(--text-muted);
-    font-size: 0.875rem;
-    font-weight: 500;
+    gap: 0.625rem;
   }
 
-  .hero-meta :global(svg) {
+  .pillar-icon {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: rgba(249, 115, 22, 0.1);
     color: var(--primary);
+    flex-shrink: 0;
   }
 
+  .hero-pillars div {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+    text-align: left;
+  }
+
+  .hero-pillars strong {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: var(--text-main);
+  }
+
+  .hero-pillars span:not(.pillar-icon) {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+
+  /* ===== Visual: foto berbingkai + kartu mengambang ===== */
   .hero-visual {
     position: relative;
-    z-index: -1;
-    opacity: 1;
     display: flex;
-    justify-content: flex-end;
+    justify-content: center;
     align-items: center;
-    pointer-events: none;
   }
 
-  .illustration-container {
+  .photo-frame {
     position: relative;
     width: 100%;
-    max-width: 650px;
-    margin-right: -10%;
-    aspect-ratio: 4 / 5;
-    overflow: hidden;
-    border-radius: 1.5rem;
+    max-width: 440px;
+    padding: 10px;
+    border-radius: 2rem;
+    background: linear-gradient(
+      145deg,
+      rgba(249, 115, 22, 0.55),
+      rgba(251, 191, 36, 0.25) 40%,
+      color-mix(in srgb, var(--border) 80%, transparent) 70%
+    );
+    box-shadow: 0 40px 80px -30px rgba(15, 23, 42, 0.35);
   }
 
-  /* Cahaya lembut di belakang ilustrasi */
-  .visual-glow {
-    position: absolute;
-    inset: 8% 8% 8% 8%;
-    background: radial-gradient(
-      circle,
-      rgba(249, 115, 22, 0.18),
-      transparent 65%
-    );
-    filter: blur(40px);
-    z-index: -1;
+  .photo-inner {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    border-radius: 1.5rem;
+    overflow: hidden;
+    background: linear-gradient(180deg, #f8fafc, #eef2f7);
+  }
+
+  :global(.dark) .photo-inner {
+    background: linear-gradient(180deg, #0f172a, #020617);
   }
 
   .hero-img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    object-position: 50% 15%;
+    object-position: 50% 20%;
     display: block;
     mix-blend-mode: multiply;
-    position: relative;
-    z-index: 1;
   }
 
   :global(.dark) .hero-img {
     mix-blend-mode: normal;
+  }
+
+  .float-card {
+    position: absolute;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: 1rem;
+    border: 1px solid color-mix(in srgb, var(--border) 60%, rgba(255, 255, 255, 0.6));
+    background: color-mix(in srgb, var(--bg-card) 78%, transparent);
+    backdrop-filter: blur(14px) saturate(1.4);
+    -webkit-backdrop-filter: blur(14px) saturate(1.4);
+    box-shadow: 0 18px 40px -18px rgba(15, 23, 42, 0.35);
+    animation: float-y 6s ease-in-out infinite;
+  }
+
+  .float-card small {
+    display: block;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+  }
+
+  .float-card strong {
+    font-size: 0.875rem;
+    color: var(--text-main);
+  }
+
+  .float-icon {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: var(--primary);
+    color: #fff;
+  }
+
+  .float-top {
+    top: 12%;
+    left: -3.5rem;
+  }
+
+  .float-bottom {
+    bottom: 9%;
+    right: -2.5rem;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    animation-delay: -3s;
+  }
+
+  .mono {
+    font-family: "JetBrains Mono", ui-monospace, monospace;
+  }
+
+  .pipeline {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .pipeline .step {
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 0.25rem 0.55rem;
+    border-radius: 0.5rem;
+    background: rgba(100, 116, 139, 0.12);
+    color: var(--text-muted);
+  }
+
+  .pipeline .step.done {
+    background: rgba(34, 197, 94, 0.12);
+    color: #16a34a;
+  }
+
+  .pipeline .step.active {
+    background: var(--primary);
+    color: #fff;
+    box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.18);
+  }
+
+  .pipeline .line {
+    width: 14px;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--border);
+  }
+
+  @keyframes float-y {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .aurora,
+    .float-card,
+    .hero-content h1 .text-gradient {
+      animation: none;
+    }
+  }
+
+  @media (max-width: 1024px) {
+    .float-top {
+      left: -1rem;
+    }
+    .float-bottom {
+      right: -1rem;
+    }
   }
 
   /* ===== Tech Marquee ===== */
@@ -1343,6 +1531,15 @@
 
     .hero-visual {
       display: none; /* Hide complex visual on small mobile to avoid overflow */
+    }
+
+    .hero-eyebrow {
+      justify-content: center;
+    }
+
+    .hero-pillars {
+      justify-content: center;
+      gap: 1.25rem;
     }
 
     .about-grid {
