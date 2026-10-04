@@ -73,35 +73,72 @@ export function recordLoginAttempt(ip: string, success: boolean, userAgent: stri
     console.warn(`[SECURITY] Failed login attempt from IP: ${ip}`);
 }
 
-// Rate limit khusus form kontak — SENGAJA dipisah dari loginAttempts.
-// Kalau digabung, orang yang spam form kontak bisa ikut memblokir login admin
-// dari IP yang sama (self-DoS). Batas: 3 pesan per 30 menit per IP.
-const contactAttempts: Map<string, { count: number; firstAttempt: number }> = new Map();
-const CONTACT_MAX = 3;
-const CONTACT_WINDOW = 30 * 60 * 1000;
+// ===== Anti-spam form kontak =====
+// Rate limit untuk form kontak ada di contact/+page.server.ts dan dihitung dari
+// tabel contact_messages (bukan memori), supaya tetap berlaku setelah restart dan
+// di serverless di mana tiap instance punya memori sendiri.
 
-/**
- * Cek + catat percobaan kirim pesan kontak untuk IP tertentu.
- * Memanggil fungsi ini sekaligus menambah hitungan (dipanggil sekali per submit).
- */
-export function checkContactRateLimit(ip: string): { allowed: boolean; resetIn: number } {
-    const now = Date.now();
-    const record = contactAttempts.get(ip);
+// Token waktu: dibuat saat halaman dirender, diverifikasi saat submit.
+// Bot yang POST langsung tanpa membuka halaman tidak punya token; bot yang
+// submit secepat kilat ditolak. Stateless (HMAC), jadi aman di serverless.
+export const FORM_MIN_AGE_MS = 3_000;
+export const FORM_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 
-    if (!record || now - record.firstAttempt > CONTACT_WINDOW) {
-        contactAttempts.set(ip, { count: 1, firstAttempt: now });
-        return { allowed: true, resetIn: 0 };
+async function hmacHex(secret: string, data: string): Promise<string> {
+    const enc = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+        'raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+    );
+    const sig = await crypto.subtle.sign('HMAC', key, enc.encode(data));
+    return [...new Uint8Array(sig)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+export async function createFormToken(secret: string): Promise<string> {
+    const ts = Date.now();
+    return `${ts}.${await hmacHex(secret, String(ts))}`;
+}
+
+/** 'ok' | 'invalid' (palsu/tidak ada) | 'too-fast' | 'expired' */
+export async function verifyFormToken(
+    secret: string,
+    token: string | null | undefined
+): Promise<'ok' | 'invalid' | 'too-fast' | 'expired'> {
+    if (!token) return 'invalid';
+    const [tsRaw, sig] = token.split('.');
+    const ts = Number(tsRaw);
+    if (!Number.isFinite(ts) || !sig) return 'invalid';
+    if (sig !== (await hmacHex(secret, String(ts)))) return 'invalid';
+    const age = Date.now() - ts;
+    if (age < FORM_MIN_AGE_MS) return 'too-fast';
+    if (age > FORM_MAX_AGE_MS) return 'expired';
+    return 'ok';
+}
+
+// Pola spam yang sering muncul di form kontak: template "newsletter/updates"
+// (hasil terjemahan mesin), SEO/backlink, judi, kripto, dll.
+const SPAM_PATTERNS: RegExp[] = [
+    /newsletter|buletin|bulletin|mailing list|unsubscribe|subscribe|langganan/i,
+    /news and updates|weekly updates|product news|keep me posted|add me (for|to)/i,
+    /pembaruan email|hubungi saya melalui email|informasi lebih lanjut\.? silakan/i,
+    /\bseo\b|backlink|guest post|rank(ing)? (on )?google|web ?traffic/i,
+    /casino|viagra|crypto|bitcoin|forex|\bloan\b|\bslot\b|judi online/i
+];
+
+/** Kembalikan alasan kalau pesan tampak spam, atau null kalau aman. */
+export function detectSpam(fields: {
+    name: string;
+    email: string;
+    subject: string;
+    message: string;
+}): string | null {
+    const text = `${fields.subject}\n${fields.message}`;
+    for (const re of SPAM_PATTERNS) {
+        if (re.test(text)) return `pola: ${re.source.slice(0, 30)}`;
     }
-
-    record.count++;
-    contactAttempts.set(ip, record);
-
-    if (record.count > CONTACT_MAX) {
-        const resetIn = Math.ceil((CONTACT_WINDOW - (now - record.firstAttempt)) / 1000 / 60);
-        return { allowed: false, resetIn: Math.max(1, resetIn) };
-    }
-
-    return { allowed: true, resetIn: 0 };
+    const links = (text.match(/https?:\/\/|www\./gi) || []).length;
+    if (links >= 2) return 'banyak link';
+    if (/https?:\/\/|www\./i.test(fields.name)) return 'link di nama';
+    return null;
 }
 
 /**
