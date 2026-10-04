@@ -2,8 +2,6 @@
   import {
     ArrowRight,
     Download,
-    MapPin,
-    Briefcase,
     GraduationCap,
     Layers,
     Server,
@@ -12,7 +10,6 @@
     Terminal,
     Bot,
     Check,
-    Sparkles,
   } from "lucide-svelte";
   import { reveal } from "$lib/reveal";
 
@@ -21,9 +18,9 @@
   const resumeUrl = "/resume/my%20resume.pdf";
 
   const quickFacts = [
-    { icon: MapPin, label: "Lokasi", value: "Indonesia · Remote" },
-    { icon: Briefcase, label: "Fokus", value: "Odoo ERP & Produk Web" },
-    { icon: GraduationCap, label: "Pendidikan", value: "Universitas Sanata Dharma" },
+    { label: "Lokasi", value: "Indonesia · Remote" },
+    { label: "Fokus", value: "Odoo ERP & Produk Web" },
+    { label: "Pendidikan", value: "Universitas Sanata Dharma" },
   ];
 
   const stats = [
@@ -103,15 +100,18 @@
 
 <!-- ===== Intro ===== -->
 <section class="about-hero">
-  <div class="hero-bg" aria-hidden="true">
-    <div class="grid-lines"></div>
-    <div class="aurora aurora-1"></div>
-    <div class="aurora aurora-2"></div>
+  <!-- Foto cutout transparan berdiri di kanan, dasarnya menyatu dengan pita statistik -->
+  <div class="about-photo">
+    <img
+      src="/foto_transparan_549KB.png"
+      alt="Blasius Chelvyn Kera Kleden"
+      fetchpriority="high"
+    />
   </div>
 
-  <div class="container intro-grid">
+  <div class="container about-grid">
     <div class="intro-text fade-in">
-      <span class="section-tag">Tentang Saya</span>
+      <p class="about-eyebrow">Tentang Saya</p>
       <h1>
         Engineer yang Berpikir
         <span class="text-gradient">Seperti Pemilik Produk.</span>
@@ -133,7 +133,7 @@
       <div class="intro-btns">
         <a
           href={resumeUrl}
-          class="btn btn-primary btn-glow"
+          class="btn btn-primary"
           download="CV-Chelvyn-Kleden.pdf"
         >
           <Download size={18} /> Unduh CV
@@ -142,34 +142,21 @@
           Hubungi Saya <ArrowRight size={18} />
         </a>
       </div>
-    </div>
 
-    <aside class="profile-card fade-in delay-1">
-      <div class="profile-photo">
-        <img
-          src="/hero-dev-2.png"
-          alt="Blasius Chelvyn Kera Kleden"
-          class="hero-img"
-        />
-        <span class="role-chip"><Sparkles size={13} /> Software Developer</span>
-      </div>
-      <ul class="facts">
+      <dl class="facts">
         {#each quickFacts as fact}
-          {@const Icon = fact.icon}
-          <li>
-            <span class="fact-icon"><Icon size={16} /></span>
-            <div>
-              <small>{fact.label}</small>
-              <strong>{fact.value}</strong>
-            </div>
-          </li>
+          <div>
+            <dt>{fact.label}</dt>
+            <dd>{fact.value}</dd>
+          </div>
         {/each}
-      </ul>
-    </aside>
+      </dl>
+    </div>
   </div>
 
-  <div class="container">
-    <div class="stats" use:reveal>
+  <!-- Pita statistik kaca di dasar hero (gaya sama dengan pita tech di home) -->
+  <div class="stats">
+    <div class="container stats-inner">
       {#each stats as stat}
         <div class="stat">
           <strong>{stat.value}</strong>
@@ -258,7 +245,7 @@
       <h2>Punya ide produk atau butuh implementasi Odoo?</h2>
       <p>Ceritakan kebutuhan Anda — saya bantu dari perencanaan sampai rilis.</p>
       <div class="intro-btns">
-        <a href="/contact" class="btn btn-primary btn-glow">
+        <a href="/contact" class="btn btn-primary">
           Diskusikan Project <ArrowRight size={18} />
         </a>
         <a href="/projects" class="btn btn-dark-ghost">Lihat Project</a>
@@ -274,11 +261,7 @@
 
   .text-gradient {
     display: block;
-    background: linear-gradient(120deg, var(--primary), #fbbf24 55%, var(--primary));
-    background-size: 200% auto;
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    color: var(--primary);
   }
 
   .section-tag {
@@ -311,73 +294,60 @@
     background: rgba(255, 255, 255, 0.03);
   }
 
-  /* ===== Intro ===== */
+  /* ===== Intro: foto full-bleed + teks di kiri (selaras dengan home) ===== */
   .about-hero {
     position: relative;
     overflow: hidden;
-    padding: 8rem 0 3rem;
-    background: var(--bg-white);
+    min-height: calc(88vh + 4.5rem);
+    padding-top: 10.5rem; /* 4.5rem tambahan: hero berada di bawah header kaca */
+    display: flex;
+    flex-direction: column;
+    background: #0b1220;
   }
 
-  :global(.dark) .about-hero {
-    background: transparent;
-  }
-
-  .hero-bg {
+  /* Sorotan lembut di belakang subjek (bukan blob warna) */
+  .about-photo {
     position: absolute;
     inset: 0;
-    pointer-events: none;
+    background: radial-gradient(
+      ellipse 45% 70% at 76% 65%,
+      #1b2638 0%,
+      transparent 100%
+    );
   }
 
-  .grid-lines {
+  /* Cutout menempel ke dasar hero; bagian bawahnya tembus di balik pita kaca. */
+  .about-photo img {
     position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(to right, rgba(15, 23, 42, 0.06) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(15, 23, 42, 0.06) 1px, transparent 1px);
-    background-size: 56px 56px;
-    -webkit-mask-image: radial-gradient(ellipse 75% 55% at 50% 30%, black 30%, transparent 100%);
-    mask-image: radial-gradient(ellipse 75% 55% at 50% 30%, black 30%, transparent 100%);
+    right: 7%;
+    bottom: 0;
+    height: 94%;
+    width: auto;
+    max-width: 55%;
+    object-fit: contain;
+    object-position: bottom;
+    display: block;
   }
 
-  :global(.dark) .grid-lines {
-    background-image:
-      linear-gradient(to right, rgba(241, 245, 249, 0.05) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(241, 245, 249, 0.05) 1px, transparent 1px);
-  }
-
-  .aurora {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(90px);
-  }
-
-  .aurora-1 {
-    width: 480px;
-    height: 480px;
-    top: -160px;
-    right: 5%;
-    background: rgba(249, 115, 22, 0.16);
-  }
-
-  .aurora-2 {
-    width: 400px;
-    height: 400px;
-    top: 40%;
-    left: -120px;
-    background: rgba(251, 191, 36, 0.12);
-  }
-
-  :global(.dark) .aurora-2 {
-    background: rgba(99, 102, 241, 0.12);
-  }
-
-  .intro-grid {
+  .about-grid {
     position: relative;
-    display: grid;
-    grid-template-columns: 1.3fr 0.7fr;
-    gap: 4rem;
-    align-items: center;
+    z-index: 1;
+    width: 100%;
+    margin-top: auto;
+    margin-bottom: auto;
+    padding-top: 2rem;
+    padding-bottom: 4rem;
+  }
+
+  .intro-text {
+    max-width: 640px;
+  }
+
+  .about-eyebrow {
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.78);
   }
 
   .intro-text h1 {
@@ -385,10 +355,12 @@
     line-height: 1.06;
     letter-spacing: -0.04em;
     margin-bottom: 1.5rem;
+    color: #fff;
+    text-shadow: 0 2px 24px rgba(2, 6, 23, 0.45);
   }
 
-  .intro-text p {
-    color: var(--text-muted);
+  .intro-text p:not(.about-eyebrow) {
+    color: rgba(255, 255, 255, 0.82);
     font-size: 1.05rem;
     line-height: 1.75;
     max-width: 600px;
@@ -400,7 +372,7 @@
   }
 
   .intro-text strong {
-    color: var(--text-main);
+    color: #fff;
     font-weight: 600;
   }
 
@@ -416,20 +388,11 @@
     padding: 0.9rem 1.5rem;
   }
 
-  .btn-glow {
-    box-shadow:
-      0 0 0 1px rgba(249, 115, 22, 0.35),
-      0 12px 30px -10px rgba(249, 115, 22, 0.65);
-  }
-
   .btn-ghost {
-    background: color-mix(in srgb, var(--bg-card) 70%, transparent);
-    border: 1px solid var(--border);
-    color: var(--text-main);
-  }
-
-  :global(:root:not(.dark)) .btn-ghost {
-    border-color: #e2e8f0;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #fff;
   }
 
   .btn-ghost:hover {
@@ -438,83 +401,29 @@
     transform: translateY(-1px);
   }
 
-  /* Kartu profil */
-  .profile-card {
-    padding: 10px;
-    border-radius: 2rem;
-    background: linear-gradient(
-      145deg,
-      rgba(249, 115, 22, 0.5),
-      rgba(251, 191, 36, 0.2) 40%,
-      color-mix(in srgb, var(--border) 80%, transparent) 70%
-    );
-    box-shadow: 0 40px 80px -30px rgba(15, 23, 42, 0.35);
-  }
-
-  .profile-photo {
-    position: relative;
-    aspect-ratio: 1 / 1;
-    border-radius: 1.5rem 1.5rem 0 0;
-    overflow: hidden;
-    background: linear-gradient(180deg, #f8fafc, #eef2f7);
-  }
-
-  :global(.dark) .profile-photo {
-    background: linear-gradient(180deg, #0f172a, #020617);
-  }
-
-  .profile-photo img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: 50% 18%;
-    display: block;
-    mix-blend-mode: multiply;
-  }
-
-  :global(.dark) .profile-photo img {
-    mix-blend-mode: normal;
-  }
-
-  .role-chip {
-    position: absolute;
-    left: 0.875rem;
-    bottom: 0.875rem;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.45rem 0.85rem;
-    border-radius: 2rem;
-    background: color-mix(in srgb, var(--bg-card) 80%, transparent);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid var(--border);
-    font-family: "JetBrains Mono", ui-monospace, monospace;
-    font-size: 0.72rem;
-    font-weight: 500;
-    color: var(--text-main);
-  }
-
-  .role-chip :global(svg) {
-    color: var(--primary);
-  }
-
+  /* Fakta singkat: teks polos sebaris, tanpa kotak/ikon */
   .facts {
     display: flex;
-    flex-direction: column;
-    gap: 0.9rem;
-    padding: 1.25rem;
-    background: var(--bg-card);
-    border-radius: 0 0 1.5rem 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem 2.5rem;
+    margin: 2.5rem 0 0;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
   }
 
-  .facts li {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
+  .facts dt {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.55);
+    margin-bottom: 0.15rem;
   }
 
-  .fact-icon,
+  .facts dd {
+    margin: 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #fff;
+  }
+
   .skill-icon,
   .edu-icon {
     display: grid;
@@ -527,37 +436,25 @@
     color: var(--primary);
   }
 
-  .facts div {
-    display: flex;
-    flex-direction: column;
-    line-height: 1.3;
-  }
-
-  .facts small {
-    font-size: 0.72rem;
-    color: var(--text-muted);
-  }
-
-  .facts strong {
-    font-size: 0.9rem;
-    color: var(--text-main);
-  }
-
-  /* Statistik */
+  /* Pita statistik: kaca tipis di dasar hero */
   .stats {
     position: relative;
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    margin-top: 4.5rem;
-    border: 1px solid var(--border);
-    border-radius: 1.25rem;
-    background: color-mix(in srgb, var(--bg-card) 75%, transparent);
-    backdrop-filter: blur(8px);
-    overflow: hidden;
+    z-index: 1;
+    width: 100%;
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.07) 0%,
+      rgba(255, 255, 255, 0.015) 100%
+    );
+    backdrop-filter: blur(14px) saturate(150%);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+    border-top: 1px solid rgba(255, 255, 255, 0.28);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
   }
 
-  :global(:root:not(.dark)) .stats {
-    border-color: #e2e8f0;
+  .stats-inner {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
   }
 
   .stat {
@@ -567,25 +464,25 @@
     padding: 1.5rem 1.75rem;
   }
 
-  .stat + .stat {
-    border-left: 1px solid var(--border);
+  .stat:first-child {
+    padding-left: 0;
   }
 
-  :global(:root:not(.dark)) .stat + .stat {
-    border-left-color: #e2e8f0;
+  .stat + .stat {
+    border-left: 1px solid rgba(255, 255, 255, 0.18);
   }
 
   .stat strong {
     font-size: 1.9rem;
     font-weight: 800;
     letter-spacing: -0.03em;
-    color: var(--text-main);
+    color: #fff;
     line-height: 1.1;
   }
 
   .stat span {
     font-size: 0.85rem;
-    color: var(--text-muted);
+    color: rgba(255, 255, 255, 0.72);
   }
 
   /* ===== Section umum ===== */
@@ -786,17 +683,20 @@
 
   /* ===== Responsif ===== */
   @media (max-width: 960px) {
-    .intro-grid {
-      grid-template-columns: 1fr;
-      gap: 3rem;
+    /* Di layar sempit foto jadi latar redup di belakang teks */
+    .about-photo img {
+      right: 50%;
+      transform: translateX(50%);
+      max-width: 90%;
+      opacity: 0.35;
     }
 
-    .profile-card {
-      max-width: 380px;
-    }
-
-    .stats {
+    .stats-inner {
       grid-template-columns: repeat(2, 1fr);
+    }
+
+    .stat:first-child {
+      padding-left: 1.75rem;
     }
 
     .stat:nth-child(3) {
@@ -804,11 +704,7 @@
     }
 
     .stat:nth-child(n + 3) {
-      border-top: 1px solid var(--border);
-    }
-
-    :global(:root:not(.dark)) .stat:nth-child(n + 3) {
-      border-top-color: #e2e8f0;
+      border-top: 1px solid rgba(255, 255, 255, 0.18);
     }
 
     .skill-grid {
@@ -827,7 +723,7 @@
 
   @media (max-width: 600px) {
     .about-hero {
-      padding-top: 6rem;
+      padding-top: 10.5rem;
     }
 
     .intro-btns .btn {

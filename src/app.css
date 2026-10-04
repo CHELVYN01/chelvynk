@@ -262,12 +262,3 @@ section {
     opacity: 0.03;
     filter: invert(1);
 }
-
-/* Image swap mechanism */
-.hero-img {
-    content: url("/hero-dev-2.png");
-}
-
-.dark .hero-img {
-    content: url("/hero-dev-dark.png");
-}
