@@ -12,13 +12,10 @@
     Layers,
     Server,
     Terminal,
-    MapPin,
     Star,
     Quote,
     ChevronLeft,
     ChevronRight,
-    Sparkles,
-    Rocket,
     Briefcase,
   } from "lucide-svelte";
   import { fade, scale } from "svelte/transition";
@@ -158,7 +155,7 @@
     name: "Blasius Chelvyn Kera Kleden",
     alternateName: ["Chelvyn Kleden", "Kleden Chelvyn"],
     url: "https://chelvynkleden.com",
-    image: "https://chelvynkleden.com/hero-dev-2.png",
+    image: "https://chelvynkleden.com/profile-bg-atas.jpg",
     jobTitle: "Odoo Technical Consultant & Product Software Engineer",
     description:
       "Blasius Chelvyn Kera Kleden (Chelvyn Kleden) — Odoo Technical Consultant & Odoo Developer freelance di Indonesia. Spesialis kustomisasi modul Odoo ERP, integrasi Odoo API, Laravel, CodeIgniter 4, Svelte, dan Next.js.",
@@ -208,24 +205,24 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <section id="home" class="hero-section">
-  <!-- Latar: grid halus + aurora -->
-  <div class="hero-bg" aria-hidden="true">
-    <div class="hero-grid-lines"></div>
-    <div class="aurora aurora-1"></div>
-    <div class="aurora aurora-2"></div>
+  <!-- Latar: foto full-bleed (di-flip supaya subjek di kanan) + overlay -->
+  <div class="hero-photo">
+    <img
+      src="/profile-bg-atas.jpg"
+      alt="Blasius Chelvyn Kera Kleden - Product Software Engineer"
+      fetchpriority="high"
+    />
   </div>
+  <div class="hero-overlay"></div>
 
   <div class="container hero-grid">
     <div class="hero-content fade-in">
-      <div class="hero-eyebrow">
-        <div class="badge">
-          <span class="badge-dot"></span>
-          {data.siteStatus}
-        </div>
-        <span class="role-chip">
-          <Sparkles size={13} /> Product Software Engineer
-        </span>
-      </div>
+      <p class="hero-eyebrow">
+        <span class="status-dot"></span>
+        <span>{data.siteStatus}</span>
+        <span class="eyebrow-sep"></span>
+        <span>Product Software Engineer</span>
+      </p>
 
       <h1>
         Dari Ide Menjadi
@@ -241,66 +238,10 @@
       </p>
 
       <div class="hero-btns">
-        <a href="/projects" class="btn btn-primary btn-glow">
-          Lihat Produk & Project <ArrowRight size={18} />
+        <a href="/projects" class="btn btn-primary">
+          Lihat Project <ArrowRight size={18} />
         </a>
         <a href="/contact" class="btn btn-ghost">Diskusikan Ide Anda</a>
-      </div>
-
-      <ul class="hero-pillars">
-        <li>
-          <span class="pillar-icon"><Rocket size={16} /></span>
-          <div>
-            <strong>End-to-end</strong>
-            <span>Discovery → Deploy</span>
-          </div>
-        </li>
-        <li>
-          <span class="pillar-icon"><Layers size={16} /></span>
-          <div>
-            <strong>ERP-ready</strong>
-            <span>Odoo & integrasi API</span>
-          </div>
-        </li>
-        <li>
-          <span class="pillar-icon"><MapPin size={16} /></span>
-          <div>
-            <strong>Indonesia</strong>
-            <span>Remote-friendly</span>
-          </div>
-        </li>
-      </ul>
-    </div>
-
-    <div class="hero-visual fade-in delay-1">
-      <div class="photo-frame">
-        <div class="photo-inner">
-          <img
-            src="/hero-dev-2.png"
-            alt="Blasius Chelvyn Kera Kleden - Product Software Engineer"
-            class="hero-img"
-          />
-        </div>
-
-        <!-- Kartu mengambang -->
-        <div class="float-card float-top">
-          <span class="float-icon"><Layers size={16} /></span>
-          <div>
-            <small>Spesialisasi</small>
-            <strong>Odoo ERP Specialist</strong>
-          </div>
-        </div>
-
-        <div class="float-card float-bottom">
-          <small class="mono">// product lifecycle</small>
-          <div class="pipeline">
-            <span class="step done">Ide</span>
-            <span class="line"></span>
-            <span class="step done">Build</span>
-            <span class="line"></span>
-            <span class="step active">Ship</span>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -772,183 +713,94 @@
     color: transparent;
   }
 
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: #fff7ed;
-    color: var(--primary);
-    border: 1px solid #ffedd5;
-    border-radius: 2rem;
-    font-size: 0.8125rem;
-    font-weight: 600;
-    margin-bottom: 1.5rem;
-  }
-
-  :global(.dark) .badge {
-    background: rgba(251, 146, 60, 0.12);
-    border-color: rgba(251, 146, 60, 0.25);
-  }
-
-  /* Titik status berdenyut (hijau = tersedia/available) */
-  .badge-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #22c55e;
-    box-shadow: 0 0 6px rgba(34, 197, 94, 0.7);
-    position: relative;
-    flex-shrink: 0;
-  }
-
-  .badge-dot::after {
-    content: "";
-    position: absolute;
-    inset: -4px;
-    border-radius: 50%;
-    background: #22c55e;
-    opacity: 0.4;
-    animation: pulse-ring 1.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-  }
-
-  @keyframes pulse-ring {
-    0% {
-      transform: scale(0.6);
-      opacity: 0.5;
-    }
-    70% {
-      transform: scale(1.6);
-      opacity: 0;
-    }
-    100% {
-      opacity: 0;
-    }
-  }
-
   .hero-section {
     position: relative;
-    padding: 7.5rem 0 0;
+    padding: 10.5rem 0 0; /* 4.5rem tambahan: hero berada di bawah header kaca */
     overflow: hidden;
-    min-height: 88vh;
+    min-height: calc(88vh + 4.5rem);
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    background: var(--bg-white);
+    background: #0b1220;
   }
 
-  :global(.dark) .hero-section {
-    background: transparent;
-  }
-
-  /* ===== Latar: grid halus + aurora ===== */
-  .hero-bg {
+  /* ===== Latar foto full-bleed ===== */
+  .hero-photo {
     position: absolute;
     inset: 0;
-    pointer-events: none;
     z-index: 0;
   }
 
-  .hero-grid-lines {
+  /* Foto menempel di kanan & lebih kecil dari viewport; sisi kirinya
+     memudar ke latar gelap. Mask dipasang di wrapper (bukan di img) supaya
+     tidak ikut ter-flip. */
+  .hero-photo {
+    -webkit-mask-image: linear-gradient(90deg, transparent 18%, black 48%);
+    mask-image: linear-gradient(90deg, transparent 18%, black 48%);
+  }
+
+  .hero-photo img {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 72%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 48%;
+    display: block;
+    transform: scaleX(-1); /* subjek pindah ke kanan, ruang teks di kiri */
+  }
+
+  .hero-overlay {
     position: absolute;
     inset: 0;
-    background-image:
-      linear-gradient(to right, rgba(15, 23, 42, 0.06) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(15, 23, 42, 0.06) 1px, transparent 1px);
-    background-size: 56px 56px;
-    -webkit-mask-image: radial-gradient(ellipse 75% 60% at 50% 35%, black 30%, transparent 100%);
-    mask-image: radial-gradient(ellipse 75% 60% at 50% 35%, black 30%, transparent 100%);
-  }
-
-  :global(.dark) .hero-grid-lines {
-    background-image:
-      linear-gradient(to right, rgba(241, 245, 249, 0.05) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(241, 245, 249, 0.05) 1px, transparent 1px);
-  }
-
-  .aurora {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(90px);
-    animation: aurora-drift 18s ease-in-out infinite alternate;
-  }
-
-  .aurora-1 {
-    width: 520px;
-    height: 520px;
-    top: -160px;
-    right: 8%;
-    background: rgba(249, 115, 22, 0.18);
-  }
-
-  .aurora-2 {
-    width: 440px;
-    height: 440px;
-    bottom: -120px;
-    left: -80px;
-    background: rgba(251, 191, 36, 0.14);
-    animation-delay: -9s;
-  }
-
-  :global(.dark) .aurora-1 {
-    background: rgba(251, 146, 60, 0.16);
-  }
-
-  :global(.dark) .aurora-2 {
-    background: rgba(99, 102, 241, 0.12);
-  }
-
-  @keyframes aurora-drift {
-    from {
-      transform: translate(0, 0) scale(1);
-    }
-    to {
-      transform: translate(40px, 30px) scale(1.12);
-    }
+    z-index: 0;
+    background:
+      linear-gradient(90deg, rgba(2, 6, 23, 0.55) 0%, transparent 60%),
+      linear-gradient(0deg, rgba(2, 6, 23, 0.7) 0%, transparent 35%);
   }
 
   /* ===== Layout ===== */
   .hero-grid {
     position: relative;
     z-index: 1;
-    display: grid;
-    grid-template-columns: 1.15fr 0.85fr;
-    gap: 3.5rem;
-    align-items: center;
     width: 100%;
+    /* margin auto vertikal: konten di tengah, pita marquee menempel di dasar */
+    margin-top: auto;
+    margin-bottom: auto;
+    padding-top: 2rem;
+    padding-bottom: 4rem;
   }
 
+  .hero-content {
+    max-width: 640px;
+  }
+
+  /* Satu baris teks polos: tanpa pill, ikon, atau animasi */
   .hero-eyebrow {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.625rem;
-    margin-bottom: 1.75rem;
-  }
-
-  .hero-eyebrow .badge {
-    margin-bottom: 0;
-  }
-
-  .role-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.5rem 0.9rem;
-    border-radius: 2rem;
-    border: 1px solid var(--border);
-    background: color-mix(in srgb, var(--bg-card) 70%, transparent);
-    backdrop-filter: blur(8px);
-    font-family: "JetBrains Mono", ui-monospace, monospace;
-    font-size: 0.75rem;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
     font-weight: 500;
-    letter-spacing: 0.02em;
-    color: var(--text-main);
+    color: rgba(255, 255, 255, 0.78);
   }
 
-  .role-chip :global(svg) {
-    color: var(--primary);
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #22c55e;
+    flex-shrink: 0;
+  }
+
+  .eyebrow-sep {
+    width: 1px;
+    height: 0.9em;
+    background: rgba(255, 255, 255, 0.35);
   }
 
   .hero-content h1 {
@@ -956,30 +808,28 @@
     line-height: 1.04;
     letter-spacing: -0.045em;
     margin-bottom: 1.5rem;
+    color: #fff;
+    text-shadow: 0 2px 24px rgba(2, 6, 23, 0.45);
   }
 
+  /* Aksen satu warna solid (bukan gradien animasi) */
   .hero-content h1 .text-gradient {
     display: block;
-    background-size: 200% auto;
-    animation: gradient-shift 6s ease-in-out infinite alternate;
-  }
-
-  @keyframes gradient-shift {
-    to {
-      background-position: 100% center;
-    }
+    background: none;
+    -webkit-text-fill-color: currentColor;
+    color: var(--primary);
   }
 
   .hero-lead {
     font-size: 1.125rem;
-    color: var(--text-muted);
+    color: rgba(255, 255, 255, 0.82);
     max-width: 540px;
     margin-bottom: 2.25rem;
     line-height: 1.7;
   }
 
   .hero-lead strong {
-    color: var(--text-main);
+    color: #fff;
     font-weight: 700;
   }
 
@@ -996,23 +846,11 @@
     padding: 0.9rem 1.5rem;
   }
 
-  .btn-glow {
-    box-shadow:
-      0 0 0 1px rgba(249, 115, 22, 0.35),
-      0 12px 30px -10px rgba(249, 115, 22, 0.65);
-  }
-
-  .btn-glow:hover {
-    box-shadow:
-      0 0 0 1px rgba(249, 115, 22, 0.5),
-      0 16px 36px -10px rgba(249, 115, 22, 0.75);
-  }
-
   .btn-ghost {
-    background: color-mix(in srgb, var(--bg-card) 70%, transparent);
+    background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(8px);
-    border: 1px solid var(--border);
-    color: var(--text-main);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #fff;
   }
 
   .btn-ghost:hover {
@@ -1021,242 +859,26 @@
     transform: translateY(-1px);
   }
 
-  /* Tiga pilar nilai di bawah CTA */
-  .hero-pillars {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1.75rem;
-    margin-top: 2.25rem;
-    padding-top: 1.5rem;
-    border-top: 1px dashed #e2e8f0;
-  }
-
-  :global(.dark) .hero-pillars {
-    border-top-color: var(--border);
-  }
-
-  .hero-pillars li {
-    display: flex;
-    align-items: center;
-    gap: 0.625rem;
-  }
-
-  .pillar-icon {
-    display: grid;
-    place-items: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
-    background: rgba(249, 115, 22, 0.1);
-    color: var(--primary);
-    flex-shrink: 0;
-  }
-
-  .hero-pillars div {
-    display: flex;
-    flex-direction: column;
-    line-height: 1.25;
-    text-align: left;
-  }
-
-  .hero-pillars strong {
-    font-size: 0.875rem;
-    font-weight: 700;
-    color: var(--text-main);
-  }
-
-  .hero-pillars span:not(.pillar-icon) {
-    font-size: 0.78rem;
-    color: var(--text-muted);
-  }
-
-  /* ===== Visual: foto berbingkai + kartu mengambang ===== */
-  .hero-visual {
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
-
-  .photo-frame {
-    position: relative;
-    width: 100%;
-    max-width: 440px;
-    padding: 10px;
-    border-radius: 2rem;
-    background: linear-gradient(
-      145deg,
-      rgba(249, 115, 22, 0.55),
-      rgba(251, 191, 36, 0.25) 40%,
-      color-mix(in srgb, var(--border) 80%, transparent) 70%
-    );
-    box-shadow: 0 40px 80px -30px rgba(15, 23, 42, 0.35);
-  }
-
-  .photo-inner {
-    position: relative;
-    aspect-ratio: 4 / 5;
-    border-radius: 1.5rem;
-    overflow: hidden;
-    background: linear-gradient(180deg, #f8fafc, #eef2f7);
-  }
-
-  :global(.dark) .photo-inner {
-    background: linear-gradient(180deg, #0f172a, #020617);
-  }
-
-  .hero-img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: 50% 20%;
-    display: block;
-    mix-blend-mode: multiply;
-  }
-
-  :global(.dark) .hero-img {
-    mix-blend-mode: normal;
-  }
-
-  .float-card {
-    position: absolute;
-    z-index: 2;
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.75rem 1rem;
-    border-radius: 1rem;
-    border: 1px solid color-mix(in srgb, var(--border) 60%, rgba(255, 255, 255, 0.6));
-    background: color-mix(in srgb, var(--bg-card) 78%, transparent);
-    backdrop-filter: blur(14px) saturate(1.4);
-    -webkit-backdrop-filter: blur(14px) saturate(1.4);
-    box-shadow: 0 18px 40px -18px rgba(15, 23, 42, 0.35);
-    animation: float-y 6s ease-in-out infinite;
-  }
-
-  .float-card small {
-    display: block;
-    font-size: 0.7rem;
-    color: var(--text-muted);
-  }
-
-  .float-card strong {
-    font-size: 0.875rem;
-    color: var(--text-main);
-  }
-
-  .float-icon {
-    display: grid;
-    place-items: center;
-    width: 34px;
-    height: 34px;
-    border-radius: 10px;
-    background: var(--primary);
-    color: #fff;
-  }
-
-  .float-top {
-    top: 12%;
-    left: -3.5rem;
-  }
-
-  .float-bottom {
-    bottom: 9%;
-    right: -2.5rem;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-    animation-delay: -3s;
-  }
-
-  .mono {
-    font-family: "JetBrains Mono", ui-monospace, monospace;
-  }
-
-  .pipeline {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-  }
-
-  .pipeline .step {
-    font-size: 0.72rem;
-    font-weight: 700;
-    padding: 0.25rem 0.55rem;
-    border-radius: 0.5rem;
-    background: rgba(100, 116, 139, 0.12);
-    color: var(--text-muted);
-  }
-
-  .pipeline .step.done {
-    background: rgba(34, 197, 94, 0.12);
-    color: #16a34a;
-  }
-
-  .pipeline .step.active {
-    background: var(--primary);
-    color: #fff;
-    box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.18);
-  }
-
-  .pipeline .line {
-    width: 14px;
-    height: 2px;
-    border-radius: 2px;
-    background: var(--border);
-  }
-
-  @keyframes float-y {
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-8px);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .aurora,
-    .float-card,
-    .hero-content h1 .text-gradient {
-      animation: none;
-    }
-  }
-
-  @media (max-width: 1024px) {
-    .float-top {
-      left: -1rem;
-    }
-    .float-bottom {
-      right: -1rem;
-    }
-  }
-
   /* ===== Tech Marquee ===== */
   .tech-marquee {
     position: relative;
     z-index: 1;
     width: 100%;
-    margin-top: 4rem;
     padding: 1.25rem 0;
-    border-top: 1px solid var(--border);
-    border-bottom: 1px solid var(--border);
+    /* Liquid glass ala iOS: tipis, blur + saturasi tinggi, highlight tepi */
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.07) 0%,
+      rgba(255, 255, 255, 0.015) 100%
+    );
+    backdrop-filter: blur(14px) saturate(150%);
+    -webkit-backdrop-filter: blur(14px) saturate(150%);
+    border-top: 1px solid rgba(255, 255, 255, 0.28);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      inset 0 -1px 0 rgba(255, 255, 255, 0.05);
     overflow: hidden;
-    -webkit-mask-image: linear-gradient(
-      90deg,
-      transparent,
-      black 12%,
-      black 88%,
-      transparent
-    );
-    mask-image: linear-gradient(
-      90deg,
-      transparent,
-      black 12%,
-      black 88%,
-      transparent
-    );
   }
 
   .marquee-track {
@@ -1274,8 +896,9 @@
   .marquee-item {
     font-size: 1.1rem;
     font-weight: 700;
-    color: var(--text-main);
-    opacity: 0.55;
+    color: #fff;
+    opacity: 0.85;
+    text-shadow: 0 1px 8px rgba(2, 6, 23, 0.35);
     transition: opacity 0.3s ease;
   }
 
@@ -2013,12 +1636,22 @@
     }
 
     .hero-section {
-      padding: 6rem 0 3rem;
+      padding: 10.5rem 0 3rem;
       text-align: center;
     }
 
-    .hero-grid {
-      grid-template-columns: 1fr;
+    .hero-overlay {
+      background: rgba(2, 6, 23, 0.68);
+    }
+
+    .hero-photo {
+      -webkit-mask-image: none;
+      mask-image: none;
+    }
+
+    .hero-photo img {
+      width: 100%;
+      object-position: 70% 30%;
     }
 
     .hero-content {
@@ -2040,17 +1673,8 @@
       width: 100%;
     }
 
-    .hero-visual {
-      display: none; /* Hide complex visual on small mobile to avoid overflow */
-    }
-
     .hero-eyebrow {
       justify-content: center;
-    }
-
-    .hero-pillars {
-      justify-content: center;
-      gap: 1.25rem;
     }
 
     .section-header {
@@ -2061,11 +1685,6 @@
     }
   }
 
-  @media (max-width: 480px) {
-    .badge {
-      font-size: 0.75rem;
-    }
-  }
   .mini-link-btn {
     display: flex;
     align-items: center;

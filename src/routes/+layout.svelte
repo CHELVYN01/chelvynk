@@ -3,11 +3,13 @@
   import { onMount } from "svelte";
   import { Sun, Moon } from "lucide-svelte";
   import { theme } from "$lib/theme.svelte";
+  import { STORE_ENABLED } from "$lib/features";
   import "../app.css";
 
   let { children, data } = $props();
 
   let isMobileMenuOpen = $state(false);
+  let scrolled = $state(false);
 
   // Halaman tanpa header/footer: admin & halaman review klien (standalone).
   const isAdmin = $derived(
@@ -18,8 +20,19 @@
     `https://chelvynkleden.com${page.url.pathname}`,
   );
 
+  // Halaman dengan hero foto full-bleed: header jadi kaca transparan di atas
+  // foto, lalu berubah jadi kaca biasa setelah halaman di-scroll.
+  const overHero = $derived(
+    page.url.pathname === "/" || page.url.pathname === "/about",
+  );
+
   onMount(() => {
     theme.init();
+
+    const onScroll = () => (scrolled = window.scrollY > 40);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
   });
 
   function toggleMenu() {
@@ -68,7 +81,7 @@
   <meta property="og:locale" content="id_ID" />
   <meta
     property="og:image"
-    content="https://chelvynkleden.com/hero-dev-2.png"
+    content="https://chelvynkleden.com/profile-bg-atas.jpg"
   />
 
   <!-- Twitter Card -->
@@ -83,12 +96,15 @@
   />
   <meta
     name="twitter:image"
-    content="https://chelvynkleden.com/hero-dev-2.png"
+    content="https://chelvynkleden.com/profile-bg-atas.jpg"
   />
 </svelte:head>
 
 {#if !isAdmin}
-  <header class="header">
+  <header
+    class="header"
+    class:hero-top={overHero && !scrolled && !isMobileMenuOpen}
+  >
     <div class="container nav-container">
       <a href="/" class="logo" style="text-decoration: none;"
         >CK<span>.</span></a
@@ -106,10 +122,13 @@
 
       <nav class="nav-links {isMobileMenuOpen ? 'show' : ''}">
         <ul>
-          <li>
-            <a href="/store" onclick={() => (isMobileMenuOpen = false)}>Store</a
-            >
-          </li>
+          {#if STORE_ENABLED}
+            <li>
+              <a href="/store" onclick={() => (isMobileMenuOpen = false)}
+                >Store</a
+              >
+            </li>
+          {/if}
           <li>
             <a href="/about" onclick={() => (isMobileMenuOpen = false)}
               >About</a
@@ -146,12 +165,13 @@
   </header>
 {/if}
 
-<main>
+<main class:under-header={overHero && !isAdmin}>
   {@render children()}
 </main>
 
 {#if !isAdmin}
   <footer class="footer">
+    <div class="footer-glass">
     <div class="container">
       <div class="footer-content">
         <div class="footer-logo">CK<span>.</span></div>
@@ -177,26 +197,67 @@
         </p>
       </div>
     </div>
+    </div>
+
   </footer>
 {/if}
 
 <style>
+  /* Header kaca: tembus pandang + blur & saturasi tinggi ala iOS */
   .header {
     position: sticky;
     top: 0;
-    background: rgba(255, 255, 255, 0.9);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    background: rgba(255, 255, 255, 0.62);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
     z-index: 1000;
-    z-index: 1000;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.4);
     transition:
       background-color 0.3s,
-      border-color 0.3s;
+      border-color 0.3s,
+      box-shadow 0.3s;
   }
 
   :global(.dark) .header {
-    background: rgba(2, 6, 23, 0.9);
+    background: rgba(2, 6, 23, 0.55);
+    border-bottom-color: rgba(255, 255, 255, 0.1);
+    box-shadow: none;
+  }
+
+  /* Hero full-bleed naik ke bawah header supaya foto tembus di balik kaca. */
+  main.under-header {
+    margin-top: calc(-4.5rem - 1px);
+  }
+
+  /* Di atas hero (belum di-scroll): kaca bening dengan teks terang. */
+  .header.hero-top {
+    background: rgba(255, 255, 255, 0.07);
+    border-bottom-color: rgba(255, 255, 255, 0.18);
+    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.06);
+  }
+
+  .header.hero-top .logo {
+    color: #fff;
+  }
+
+  .header.hero-top .mobile-toggle span {
+    background-color: #fff;
+  }
+
+  .header.hero-top .theme-toggle {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.3);
+  }
+
+  @media (min-width: 769px) {
+    .header.hero-top .nav-links a:not(.btn) {
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .header.hero-top .nav-links a:not(.btn):hover {
+      color: var(--primary);
+    }
   }
 
   .nav-container {
@@ -321,10 +382,19 @@
     }
   }
 
+  /* Foto jadi latar footer (hanya bagian bawahnya yang terlihat); tinggi
+     footer mengikuti konten, yang duduk di panel kaca ber-blur. */
   .footer {
-    padding: 4rem 0;
-    background: var(--bg-soft);
+    background: #0b0b0d url("/profile-bg-bawah.jpg") center bottom / cover
+      no-repeat;
     border-top: 1px solid var(--border);
+  }
+
+  .footer-glass {
+    padding: 3.5rem 0;
+    background: rgba(2, 6, 23, 0.4);
+    backdrop-filter: blur(12px) saturate(140%);
+    -webkit-backdrop-filter: blur(12px) saturate(140%);
   }
 
   .footer-content {
@@ -337,6 +407,7 @@
   .footer-logo {
     font-size: 1.25rem;
     font-weight: 800;
+    color: #fff;
   }
 
   .footer-logo span {
@@ -349,7 +420,7 @@
   }
 
   .footer-links a {
-    color: var(--text-muted);
+    color: rgba(255, 255, 255, 0.8);
     font-size: 0.875rem;
     font-weight: 500;
     text-decoration: none;
@@ -360,7 +431,7 @@
   }
 
   .copyright {
-    color: var(--text-muted);
+    color: rgba(255, 255, 255, 0.65);
     font-size: 0.8125rem;
     text-align: center;
   }
