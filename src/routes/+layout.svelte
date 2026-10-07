@@ -352,7 +352,7 @@
     .nav-links {
       position: fixed;
       top: 0;
-      right: -100%;
+      right: 0;
       width: 80%;
       max-width: 300px;
       height: 100vh;
@@ -361,11 +361,24 @@
       justify-content: center;
       padding: 2rem;
       box-shadow: -10px 0 30px rgba(0, 0, 0, 0.05);
-      transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      /* Tertutup: disembunyikan total (bukan digeser keluar layar lewat
+         right negatif) supaya tidak melebarkan halaman & bisa di-swipe. */
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(24px);
+      transition:
+        opacity 0.3s ease,
+        transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+        visibility 0s linear 0.4s;
     }
 
     .nav-links.show {
-      right: 0;
+      visibility: visible;
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(0);
+      transition-delay: 0s;
     }
 
     .nav-links ul {
