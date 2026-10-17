@@ -5,11 +5,11 @@
   import { theme } from "$lib/theme.svelte";
   import { STORE_ENABLED } from "$lib/features";
   import "../app.css";
+  import "$lib/styles/editorial.css";
 
   let { children, data } = $props();
 
   let isMobileMenuOpen = $state(false);
-  let scrolled = $state(false);
 
   // Halaman tanpa header/footer: admin & halaman review klien (standalone).
   const isAdmin = $derived(
@@ -20,19 +20,8 @@
     `https://chelvynkleden.com${page.url.pathname}`,
   );
 
-  // Halaman dengan hero foto full-bleed: header jadi kaca transparan di atas
-  // foto, lalu berubah jadi kaca biasa setelah halaman di-scroll.
-  const overHero = $derived(
-    page.url.pathname === "/" || page.url.pathname === "/about",
-  );
-
   onMount(() => {
     theme.init();
-
-    const onScroll = () => (scrolled = window.scrollY > 40);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
   });
 
   function toggleMenu() {
@@ -45,7 +34,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
   <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap"
     rel="stylesheet"
   />
   <!-- prettier-ignore -->
@@ -63,7 +52,7 @@
     name="robots"
     content={isAdmin ? "noindex, nofollow" : "index, follow"}
   />
-  <meta name="theme-color" content="#f97316" />
+  <meta name="theme-color" content="#0a0a0a" />
   <link rel="canonical" href={canonicalUrl} />
 
   <!-- Open Graph / Social Media -->
@@ -101,13 +90,10 @@
 </svelte:head>
 
 {#if !isAdmin}
-  <header
-    class="header"
-    class:hero-top={overHero && !scrolled && !isMobileMenuOpen}
-  >
+  <header class="header">
     <div class="container nav-container">
-      <a href="/" class="logo" style="text-decoration: none;"
-        >CK<span>.</span></a
+      <a href="/" class="logo"
+        ><span class="logo-mark" aria-hidden="true"></span>Chelvyn Kleden</a
       >
 
       <button
@@ -121,7 +107,8 @@
       </button>
 
       <nav class="nav-links {isMobileMenuOpen ? 'show' : ''}">
-        <ul>
+        <!-- Desktop: grup ini dikunci di tengah header -->
+        <ul class="nav-center">
           {#if STORE_ENABLED}
             <li>
               <a href="/store" onclick={() => (isMobileMenuOpen = false)}
@@ -140,9 +127,16 @@
             >
           </li>
           <li>
+            <a href="/certificates" onclick={() => (isMobileMenuOpen = false)}
+              >Certificates</a
+            >
+          </li>
+        </ul>
+        <ul class="nav-right">
+          <li>
             <a
               href="/contact"
-              class="btn btn-primary btn-sm"
+              class="nav-cta"
               onclick={() => (isMobileMenuOpen = false)}>Kontak</a
             >
           </li>
@@ -165,16 +159,17 @@
   </header>
 {/if}
 
-<main class:under-header={overHero && !isAdmin}>
+<main>
   {@render children()}
 </main>
 
 {#if !isAdmin}
   <footer class="footer">
-    <div class="footer-glass">
     <div class="container">
       <div class="footer-content">
-        <div class="footer-logo">CK<span>.</span></div>
+        <div class="footer-logo">
+          <span class="logo-mark" aria-hidden="true"></span>Chelvyn Kleden
+        </div>
         <div class="footer-links">
           <a
             href={data.settings?.github || "https://github.com"}
@@ -197,7 +192,6 @@
         </p>
       </div>
     </div>
-    </div>
 
   </footer>
 {/if}
@@ -207,12 +201,11 @@
   .header {
     position: sticky;
     top: 0;
-    background: rgba(255, 255, 255, 0.62);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    background: rgba(255, 255, 255, 0.86);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     z-index: 1000;
-    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
-    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.4);
+    border-bottom: 1px solid var(--text-main);
     transition:
       background-color 0.3s,
       border-color 0.3s,
@@ -220,62 +213,41 @@
   }
 
   :global(.dark) .header {
-    background: rgba(2, 6, 23, 0.55);
-    border-bottom-color: rgba(255, 255, 255, 0.1);
-    box-shadow: none;
-  }
-
-  /* Hero full-bleed naik ke bawah header supaya foto tembus di balik kaca. */
-  main.under-header {
-    margin-top: calc(-4.5rem - 1px);
-  }
-
-  /* Di atas hero (belum di-scroll): kaca bening dengan teks terang. */
-  .header.hero-top {
-    background: rgba(255, 255, 255, 0.07);
-    border-bottom-color: rgba(255, 255, 255, 0.18);
-    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.06);
-  }
-
-  .header.hero-top .logo {
-    color: #fff;
-  }
-
-  .header.hero-top .mobile-toggle span {
-    background-color: #fff;
-  }
-
-  .header.hero-top .theme-toggle {
-    color: #fff;
-    border-color: rgba(255, 255, 255, 0.3);
-  }
-
-  @media (min-width: 769px) {
-    .header.hero-top .nav-links a:not(.btn) {
-      color: rgba(255, 255, 255, 0.85);
-    }
-
-    .header.hero-top .nav-links a:not(.btn):hover {
-      color: var(--primary);
-    }
+    background: rgba(0, 0, 0, 0.82);
+    border-bottom-color: rgba(255, 255, 255, 0.25);
   }
 
   .nav-container {
+    position: relative;
     display: flex;
     justify-content: space-between;
     align-items: center;
     height: 4.5rem;
   }
 
-  .logo {
-    font-size: 1.5rem;
-    font-weight: 800;
+  /* Logo: kotak solid + nama monospace */
+  .logo,
+  .footer-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     color: var(--text-main);
+  }
+
+  .logo {
     z-index: 1100;
   }
 
-  .logo span {
-    color: var(--primary);
+  .logo-mark {
+    width: 14px;
+    height: 14px;
+    background: var(--text-main);
+    flex-shrink: 0;
   }
 
   .nav-links {
@@ -290,25 +262,50 @@
     list-style: none;
   }
 
+  .nav-links .nav-right {
+    gap: 1rem;
+  }
+
+  /* Desktop: menu utama tepat di tengah header (logo kiri, Kontak kanan) */
+  @media (min-width: 769px) {
+    .nav-center {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+  }
+
   .nav-links a {
-    font-size: 0.9375rem;
-    font-weight: 500;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     color: var(--text-muted);
     text-decoration: none;
     transition: color 0.2s;
   }
 
   .nav-links a:hover {
-    color: var(--primary);
+    color: var(--text-main);
   }
 
-  .nav-links a.btn {
-    color: white;
+  /* Tombol Kontak: outline kotak */
+  .nav-links a.nav-cta {
+    display: inline-block;
+    padding: 0.6rem 1.1rem;
+    border: 1px solid var(--text-main);
+    font-family: var(--font-serif);
+    letter-spacing: 0.16em;
+    color: var(--text-main);
+    transition:
+      background 0.2s,
+      color 0.2s;
   }
 
-  .btn-sm {
-    padding: 0.5rem 1.25rem;
-    font-size: 0.875rem;
+  .nav-links a.nav-cta:hover {
+    background: var(--primary);
+    color: var(--on-primary);
   }
 
   /* Mobile Toggle Button */
@@ -387,6 +384,11 @@
       width: 100%;
     }
 
+    .nav-links .nav-right {
+      margin-top: 2rem;
+      gap: 2rem;
+    }
+
     .nav-links a {
       font-size: 1.25rem;
       width: 100%;
@@ -395,36 +397,19 @@
     }
   }
 
-  /* Foto jadi latar footer (hanya bagian bawahnya yang terlihat); tinggi
-     footer mengikuti konten, yang duduk di panel kaca ber-blur. */
+  /* Footer polos: tanpa gambar, garis tipis + teks monospace */
   .footer {
-    background: #0b0b0d url("/profile-bg-bawah.jpg") center bottom / cover
-      no-repeat;
-    border-top: 1px solid var(--border);
-  }
-
-  .footer-glass {
-    padding: 3.5rem 0;
-    background: rgba(2, 6, 23, 0.4);
-    backdrop-filter: blur(12px) saturate(140%);
-    -webkit-backdrop-filter: blur(12px) saturate(140%);
+    background: var(--bg-white);
+    border-top: 1px solid var(--text-main);
+    padding: 2.5rem 0;
   }
 
   .footer-content {
     display: flex;
-    flex-direction: column;
+    flex-wrap: wrap;
+    justify-content: space-between;
     align-items: center;
     gap: 1.5rem;
-  }
-
-  .footer-logo {
-    font-size: 1.25rem;
-    font-weight: 800;
-    color: #fff;
-  }
-
-  .footer-logo span {
-    color: var(--primary);
   }
 
   .footer-links {
@@ -432,39 +417,43 @@
     gap: 2rem;
   }
 
-  .footer-links a {
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 0.875rem;
-    font-weight: 500;
-    text-decoration: none;
+  .footer-links a,
+  .copyright {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-muted);
   }
 
   .footer-links a:hover {
-    color: var(--primary);
+    color: var(--text-main);
   }
 
   .copyright {
-    color: rgba(255, 255, 255, 0.65);
-    font-size: 0.8125rem;
-    text-align: center;
+    width: 100%;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    text-transform: none;
+    letter-spacing: 0.02em;
   }
 
   .theme-toggle {
     background: transparent;
     border: 1px solid var(--border);
-    color: var(--text-muted);
+    color: var(--text-main);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 0.5rem;
-    border-radius: 0.5rem;
+    border-radius: 0;
     transition: all 0.2s;
   }
 
   .theme-toggle:hover {
-    color: var(--primary);
+    color: var(--on-primary);
     border-color: var(--primary);
-    background: var(--bg-soft);
+    background: var(--primary);
   }
 </style>

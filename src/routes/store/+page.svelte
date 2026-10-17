@@ -260,7 +260,7 @@
     border-radius: 1rem;
     padding: 0.75rem;
     background: var(--primary);
-    color: white;
+    color: var(--on-primary);
     text-align: center;
   }
 
