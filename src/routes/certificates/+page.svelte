@@ -510,28 +510,66 @@
       gap: 0;
     }
 
+    /* Tahun jadi bar yang menempel tepat di bawah header selama
+       sertifikat tahun itu di-scroll */
     .year {
-      position: static;
-      padding-bottom: 0.5rem;
+      top: calc(4.5rem + 1px);
+      z-index: 5;
+      align-items: center;
+      padding: 0.75rem 0;
+      background: var(--bg-white);
+      border-bottom: 1px solid var(--border);
     }
 
+    .year .mask > span {
+      font-size: 2.75rem;
+    }
+
+    .year-count {
+      padding-top: 0;
+    }
+
+    /* Baris atas: nomor · tanggal · panah; judul selebar layar di bawahnya */
     .row {
-      grid-template-columns: 2.5rem minmax(0, 1fr) auto;
-      gap: 0.35rem 1rem;
-      align-items: start;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 0.75rem;
+      align-items: center;
+      padding: 1.4rem 0 1.6rem;
+    }
+
+    .row-num {
+      grid-column: 1;
+      grid-row: 1;
     }
 
     .row-date {
       grid-column: 2;
-      grid-row: 2;
+      grid-row: 1;
       text-align: left;
     }
 
     .row-arrow {
       grid-column: 3;
-      grid-row: 1 / span 2;
+      grid-row: 1;
       width: 40px;
       height: 40px;
+    }
+
+    .row-main {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+  }
+
+  /* Sentuh: feedback saat baris ditekan */
+  @media (hover: none) {
+    .row:active {
+      background: color-mix(in srgb, var(--text-main) 4%, transparent);
+    }
+
+    .row:active .row-arrow {
+      background: var(--primary);
+      color: var(--on-primary);
     }
   }
 

@@ -702,6 +702,7 @@
     transition: color 0.35s ease;
   }
 
+  /* Mouse: saat hover. Sentuh: saat ditekan (:active) */
   @media (hover: hover) {
     .skill:hover {
       background: var(--primary);
@@ -714,6 +715,22 @@
     .skill:hover p,
     .skill:hover .skill-list,
     .skill:hover .label {
+      color: color-mix(in srgb, var(--on-primary) 65%, transparent);
+    }
+  }
+
+  @media (hover: none) {
+    .skill:active {
+      background: var(--primary);
+    }
+
+    .skill:active h3 {
+      color: var(--on-primary);
+    }
+
+    .skill:active p,
+    .skill:active .skill-list,
+    .skill:active .label {
       color: color-mix(in srgb, var(--on-primary) 65%, transparent);
     }
   }
@@ -763,7 +780,8 @@
 
     .exp {
       grid-template-columns: 1fr;
-      gap: 2rem;
+      gap: 1.5rem;
+      padding: 2rem 0 3rem;
     }
 
     .exp-side {

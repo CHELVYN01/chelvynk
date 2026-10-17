@@ -116,7 +116,10 @@
       <div class="intro" style="--d: 1.2s">
         <p class="p-lead">
           Kumpulan lengkap solusi digital yang pernah saya bangun — ERP, web,
-          hingga mobile. Arahkan kursor untuk pratinjau, klik untuk detail.
+          hingga mobile.
+          <span class="hint-mouse"
+            >Arahkan kursor untuk pratinjau, klik untuk detail.</span
+          ><span class="hint-touch">Ketuk salah satu untuk detail.</span>
         </p>
         <a href="/contact" class="btn-text">
           Diskusikan project baru <ArrowRight size={16} />
@@ -136,7 +139,14 @@
           class="mono filter"
           class:active={activeCat === cat}
           aria-pressed={activeCat === cat}
-          onclick={() => (activeCat = cat as string)}
+          onclick={(e) => {
+            activeCat = cat as string;
+            e.currentTarget.scrollIntoView({
+              behavior: "smooth",
+              block: "nearest",
+              inline: "center",
+            });
+          }}
         >
           {cat} <span class="filter-count">({pad(count as number)})</span>
         </button>
@@ -578,7 +588,28 @@
   }
 
   /* Tanpa kursor (HP/tablet): tanpa pratinjau, deskripsi tampil di baris */
+  .hint-touch {
+    display: none;
+  }
+
   @media (hover: none) {
+    .hint-mouse {
+      display: none;
+    }
+
+    .hint-touch {
+      display: inline;
+    }
+
+    .row:active {
+      background: color-mix(in srgb, var(--text-main) 4%, transparent);
+    }
+
+    .row:active .row-arrow {
+      background: var(--primary);
+      color: var(--on-primary);
+    }
+
     .row-desc {
       display: -webkit-box;
       margin-top: 0.6rem;
@@ -600,37 +631,53 @@
 
   /* ===== Responsif ===== */
   @media (max-width: 960px) {
+    /* Baris atas: nomor · kategori · tombol; judul selebar layar di bawahnya */
     .row {
-      grid-template-columns: 2.75rem minmax(0, 1fr) auto;
-      gap: 0.35rem 1rem;
-      align-items: start;
-      padding: 1.6rem 0;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 0.85rem 0.75rem;
+      align-items: center;
+      padding: 1.5rem 0 1.75rem;
     }
 
     .row-num {
-      padding-top: 0.15rem;
-    }
-
-    .row-main {
-      grid-column: 2;
-      grid-row: 2;
+      grid-column: 1;
+      grid-row: 1;
     }
 
     .row-cats {
       grid-column: 2;
       grid-row: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .row-actions {
       grid-column: 3;
-      grid-row: 1 / span 2;
-      flex-direction: column-reverse;
-      justify-content: flex-end;
+      grid-row: 1;
     }
 
-    .row-arrow {
-      width: 44px;
-      height: 44px;
+    .row-main {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+
+    .row-arrow,
+    .row-actions .icon-btn {
+      width: 40px;
+      height: 40px;
+    }
+
+    /* Bar filter bisa digeser: pudar di tepi kanan sebagai petunjuk */
+    .filters-inner {
+      scroll-snap-type: x proximity;
+      -webkit-mask-image: linear-gradient(90deg, #000 82%, transparent);
+      mask-image: linear-gradient(90deg, #000 82%, transparent);
+      padding-right: 3rem;
+    }
+
+    .filter {
+      scroll-snap-align: start;
     }
   }
 

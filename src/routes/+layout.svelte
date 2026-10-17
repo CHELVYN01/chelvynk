@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/state";
   import { onMount } from "svelte";
+  import { afterNavigate } from "$app/navigation";
   import { Sun, Moon } from "lucide-svelte";
   import { theme } from "$lib/theme.svelte";
   import { STORE_ENABLED } from "$lib/features";
@@ -20,9 +21,40 @@
     `https://chelvynkleden.com${page.url.pathname}`,
   );
 
+  const navItems = [
+    ...(STORE_ENABLED ? [{ href: "/store", label: "Store" }] : []),
+    { href: "/about", label: "About" },
+    { href: "/projects", label: "Projects" },
+    { href: "/certificates", label: "Certificates" },
+  ];
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const isCurrent = (href: string) => page.url.pathname.startsWith(href);
+
   onMount(() => {
     theme.init();
+
+    // iOS Safari baru menerapkan :active saat disentuh kalau ada touch listener
+    const noop = () => {};
+    document.addEventListener("touchstart", noop, { passive: true });
+
+    // Layar dilebarkan ke desktop saat menu terbuka -> tutup menunya
+    const mq = window.matchMedia("(min-width: 769px)");
+    const onChange = (e: MediaQueryListEvent) => {
+      if (e.matches) isMobileMenuOpen = false;
+    };
+    mq.addEventListener("change", onChange);
+    return () => {
+      mq.removeEventListener("change", onChange);
+      document.removeEventListener("touchstart", noop);
+    };
   });
+
+  // Menu layar penuh: kunci scroll halaman di belakangnya
+  $effect(() => {
+    document.body.style.overflow = isMobileMenuOpen ? "hidden" : "";
+  });
+
+  afterNavigate(() => (isMobileMenuOpen = false));
 
   function toggleMenu() {
     isMobileMenuOpen = !isMobileMenuOpen;
@@ -52,7 +84,7 @@
     name="robots"
     content={isAdmin ? "noindex, nofollow" : "index, follow"}
   />
-  <meta name="theme-color" content="#0a0a0a" />
+  <meta name="theme-color" content={theme.isDark ? "#000000" : "#ffffff"} />
   <link rel="canonical" href={canonicalUrl} />
 
   <!-- Open Graph / Social Media -->
@@ -89,58 +121,61 @@
   />
 </svelte:head>
 
+<svelte:window
+  onkeydown={(e) => e.key === "Escape" && (isMobileMenuOpen = false)}
+/>
+
 {#if !isAdmin}
-  <header class="header">
+  <header class="header" class:menu-open={isMobileMenuOpen}>
     <div class="container nav-container">
       <a href="/" class="logo"
         ><span class="logo-mark" aria-hidden="true"></span>Chelvyn Kleden</a
       >
 
+      <!-- Mobile: tombol teks "Menu" / "Tutup" yang bergeser -->
       <button
         class="mobile-toggle"
         onclick={toggleMenu}
-        aria-label="Toggle Menu"
+        aria-expanded={isMobileMenuOpen}
+        aria-controls="site-nav"
+        aria-label={isMobileMenuOpen ? "Tutup menu" : "Buka menu"}
       >
-        <span class={isMobileMenuOpen ? "open" : ""}></span>
-        <span class={isMobileMenuOpen ? "open" : ""}></span>
-        <span class={isMobileMenuOpen ? "open" : ""}></span>
+        <span class="toggle-text" aria-hidden="true">
+          <span class:out={isMobileMenuOpen}>Menu</span>
+          <span class:out={!isMobileMenuOpen}>Tutup</span>
+        </span>
+        <span class="toggle-mark" aria-hidden="true"></span>
       </button>
 
-      <nav class="nav-links {isMobileMenuOpen ? 'show' : ''}">
+      <nav
+        id="site-nav"
+        class="nav-links"
+        class:show={isMobileMenuOpen}
+        aria-label="Navigasi utama"
+      >
         <!-- Desktop: grup ini dikunci di tengah header -->
         <ul class="nav-center">
-          {#if STORE_ENABLED}
-            <li>
-              <a href="/store" onclick={() => (isMobileMenuOpen = false)}
-                >Store</a
+          {#each navItems as item, i}
+            <li style="--i: {i}">
+              <a
+                href={item.href}
+                aria-current={isCurrent(item.href) ? "page" : undefined}
+                onclick={() => (isMobileMenuOpen = false)}
+                ><span class="nav-num" aria-hidden="true">{pad(i + 1)}</span
+                >{item.label}</a
               >
             </li>
-          {/if}
-          <li>
-            <a href="/about" onclick={() => (isMobileMenuOpen = false)}
-              >About</a
-            >
-          </li>
-          <li>
-            <a href="/projects" onclick={() => (isMobileMenuOpen = false)}
-              >Projects</a
-            >
-          </li>
-          <li>
-            <a href="/certificates" onclick={() => (isMobileMenuOpen = false)}
-              >Certificates</a
-            >
-          </li>
+          {/each}
         </ul>
         <ul class="nav-right">
-          <li>
+          <li style="--i: {navItems.length}">
             <a
               href="/contact"
               class="nav-cta"
               onclick={() => (isMobileMenuOpen = false)}>Kontak</a
             >
           </li>
-          <li>
+          <li style="--i: {navItems.length + 1}">
             <button
               class="theme-toggle"
               onclick={() => theme.toggle()}
@@ -151,9 +186,34 @@
               {:else}
                 <Moon size={20} />
               {/if}
+              <span class="toggle-label"
+                >{theme.isDark ? "Mode Terang" : "Mode Gelap"}</span
+              >
             </button>
           </li>
         </ul>
+
+        <!-- Mobile: info kecil di dasar menu -->
+        <div class="mono nav-meta">
+          <div class="nav-social">
+            <a
+              href={data.settings?.github || "https://github.com"}
+              target="_blank"
+              rel="noopener noreferrer">GitHub</a
+            >
+            <a
+              href={data.settings?.linkedin || "https://linkedin.com"}
+              target="_blank"
+              rel="noopener noreferrer">LinkedIn</a
+            >
+            <a
+              href={data.settings?.twitter || "https://twitter.com"}
+              target="_blank"
+              rel="noopener noreferrer">Twitter</a
+            >
+          </div>
+          <span>© 2026 — Chelvyn Kleden</span>
+        </div>
       </nav>
     </div>
   </header>
@@ -308,92 +368,232 @@
     color: var(--on-primary);
   }
 
-  /* Mobile Toggle Button */
+  /* Penanda halaman aktif (desktop) */
+  .nav-links .nav-center a[aria-current="page"] {
+    color: var(--text-main);
+  }
+
+  /* Elemen khusus menu mobile: disembunyikan di desktop */
+  .nav-num,
+  .nav-meta,
+  .toggle-label {
+    display: none;
+  }
+
+  /* Tombol mobile: teks "Menu"/"Tutup" bergeser + kotak kecil berputar */
   .mobile-toggle {
     display: none;
-    flex-direction: column;
-    justify-content: space-between;
-    width: 24px;
-    height: 18px;
+    align-items: center;
+    gap: 0.6rem;
+    height: 2.5rem;
+    padding: 0 0 0 0.75rem;
     background: none;
     border: none;
+    color: var(--text-main);
     cursor: pointer;
-    padding: 0;
     z-index: 1100;
+    -webkit-tap-highlight-color: transparent;
   }
 
-  .mobile-toggle span {
-    width: 100%;
-    height: 2px;
-    background-color: var(--text-main);
-    transition: all 0.3s;
-    border-radius: 2px;
+  .toggle-text {
+    display: grid;
+    overflow: hidden;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    line-height: 1.2;
   }
 
-  .mobile-toggle span.open:nth-child(1) {
-    transform: translateY(8px) rotate(45deg);
-  }
-  .mobile-toggle span.open:nth-child(2) {
-    opacity: 0;
-  }
-  .mobile-toggle span.open:nth-child(3) {
-    transform: translateY(-8px) rotate(-45deg);
+  .toggle-text span {
+    grid-area: 1 / 1;
+    transition: transform 0.5s cubic-bezier(0.65, 0, 0.35, 1);
   }
 
-  /* Tablet/Mobile styles */
+  .toggle-text span:first-child.out {
+    transform: translateY(-120%);
+  }
+
+  .toggle-text span:last-child.out {
+    transform: translateY(120%);
+  }
+
+  .toggle-mark {
+    width: 9px;
+    height: 9px;
+    background: var(--text-main);
+    transition: transform 0.5s cubic-bezier(0.65, 0, 0.35, 1);
+  }
+
+  .menu-open .toggle-mark {
+    transform: rotate(45deg) scale(0.85);
+  }
+
+  /* Tablet/Mobile: menu layar penuh bergaya editorial */
   @media (max-width: 768px) {
     .mobile-toggle {
-      display: flex;
+      display: inline-flex;
+    }
+
+    /* Saat menu terbuka header jadi solid, menyatu dengan panel menu */
+    .header.menu-open,
+    :global(.dark) .header.menu-open {
+      background: var(--bg-white);
     }
 
     .nav-links {
       position: fixed;
       top: 0;
-      right: 0;
-      width: 80%;
-      max-width: 300px;
+      left: 0;
+      z-index: 1050;
+      width: 100vw;
       height: 100vh;
-      background: var(--bg-card);
+      height: 100dvh;
       flex-direction: column;
-      justify-content: center;
-      padding: 2rem;
-      box-shadow: -10px 0 30px rgba(0, 0, 0, 0.05);
-      /* Tertutup: disembunyikan total (bukan digeser keluar layar lewat
-         right negatif) supaya tidak melebarkan halaman & bisa di-swipe. */
+      align-items: stretch;
+      justify-content: flex-start;
+      padding: calc(4.5rem + 1.75rem) 1.25rem 1.5rem;
+      overflow-y: auto;
+      background-color: var(--bg-white);
+      background-image:
+        linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+      background-size: 64px 64px;
+      /* Tertutup: disembunyikan total (bukan digeser keluar layar) supaya
+         tidak melebarkan halaman. Buka = tirai turun dari atas. */
       visibility: hidden;
-      opacity: 0;
       pointer-events: none;
-      transform: translateX(24px);
+      clip-path: inset(0 0 100% 0);
       transition:
-        opacity 0.3s ease,
-        transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-        visibility 0s linear 0.4s;
+        clip-path 0.7s cubic-bezier(0.76, 0, 0.24, 1),
+        visibility 0s linear 0.7s;
     }
 
     .nav-links.show {
       visibility: visible;
-      opacity: 1;
       pointer-events: auto;
-      transform: translateX(0);
+      clip-path: inset(0 0 0 0);
       transition-delay: 0s;
     }
 
     .nav-links ul {
       flex-direction: column;
-      gap: 2rem;
+      align-items: stretch;
+      gap: 0;
       width: 100%;
+    }
+
+    /* Item menu naik berurutan setelah tirai terbuka (--i = urutan) */
+    .nav-links li {
+      opacity: 0;
+      transform: translateY(28px);
+      transition:
+        opacity 0.4s ease,
+        transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .nav-links.show li {
+      opacity: 1;
+      transform: none;
+      transition-delay: calc(0.3s + var(--i) * 0.07s);
+    }
+
+    .nav-center li {
+      border-bottom: 1px solid var(--border);
+    }
+
+    .nav-center li:first-child {
+      border-top: 1px solid var(--text-main);
+    }
+
+    .nav-links .nav-center a {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      padding: 1.1rem 0;
+      font-family: var(--font-serif);
+      font-size: clamp(2.25rem, 11vw, 3.25rem);
+      line-height: 1;
+      letter-spacing: -0.03em;
+      color: var(--text-main);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .nav-links .nav-center a:active {
+      padding-left: 0.5rem;
+    }
+
+    .nav-links .nav-center a[aria-current="page"] {
+      font-style: italic;
+    }
+
+    .nav-num {
+      display: inline;
+      min-width: 1.75rem;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
     }
 
     .nav-links .nav-right {
+      flex-direction: row;
+      gap: 0.75rem;
       margin-top: 2rem;
-      gap: 2rem;
     }
 
-    .nav-links a {
-      font-size: 1.25rem;
-      width: 100%;
+    .nav-right li {
+      flex: 1;
+    }
+
+    .nav-links a.nav-cta {
       display: block;
+      padding: 1rem;
       text-align: center;
+      background: var(--primary);
+      color: var(--on-primary);
+    }
+
+    .theme-toggle {
+      width: 100%;
+      height: 100%;
+      gap: 0.6rem;
+      padding: 1rem;
+      border-color: var(--text-main);
+    }
+
+    .toggle-label {
+      display: inline;
+      font-family: var(--font-mono);
+      font-size: 0.72rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .nav-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      margin-top: auto;
+      padding-top: 2.5rem;
+      color: var(--text-muted);
+    }
+
+    .nav-social {
+      display: flex;
+      gap: 1.5rem;
+    }
+
+    .nav-links .nav-social a {
+      font-size: 0.72rem;
+      color: var(--text-main);
+    }
+  }
+
+  @media (max-width: 768px) and (prefers-reduced-motion: reduce) {
+    .nav-links,
+    .nav-links li {
+      transition: none;
     }
   }
 

@@ -49,6 +49,23 @@
     if (n) activeTesti = (i + n) % n;
   }
 
+  // Swipe kiri/kanan di HP untuk ganti testimoni (abaikan gerak vertikal = scroll)
+  let swipeX = 0;
+  let swipeY = 0;
+  function onTouchStart(e: TouchEvent) {
+    testiPaused = true;
+    swipeX = e.touches[0].clientX;
+    swipeY = e.touches[0].clientY;
+  }
+  function onTouchEnd(e: TouchEvent) {
+    testiPaused = false;
+    const dx = e.changedTouches[0].clientX - swipeX;
+    const dy = e.changedTouches[0].clientY - swipeY;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      goTesti(activeTesti + (dx < 0 ? 1 : -1));
+    }
+  }
+
   // Ganti kutipan otomatis; berhenti saat di-hover/fokus.
   $effect(() => {
     if (reviews.length < 2 || testiPaused) return;
@@ -514,6 +531,8 @@
         onmouseleave={() => (testiPaused = false)}
         onfocusin={() => (testiPaused = true)}
         onfocusout={() => (testiPaused = false)}
+        ontouchstart={onTouchStart}
+        ontouchend={onTouchEnd}
         use:reveal
       >
         {#key activeTesti}
@@ -546,7 +565,10 @@
         {#if reviews.length > 1}
           <div class="testi-controls">
             <span class="mono" aria-live="polite"
-              >{pad(activeTesti + 1)} / {pad(reviews.length)}</span
+              >{pad(activeTesti + 1)} / {pad(reviews.length)}<span
+                class="swipe-hint"
+                aria-hidden="true"> · ← Geser →</span
+              ></span
             >
             <div class="testi-nav">
               <button
@@ -1161,37 +1183,73 @@
       grid-template-columns: repeat(2, 1fr);
     }
 
+    /* Baris atas: nomor · kategori · tombol; judul selebar layar di bawahnya */
     .work-row {
-      grid-template-columns: 3rem minmax(0, 1fr) auto;
-      gap: 0.25rem 1rem;
-      padding: 1.5rem 0;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 0.85rem 0.75rem;
+      align-items: center;
+      padding: 1.5rem 0 1.75rem;
     }
 
     .work-num {
-      padding-top: 0.2rem;
-    }
-
-    .work-main {
-      grid-column: 2;
-      grid-row: 2;
+      grid-column: 1;
+      grid-row: 1;
+      padding-top: 0;
     }
 
     .work-cats {
       grid-column: 2;
       grid-row: 1;
-      padding-top: 0.2rem;
+      padding-top: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
 
     .work-actions {
       grid-column: 3;
-      grid-row: 1 / span 2;
-      flex-direction: column-reverse;
-      justify-content: flex-end;
+      grid-row: 1;
+    }
+
+    .work-main {
+      grid-column: 1 / -1;
+      grid-row: 2;
+    }
+
+    .work-desc,
+    .work-tech {
+      padding-top: 0.6rem;
     }
 
     .work-arrow {
-      width: 42px;
-      height: 42px;
+      width: 40px;
+      height: 40px;
+    }
+
+    .work-actions .icon-btn {
+      width: 40px;
+      height: 40px;
+    }
+  }
+
+  /* Petunjuk geser testimoni: hanya di perangkat sentuh */
+  .swipe-hint {
+    display: none;
+  }
+
+  /* Sentuh: baris berkedip halus saat ditekan (pengganti hover) */
+  @media (hover: none) {
+    .swipe-hint {
+      display: inline;
+    }
+
+    .work-row:active {
+      background: color-mix(in srgb, var(--text-main) 4%, transparent);
+    }
+
+    .work-row:active .work-arrow {
+      background: var(--primary);
+      color: var(--on-primary);
     }
   }
 
@@ -1255,6 +1313,21 @@
       font-size: 2rem;
     }
 
+    .testi-stats .caption {
+      font-size: 0.62rem;
+    }
+
+    .sub-block {
+      margin-top: 3rem;
+    }
+
+    .split {
+      margin-bottom: 2.5rem;
+    }
+
+    .testi-controls {
+      margin-top: 2rem;
+    }
   }
 
   @media (max-width: 520px) {
