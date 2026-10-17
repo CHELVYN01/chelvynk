@@ -31,6 +31,8 @@
     TrendingDown,
     Users,
     Activity,
+    Award,
+    ExternalLink,
   } from "lucide-svelte";
   import { theme } from "$lib/theme.svelte";
   import { navigating } from "$app/state";
@@ -50,6 +52,7 @@
       projects: any[];
       settings: any;
       experiences: any[];
+      certificates: any[];
       apps: any[];
       reviewTokens: any[];
       reviews: any[];
@@ -85,6 +88,16 @@
   );
   let isAddModalOpen = $state(false);
   let isAddExpModalOpen = $state(false);
+  // Form sertifikat: null = tertutup, {} = tambah baru, objek ber-id = edit
+  let certForm = $state<any | null>(null);
+
+  /** 'YYYY-MM' -> 'Mar 2025' */
+  function formatMonth(ym: string | null) {
+    if (!ym) return "";
+    const [y, m] = ym.split("-");
+    const months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+    return `${months[Number(m) - 1] ?? ""} ${y}`;
+  }
   let isAddAppModalOpen = $state(false);
   let iconDragging = $state(false);
   let appDragging = $state(false);
@@ -403,6 +416,14 @@ Sekali lagi makasih banyak! 🚀`;
         </button>
         <button
           class="nav-item"
+          class:active={activeTab === "certificates"}
+          onclick={() => (activeTab = "certificates")}
+        >
+          <Award size={20} />
+          <span>Sertifikat</span>
+        </button>
+        <button
+          class="nav-item"
           class:active={activeTab === "store"}
           onclick={() => (activeTab = "store")}
         >
@@ -480,6 +501,8 @@ Sekali lagi makasih banyak! 🚀`;
               Kelola Project
             {:else if activeTab === "experiences"}
               Kelola Pengalaman
+            {:else if activeTab === "certificates"}
+              Kelola Sertifikat
             {:else if activeTab === "store"}
               Kelola Store Apps
             {:else if activeTab === "analytics"}
@@ -499,6 +522,8 @@ Sekali lagi makasih banyak! 🚀`;
               Daftar semua hasil karya bapak.
             {:else if activeTab === "experiences"}
               Daftar riwayat karir bapak.
+            {:else if activeTab === "certificates"}
+              Sertifikat yang tampil di halaman /certificates.
             {:else if activeTab === "store"}
               Kelola aplikasi Store yang dibagikan.
             {:else if activeTab === "analytics"}
@@ -530,6 +555,15 @@ Sekali lagi makasih banyak! 🚀`;
           >
             <PlusCircle size={18} />
             Tambah Pengalaman
+          </button>
+        {:else if activeTab === "certificates"}
+          <button
+            class="btn btn-primary"
+            onclick={() => (certForm = {})}
+            style="gap: 0.5rem;"
+          >
+            <PlusCircle size={18} />
+            Tambah Sertifikat
           </button>
         {:else if activeTab === "store"}
           <button
@@ -850,6 +884,75 @@ Sekali lagi makasih banyak! 🚀`;
               {#if data.experiences.length === 0}
                 <p class="empty-state">
                   Belum ada pengalaman yang ditambahkan.
+                </p>
+              {/if}
+            </div>
+          </div>
+        {:else if activeTab === "certificates"}
+          <!-- CERTIFICATES LIST -->
+          <div class="card projects-container fade-in">
+            <div class="project-list">
+              {#each data.certificates as cert (cert.id)}
+                <div class="project-item">
+                  <div class="project-main-info">
+                    <div class="project-tags">
+                      <span class="tag">{cert.issuer}</span>
+                      {#if cert.issued_at}
+                        <span class="tag">{formatMonth(cert.issued_at)}</span>
+                      {/if}
+                    </div>
+                    <h3>{cert.title}</h3>
+                    {#if cert.credential_id}
+                      <p class="project-desc">ID: {cert.credential_id}</p>
+                    {/if}
+                  </div>
+
+                  <div class="project-item-actions">
+                    {#if cert.credential_url}
+                      <a
+                        href={cert.credential_url}
+                        class="action-btn"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title="Buka link verifikasi"
+                      >
+                        <ExternalLink size={18} />
+                      </a>
+                    {/if}
+                    <button
+                      type="button"
+                      class="action-btn"
+                      title="Edit Sertifikat"
+                      onclick={() => (certForm = { ...cert })}
+                    >
+                      <Pencil size={18} />
+                    </button>
+                    <form
+                      method="POST"
+                      action="?/deleteCertificate"
+                      use:enhance={trackedEnhance({
+                        success: "Sertifikat berhasil dihapus",
+                      })}
+                    >
+                      <input type="hidden" name="id" value={cert.id} />
+                      <button
+                        type="submit"
+                        class="action-btn btn-delete-icon"
+                        title="Hapus Sertifikat"
+                        onclick={(e) =>
+                          !confirm("Hapus sertifikat ini?") &&
+                          e.preventDefault()}
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              {/each}
+
+              {#if data.certificates.length === 0}
+                <p class="empty-state">
+                  Belum ada sertifikat yang ditambahkan.
                 </p>
               {/if}
             </div>
@@ -2077,6 +2180,135 @@ Sekali lagi makasih banyak! 🚀`;
       </div>
     </div>
   {/if}
+
+  <!-- Modal Tambah / Edit Sertifikat -->
+  {#if certForm}
+    <div
+      class="modal-overlay"
+      role="button"
+      tabindex="-1"
+      transition:fade={{ duration: 200 }}
+      onclick={(e) => {
+        if (e.target === e.currentTarget) certForm = null;
+      }}
+      onkeydown={(e) => {
+        if (e.key === "Escape") certForm = null;
+      }}
+    >
+      <div
+        class="modal-content card"
+        transition:fly={{ y: 20, duration: 300 }}
+        style="max-width: 600px;"
+      >
+        <div class="modal-header">
+          <h2>{certForm.id ? "Edit Sertifikat" : "Tambah Sertifikat"}</h2>
+          <button class="close-btn" onclick={() => (certForm = null)}>
+            <X size={20} />
+          </button>
+        </div>
+        <form
+          method="POST"
+          action={certForm.id ? "?/updateCertificate" : "?/addCertificate"}
+          use:enhance={() => {
+            return async ({ result, update }) => {
+              if (result.type === "success") certForm = null;
+              await update();
+            };
+          }}
+          class="admin-form"
+        >
+          {#if certForm.id}
+            <input type="hidden" name="id" value={certForm.id} />
+          {/if}
+
+          <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label for="cert_title">Nama Sertifikat</label>
+            <input
+              type="text"
+              id="cert_title"
+              name="title"
+              value={certForm.title ?? ""}
+              placeholder="Contoh: Odoo 17 Functional Certification"
+              required
+            />
+          </div>
+
+          <div
+            style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;"
+          >
+            <div class="form-group">
+              <label for="cert_issuer">Penerbit</label>
+              <input
+                type="text"
+                id="cert_issuer"
+                name="issuer"
+                value={certForm.issuer ?? ""}
+                placeholder="Contoh: Odoo S.A. / Dicoding"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="cert_issued">Bulan Terbit</label>
+              <input
+                type="month"
+                id="cert_issued"
+                name="issued_at"
+                value={certForm.issued_at ?? ""}
+              />
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label for="cert_cid">ID Kredensial (opsional)</label>
+            <input
+              type="text"
+              id="cert_cid"
+              name="credential_id"
+              value={certForm.credential_id ?? ""}
+              placeholder="Contoh: ABC-123-XYZ"
+            />
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label for="cert_url">Link Verifikasi (opsional)</label>
+            <input
+              type="text"
+              id="cert_url"
+              name="credential_url"
+              value={certForm.credential_url ?? ""}
+              placeholder="https://www.credly.com/badges/..."
+            />
+          </div>
+
+          <div class="form-group" style="margin-bottom: 2rem;">
+            <label for="cert_img">Link Gambar Sertifikat (opsional)</label>
+            <input
+              type="text"
+              id="cert_img"
+              name="image_url"
+              value={certForm.image_url ?? ""}
+              placeholder="https://.../sertifikat.jpg"
+            />
+            <small style="color: var(--text-muted); font-size: 0.8rem;">
+              Link langsung ke file gambar (.jpg / .png / .webp). Tampil sebagai
+              pratinjau saat kursor diarahkan ke sertifikat.
+            </small>
+          </div>
+
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-outline"
+              onclick={() => (certForm = null)}>Batal</button
+            >
+            <button type="submit" class="btn btn-primary"
+              >{certForm.id ? "Simpan Perubahan" : "Simpan Sertifikat"}</button
+            >
+          </div>
+        </form>
+      </div>
+    </div>
+  {/if}
 {/if}
 
 <!-- Modal Edit Project -->
@@ -2726,7 +2958,7 @@ Sekali lagi makasih banyak! 🚀`;
 
   .nav-item.active {
     background: var(--primary);
-    color: white;
+    color: var(--on-primary);
   }
 
   .sidebar-footer {
@@ -3042,7 +3274,7 @@ Sekali lagi makasih banyak! 🚀`;
   }
   .project-links-preview a:hover {
     background: var(--primary);
-    color: white;
+    color: var(--on-primary);
     transform: translateY(-2px);
   }
 
@@ -3516,7 +3748,7 @@ Sekali lagi makasih banyak! 🚀`;
     padding: 0 0.35rem;
     border-radius: 999px;
     background: var(--primary);
-    color: #fff;
+    color: var(--on-primary);
     font-size: 0.68rem;
     font-weight: 700;
     line-height: 1;
@@ -3658,7 +3890,7 @@ Sekali lagi makasih banyak! 🚀`;
     border: 1px solid var(--primary);
     border-radius: 0.5rem;
     background: var(--primary);
-    color: #fff;
+    color: var(--on-primary);
     font-size: 0.82rem;
     font-weight: 600;
     cursor: pointer;
@@ -3685,7 +3917,7 @@ Sekali lagi makasih banyak! 🚀`;
     padding: 0 0.45rem;
     border-radius: 999px;
     background: var(--primary);
-    color: #fff;
+    color: var(--on-primary);
     font-size: 0.75rem;
     font-weight: 700;
   }

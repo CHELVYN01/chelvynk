@@ -1,18 +1,22 @@
 :root {
-    --primary: #f97316;
-    /* Bright Orange */
-    --primary-hover: #ea580c;
+    /* Monokrom: hitam di mode terang, putih di mode gelap */
+    --primary: #0a0a0a;
+    --primary-hover: #262626;
+    --on-primary: #fafafa;
     --bg-white: #ffffff;
-    --bg-soft: #fcfcfd;
+    --bg-soft: #ffffff;
     --bg-card: #ffffff;
-    --text-main: #1e293b;
-    --text-muted: #64748b;
-    --accent: #fbbf24;
-    --border: #f1f5f9;
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    --text-main: #0a0a0a;
+    --text-muted: #6b6b6b;
+    --accent: #0a0a0a;
+    --border: #e5e5e5;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.06), 0 2px 4px -2px rgb(0 0 0 / 0.06);
+    --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.08), 0 8px 10px -6px rgb(0 0 0 / 0.06);
     --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-serif: 'Newsreader', Georgia, 'Times New Roman', serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+    --grid-line: rgb(0 0 0 / 0.045);
 }
 
 html {
@@ -41,7 +45,7 @@ h2,
 h3 {
     font-weight: 800;
     letter-spacing: -0.025em;
-    color: #0f172a;
+    color: var(--text-main);
     line-height: 1.2;
 }
 
@@ -108,24 +112,24 @@ section {
 
 .btn-primary {
     background: var(--primary);
-    color: white;
+    color: var(--on-primary);
 }
 
 .btn-primary:hover {
     background: var(--primary-hover);
     transform: translateY(-1px);
-    box-shadow: 0 10px 15px -3px rgba(249, 115, 22, 0.2);
+    box-shadow: 0 10px 20px -8px rgb(0 0 0 / 0.25);
 }
 
 .btn-outline {
-    background: white;
+    background: var(--bg-card);
     border: 1px solid var(--border);
     color: var(--text-main);
 }
 
 .btn-outline:hover {
-    border-color: var(--primary);
-    color: var(--primary);
+    border-color: var(--text-main);
+    color: var(--text-main);
 }
 
 /* Common responsiveness helpers */
@@ -182,10 +186,10 @@ section {
 /* Scroll reveal — class ditambahkan oleh action $lib/reveal */
 .reveal {
     opacity: 0;
-    transform: translateY(26px);
+    transform: translateY(40px);
     transition:
-        opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
-        transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+        opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1),
+        transform 1s cubic-bezier(0.16, 1, 0.3, 1);
     will-change: opacity, transform;
 }
 
@@ -203,14 +207,17 @@ section {
 }
 
 .dark {
-    --bg-white: #020617;
-    --bg-soft: #0f172a;
-    --bg-card: #0f172a;
-    --text-main: #f1f5f9;
-    --text-muted: #94a3b8;
-    --border: #1e293b;
-    --primary: #fb923c;
-    --primary-hover: #f97316;
+    --bg-white: #000000;
+    --bg-soft: #000000;
+    --bg-card: #0a0a0a;
+    --text-main: #fafafa;
+    --text-muted: #a1a1a1;
+    --border: #262626;
+    --primary: #fafafa;
+    --primary-hover: #d4d4d4;
+    --on-primary: #0a0a0a;
+    --accent: #fafafa;
+    --grid-line: rgb(255 255 255 / 0.05);
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5);
     --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.5);
@@ -234,12 +241,12 @@ section {
 }
 
 .dark .btn-outline:hover {
-    border-color: var(--primary);
-    color: var(--primary);
+    border-color: var(--text-main);
+    color: var(--text-main);
 }
 
 .dark .contact-card-main {
-    background: #1e293b;
+    background: var(--bg-card);
     border: 1px solid var(--border);
 }
 
@@ -250,13 +257,13 @@ section {
 /* Dark mode specific patterns */
 .dark .pattern-dots {
     opacity: 0.1;
-    background-image: radial-gradient(#fb923c 1.5px, transparent 1.5px);
+    background-image: radial-gradient(#fafafa 1.5px, transparent 1.5px);
 }
 
 .dark .pattern-grid {
     opacity: 0.05;
-    background-image: linear-gradient(#f1f5f9 1px, transparent 1px),
-        linear-gradient(90deg, #f1f5f9 1px, transparent 1px);
+    background-image: linear-gradient(#fafafa 1px, transparent 1px),
+        linear-gradient(90deg, #fafafa 1px, transparent 1px);
 }
 
 .dark .pattern-waves {

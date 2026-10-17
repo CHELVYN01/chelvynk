@@ -1,21 +1,44 @@
 <script lang="ts">
-  import {
-    ArrowRight,
-    Download,
-    GraduationCap,
-    Layers,
-    Server,
-    Smartphone,
-    Database,
-    Terminal,
-    Bot,
-    Check,
-  } from "lucide-svelte";
+  import { ArrowRight, Download } from "lucide-svelte";
   import { reveal } from "$lib/reveal";
+  import ClosingCta from "$lib/components/ClosingCta.svelte";
+  import {
+    exitProgress,
+    scrub,
+    pageProgress,
+    inview,
+    scramble,
+    countUp,
+    velocityMarquee,
+  } from "$lib/motion";
 
   // Seluruh konten halaman ini diambil dari resume (static/resume/my resume.pdf).
   // Kalau resume diperbarui, perbarui juga data di bawah.
   const resumeUrl = "/resume/my%20resume.pdf";
+
+  const pad = (n: number) => String(n).padStart(2, "0");
+
+  // Pecah kalimat jadi kata; teks di antara *...* dicetak miring.
+  const toWords = (s: string) => {
+    let on = false;
+    return s.split(" ").map((raw) => {
+      if (raw.startsWith("*")) on = true;
+      const word = { w: raw.replaceAll("*", ""), em: on };
+      if (raw.endsWith("*")) on = false;
+      return word;
+    });
+  };
+
+  // Headline hero: tiap baris punya indent & arah geser saat scroll sendiri
+  const heroLines = [
+    { text: "Engineer", italic: false },
+    { text: "Pemikir", italic: true },
+    { text: "Produk.", italic: false },
+  ];
+
+  const bioWords = toWords(
+    "Lebih dari satu tahun hands-on dengan *Odoo 17, 18, 19,* Python backend, PostgreSQL, Docker, dan DevOps. Terbiasa membangun aplikasi mobile — *React Native* dan *Flutter* — serta mengimplementasikan *machine learning.* Menangani deployment kompleks, troubleshooting sistem production, dan menghadirkan solusi yang scalable.",
+  );
 
   const quickFacts = [
     { label: "Lokasi", value: "Indonesia · Remote" },
@@ -23,11 +46,15 @@
     { label: "Pendidikan", value: "Universitas Sanata Dharma" },
   ];
 
-  const stats = [
-    { value: "1+", label: "Tahun hands-on Odoo" },
+  const stats: {
+    value: string;
+    label: string;
+    count?: { to: number; from?: number; suffix?: string };
+  }[] = [
+    { value: "1+", label: "Tahun hands-on Odoo", count: { to: 1, suffix: "+" } },
     { value: "17·18·19", label: "Versi Odoo yang ditangani" },
-    { value: "5", label: "Modul inti dikustomisasi" },
-    { value: "2024", label: "Mulai freelance" },
+    { value: "5", label: "Modul inti dikustomisasi", count: { to: 5 } },
+    { value: "2024", label: "Mulai freelance", count: { to: 2024, from: 2000 } },
   ];
 
   const experiences = [
@@ -56,695 +83,771 @@
 
   const skillGroups = [
     {
-      icon: Layers,
       title: "Odoo Development",
       desc: "Kustomisasi & implementasi ERP",
       items: ["Odoo 17/18/19", "Odoo ORM", "XML Views", "QWeb", "OWL"],
     },
     {
-      icon: Server,
       title: "Backend",
       desc: "API & business logic",
       items: ["Python", "PHP", "Laravel", "Rust"],
     },
     {
-      icon: Smartphone,
       title: "Frontend & Mobile",
       desc: "Web modern & aplikasi mobile",
       items: ["Next.js", "SvelteKit", "React Native", "Flutter"],
     },
     {
-      icon: Database,
       title: "Data & Machine Learning",
       desc: "Database & model ML",
       items: ["PostgreSQL", "MySQL", "PyTorch", "Python"],
     },
     {
-      icon: Terminal,
       title: "DevOps",
       desc: "Deploy & operasional production",
       items: ["Docker", "Git", "Vercel", "Troubleshooting"],
     },
     {
-      icon: Bot,
       title: "AI & Problem Solving",
       desc: "Workflow modern & analitis",
       items: ["Agent AI (Claude Code)", "Analytics", "Problem Solving"],
     },
   ];
+
 </script>
 
 <svelte:head>
   <title>Tentang — Chelvyn Kleden | Product Software Engineer & Odoo Developer</title>
 </svelte:head>
 
-<!-- ===== Intro ===== -->
-<section class="about-hero">
-  <!-- Foto cutout transparan berdiri di kanan, dasarnya menyatu dengan pita statistik -->
-  <div class="about-photo">
-    <img
-      src="/foto_transparan_549KB.png"
-      alt="Blasius Chelvyn Kera Kleden"
-      fetchpriority="high"
-    />
-  </div>
+<div class="page-progress" use:pageProgress aria-hidden="true"></div>
 
-  <div class="container about-grid">
-    <div class="intro-text fade-in">
-      <p class="about-eyebrow">Tentang Saya</p>
-      <h1>
-        Engineer yang Berpikir
-        <span class="text-gradient">Seperti Pemilik Produk.</span>
-      </h1>
-      <p class="lead">
-        Saya <strong>Blasius Chelvyn Kera Kleden</strong> — Software Developer
-        & Odoo Consultant yang berspesialisasi dalam implementasi dan optimasi
-        <strong>ERP enterprise</strong>.
-      </p>
-      <p>
-        Lebih dari satu tahun hands-on dengan <strong>Odoo 17, 18, 19</strong>,
-        Python backend, PostgreSQL, Docker, dan DevOps. Terbiasa juga membangun
-        aplikasi mobile (<strong>React Native, Flutter</strong>) dan
-        mengimplementasikan <strong>machine learning</strong>. Terbukti
-        menangani deployment yang kompleks, troubleshooting sistem production,
-        dan menghadirkan solusi yang scalable.
-      </p>
+<!-- ===== Hero: tiga baris raksasa, tanpa gambar ===== -->
+<section class="a-hero" use:exitProgress>
+  <div class="container">
+    <div class="mono a-top intro" style="--d: 0.1s">
+      <span use:scramble={200}>(Tentang) — Profil 2026</span>
+      <span class="scroll-cue" aria-hidden="true">
+        <span use:scramble={400}>Scroll</span>
+        <span class="scroll-line"></span>
+      </span>
+    </div>
 
-      <div class="intro-btns">
-        <a
-          href={resumeUrl}
-          class="btn btn-primary"
-          download="CV-Chelvyn-Kleden.pdf"
-        >
-          <Download size={18} /> Unduh CV
-        </a>
-        <a href="/contact" class="btn btn-ghost">
-          Hubungi Saya <ArrowRight size={18} />
-        </a>
+    <h1
+      class="a-title"
+      aria-label="Engineer yang berpikir seperti pemilik produk."
+    >
+      {#each heroLines as line, li}
+        <span class="line line-{li}" class:italic={line.italic} aria-hidden="true">
+          <span class="line-mask">
+            {#each line.text.split("") as ch, ci}
+              <span
+                class="ch"
+                style="--d: {(0.25 + li * 0.2 + ci * 0.045).toFixed(3)}s"
+                >{ch}</span
+              >
+            {/each}
+          </span>
+        </span>
+      {/each}
+    </h1>
+
+    <div class="a-foot">
+      <div class="mono a-meta intro" style="--d: 1.15s">
+        <span use:scramble={1200}>Blasius Chelvyn</span>
+        <span use:scramble={1300}>Kera Kleden</span>
+        <span use:scramble={1400}>Indonesia · Remote</span>
       </div>
 
-      <dl class="facts">
-        {#each quickFacts as fact}
-          <div>
-            <dt>{fact.label}</dt>
-            <dd>{fact.value}</dd>
-          </div>
-        {/each}
-      </dl>
+      <div class="intro" style="--d: 1.3s">
+        <p class="a-lead">
+          Software Developer &amp; Odoo Consultant yang berspesialisasi dalam
+          implementasi dan optimasi ERP enterprise — membangun produk seolah
+          milik sendiri.
+        </p>
+        <div class="btn-row">
+          <a href={resumeUrl} class="btn-solid" download="CV-Chelvyn-Kleden.pdf">
+            <Download size={16} /> Unduh CV
+          </a>
+          <a href="/contact" class="btn-text">
+            Hubungi Saya <ArrowRight size={16} />
+          </a>
+        </div>
+      </div>
     </div>
   </div>
+</section>
 
-  <!-- Pita statistik kaca di dasar hero (gaya sama dengan pita tech di home) -->
-  <div class="stats">
-    <div class="container stats-inner">
-      {#each stats as stat}
-        <div class="stat">
-          <strong>{stat.value}</strong>
-          <span>{stat.label}</span>
+<!-- Pita nama raksasa (outline), bereaksi ke kecepatan scroll -->
+<div class="name-band" aria-hidden="true">
+  <div class="name-track" use:velocityMarquee={0.9}>
+    {#each Array(4) as _, i}
+      <span class="name" class:solid={i % 2 === 1}>Blasius Chelvyn Kera Kleden</span>
+      <span class="name-sep">✳</span>
+    {/each}
+  </div>
+</div>
+
+<!-- ===== 01 · Profil ===== -->
+<section class="block">
+  <div class="container">
+    <header class="sec-head" use:inview>
+      <h2><span class="mask"><span>Profil</span></span></h2>
+      <span class="mono" use:scramble={300}>(01)</span>
+    </header>
+
+    <div class="split">
+      <div class="mono split-meta">
+        <span use:scramble>Bio</span>
+        <span use:scramble={150}>Sejak 2024</span>
+      </div>
+      <p class="bio" use:scrub style="--n: {bioWords.length}">
+        {#each bioWords as word, i}<span
+            class="w"
+            class:em={word.em}
+            style="--i: {i}">{word.w}</span
+          >{" "}{/each}
+      </p>
+    </div>
+
+    <dl class="grid-lines facts">
+      {#each quickFacts as fact, i}
+        <div class="cell" use:reveal={{ delay: i * 100 }}>
+          <dt class="mono label" use:scramble={i * 100}>{fact.label}</dt>
+          <dd>{fact.value}</dd>
+        </div>
+      {/each}
+    </dl>
+
+    <div class="grid-lines stats">
+      {#each stats as stat, i}
+        <div class="cell" use:reveal={{ delay: i * 100 }}>
+          {#if stat.count}
+            <strong class="stat-num" use:countUp={stat.count}>{stat.value}</strong>
+          {:else}
+            <strong class="stat-num">{stat.value}</strong>
+          {/if}
+          <span class="mono caption">{stat.label}</span>
         </div>
       {/each}
     </div>
   </div>
 </section>
 
-<!-- ===== Pengalaman ===== -->
-<section class="exp-section">
+<!-- ===== 02 · Pengalaman ===== -->
+<section class="block">
   <div class="container">
-    <div class="section-head" use:reveal>
-      <span class="section-tag">Perjalanan</span>
-      <h2>Pengalaman <span class="text-orange">Kerja</span></h2>
-    </div>
+    <header class="sec-head" use:inview>
+      <h2><span class="mask"><span>Pengalaman</span></span></h2>
+      <span class="mono" use:scramble={300}>(02)</span>
+    </header>
 
-    <div class="exp-list">
-      {#each experiences as exp, i}
-        <article class="exp-item" use:reveal={{ delay: i * 90 }}>
-          <div class="exp-meta">
-            <span class="exp-period">{exp.period}</span>
-            <h3>{exp.role}</h3>
-          </div>
-          <div class="exp-body">
-            <ul class="exp-points">
-              {#each exp.points as point}
-                <li><Check size={16} /> <span>{point}</span></li>
-              {/each}
-            </ul>
-            <div class="tags">
-              {#each exp.tech as t}
-                <span>{t}</span>
-              {/each}
-            </div>
-          </div>
+    {#each experiences as exp, i}
+      <article class="exp" use:inview={0.15}>
+        <!-- Kolom kiri lengket selama poin-poin di kanan di-scroll -->
+        <div class="exp-side">
+          <span class="mono exp-index">{pad(i + 1)} / {pad(experiences.length)}</span>
+          <h3><span class="mask"><span>{exp.role}</span></span></h3>
+          <span class="mono exp-period" use:scramble={200}>{exp.period}</span>
+        </div>
+
+        <div class="exp-body">
+          <ol class="exp-points">
+            {#each exp.points as point, pi}
+              <li use:reveal={{ delay: pi * 90 }}>
+                <span class="mono">{pad(pi + 1)}</span>
+                <p>{point}</p>
+              </li>
+            {/each}
+          </ol>
+          <ul class="mono exp-tech" use:reveal>
+            {#each exp.tech as t}
+              <li>{t}</li>
+            {/each}
+          </ul>
+        </div>
+      </article>
+    {/each}
+  </div>
+</section>
+
+<!-- ===== 03 · Keahlian ===== -->
+<section class="block">
+  <div class="container">
+    <header class="sec-head" use:inview>
+      <h2><span class="mask"><span>Keahlian</span></span></h2>
+      <span class="mono" use:scramble={300}>(03)</span>
+    </header>
+
+    <div class="grid-lines skills">
+      {#each skillGroups as group, i}
+        <article class="cell skill" use:reveal={{ delay: (i % 3) * 110 }}>
+          <span class="mono label">{pad(i + 1)}</span>
+          <h3>{group.title}</h3>
+          <p>{group.desc}</p>
+          <ul class="mono skill-list">
+            {#each group.items as item}
+              <li>{item}</li>
+            {/each}
+          </ul>
         </article>
       {/each}
     </div>
   </div>
 </section>
 
-<!-- ===== Keahlian ===== -->
-<section class="skills-section">
+<!-- ===== 04 · Pendidikan ===== -->
+<section class="block">
   <div class="container">
-    <div class="section-head" use:reveal>
-      <span class="section-tag">Keahlian</span>
-      <h2>Core <span class="text-orange">Skills</span></h2>
-    </div>
+    <header class="sec-head" use:inview>
+      <h2><span class="mask"><span>Pendidikan</span></span></h2>
+      <span class="mono" use:scramble={300}>(04)</span>
+    </header>
 
-    <div class="skill-grid">
-      {#each skillGroups as group, i}
-        {@const Icon = group.icon}
-        <div class="skill-card" use:reveal={{ delay: (i % 3) * 80 }}>
-          <div class="skill-icon"><Icon size={20} /></div>
-          <h3>{group.title}</h3>
-          <p>{group.desc}</p>
-          <div class="tags">
-            {#each group.items as item}
-              <span>{item}</span>
-            {/each}
-          </div>
-        </div>
-      {/each}
+    <div class="edu" use:inview>
+      <span class="mono edu-label" use:scramble>Perguruan Tinggi</span>
+      <h3><span class="mask"><span>Universitas Sanata Dharma</span></span></h3>
+      <span class="mono edu-year" use:scramble={250}>2020 — 2024</span>
     </div>
   </div>
 </section>
 
-<!-- ===== Pendidikan + CTA ===== -->
-<section class="closing-section">
-  <div class="container closing-grid">
-    <div class="edu-card" use:reveal>
-      <span class="section-tag">Pendidikan</span>
-      <div class="edu-row">
-        <span class="edu-icon"><GraduationCap size={22} /></span>
-        <div>
-          <h3>Universitas Sanata Dharma</h3>
-          <span class="exp-period">2020 — 2024</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="cta-card" use:reveal={{ delay: 100 }}>
-      <div class="cta-glow" aria-hidden="true"></div>
-      <h2>Punya ide produk atau butuh implementasi Odoo?</h2>
-      <p>Ceritakan kebutuhan Anda — saya bantu dari perencanaan sampai rilis.</p>
-      <div class="intro-btns">
-        <a href="/contact" class="btn btn-primary">
-          Diskusikan Project <ArrowRight size={18} />
-        </a>
-        <a href="/projects" class="btn btn-dark-ghost">Lihat Project</a>
-      </div>
-    </div>
-  </div>
-</section>
+<ClosingCta
+  kicker="Punya ide produk atau butuh implementasi Odoo?"
+  lines={["Mari", "Bangun."]}
+  lead="Ceritakan kebutuhan Anda — saya bantu dari perencanaan sampai rilis."
+  primary={{ href: "/contact", label: "Diskusikan Project" }}
+  secondary={{ href: "/projects", label: "Lihat Project" }}
+/>
 
 <style>
-  .text-orange {
-    color: var(--primary);
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-serif);
+    font-weight: 400;
   }
 
-  .text-gradient {
+  .label {
     display: block;
-    color: var(--primary);
-  }
-
-  .section-tag {
-    display: inline-block;
-    color: var(--primary);
-    font-weight: 700;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    font-size: 0.8rem;
-    margin-bottom: 1rem;
-  }
-
-  .tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem;
-  }
-
-  .tags span {
-    font-size: 0.75rem;
-    font-weight: 600;
-    padding: 0.3rem 0.65rem;
-    border-radius: 0.5rem;
-    background: var(--bg-soft);
-    border: 1px solid var(--border);
     color: var(--text-muted);
-  }
-
-  :global(.dark) .tags span {
-    background: rgba(255, 255, 255, 0.03);
-  }
-
-  /* ===== Intro: foto full-bleed + teks di kiri (selaras dengan home) ===== */
-  .about-hero {
-    position: relative;
-    overflow: hidden;
-    min-height: calc(88vh + 4.5rem);
-    padding-top: 10.5rem; /* 4.5rem tambahan: hero berada di bawah header kaca */
-    display: flex;
-    flex-direction: column;
-    background: #0b1220;
-  }
-
-  /* Sorotan lembut di belakang subjek (bukan blob warna) */
-  .about-photo {
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(
-      ellipse 45% 70% at 76% 65%,
-      #1b2638 0%,
-      transparent 100%
-    );
-  }
-
-  /* Cutout menempel ke dasar hero; bagian bawahnya tembus di balik pita kaca. */
-  .about-photo img {
-    position: absolute;
-    right: 7%;
-    bottom: 0;
-    height: 94%;
-    width: auto;
-    max-width: 55%;
-    object-fit: contain;
-    object-position: bottom;
-    display: block;
-  }
-
-  .about-grid {
-    position: relative;
-    z-index: 1;
-    width: 100%;
-    margin-top: auto;
-    margin-bottom: auto;
-    padding-top: 2rem;
-    padding-bottom: 4rem;
-  }
-
-  .intro-text {
-    max-width: 640px;
-  }
-
-  .about-eyebrow {
-    margin-bottom: 1.5rem;
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.78);
-  }
-
-  .intro-text h1 {
-    font-size: clamp(2.3rem, 4.4vw, 3.6rem);
-    line-height: 1.06;
-    letter-spacing: -0.04em;
-    margin-bottom: 1.5rem;
-    color: #fff;
-    text-shadow: 0 2px 24px rgba(2, 6, 23, 0.45);
-  }
-
-  .intro-text p:not(.about-eyebrow) {
-    color: rgba(255, 255, 255, 0.82);
-    font-size: 1.05rem;
-    line-height: 1.75;
-    max-width: 600px;
-    margin-bottom: 1rem;
-  }
-
-  .intro-text .lead {
-    font-size: 1.15rem;
-  }
-
-  .intro-text strong {
-    color: #fff;
-    font-weight: 600;
-  }
-
-  .intro-btns {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.875rem;
-    margin-top: 2rem;
-  }
-
-  .intro-btns .btn {
-    gap: 0.5rem;
-    padding: 0.9rem 1.5rem;
-  }
-
-  .btn-ghost {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: #fff;
-  }
-
-  .btn-ghost:hover {
-    border-color: var(--primary);
-    color: var(--primary);
-    transform: translateY(-1px);
-  }
-
-  /* Fakta singkat: teks polos sebaris, tanpa kotak/ikon */
-  .facts {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1rem 2.5rem;
-    margin: 2.5rem 0 0;
-    padding-top: 1.5rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
-  }
-
-  .facts dt {
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.55);
-    margin-bottom: 0.15rem;
-  }
-
-  .facts dd {
-    margin: 0;
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: #fff;
-  }
-
-  .skill-icon,
-  .edu-icon {
-    display: grid;
-    place-items: center;
-    flex-shrink: 0;
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    background: rgba(249, 115, 22, 0.1);
-    color: var(--primary);
-  }
-
-  /* Pita statistik: kaca tipis di dasar hero */
-  .stats {
-    position: relative;
-    z-index: 1;
-    width: 100%;
-    background: linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.07) 0%,
-      rgba(255, 255, 255, 0.015) 100%
-    );
-    backdrop-filter: blur(14px) saturate(150%);
-    -webkit-backdrop-filter: blur(14px) saturate(150%);
-    border-top: 1px solid rgba(255, 255, 255, 0.28);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
-  }
-
-  .stats-inner {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-  }
-
-  .stat {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    padding: 1.5rem 1.75rem;
-  }
-
-  .stat:first-child {
-    padding-left: 0;
-  }
-
-  .stat + .stat {
-    border-left: 1px solid rgba(255, 255, 255, 0.18);
-  }
-
-  .stat strong {
-    font-size: 1.9rem;
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    color: #fff;
-    line-height: 1.1;
-  }
-
-  .stat span {
-    font-size: 0.85rem;
-    color: rgba(255, 255, 255, 0.72);
-  }
-
-  /* ===== Section umum ===== */
-  .section-head {
-    margin-bottom: 2.5rem;
-  }
-
-  .section-head h2 {
-    font-size: clamp(1.9rem, 3.4vw, 2.6rem);
-  }
-
-  /* ===== Pengalaman ===== */
-  .exp-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1.25rem;
-  }
-
-  .exp-item {
-    display: grid;
-    grid-template-columns: 260px 1fr;
-    gap: 2rem;
-    padding: 2rem;
-    border: 1px solid var(--border);
-    border-radius: 1.25rem;
-    background: var(--bg-card);
-    transition:
-      border-color 0.3s ease,
-      box-shadow 0.3s ease;
-  }
-
-  .exp-item:hover {
-    border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
-    box-shadow: var(--shadow-lg);
-  }
-
-  .exp-period {
-    display: inline-block;
-    font-family: "JetBrains Mono", ui-monospace, monospace;
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: var(--primary);
-    margin-bottom: 0.4rem;
-  }
-
-  .exp-meta h3 {
-    font-size: 1.25rem;
-  }
-
-  .exp-points {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
     margin-bottom: 1.25rem;
   }
 
-  .exp-points li {
+  .caption {
+    color: var(--text-muted);
+    margin-top: auto;
+  }
+
+  .btn-row {
     display: flex;
-    gap: 0.6rem;
-    color: var(--text-muted);
-    line-height: 1.6;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.75rem;
   }
 
-  .exp-points :global(svg) {
+  .btn-row :global(svg) {
     flex-shrink: 0;
-    margin-top: 0.3rem;
-    color: #22c55e;
   }
 
-  /* ===== Keahlian ===== */
-  .skills-section {
-    background: var(--bg-soft);
+  /* ===== Hero ===== */
+  .a-hero {
+    position: relative;
+    padding: 0;
+    overflow: hidden;
+    background-image:
+      linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+    background-size: 64px 64px;
+    background-position: -1px calc(-1px + var(--p, 0) * 160px);
   }
 
-  :global(.dark) .skills-section {
-    background: transparent;
-  }
-
-  .skill-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.25rem;
-  }
-
-  .skill-card {
-    padding: 1.75rem;
-    border: 1px solid var(--border);
-    border-radius: 1.25rem;
-    background: var(--bg-card);
-    transition:
-      transform 0.3s ease,
-      border-color 0.3s ease,
-      box-shadow 0.3s ease;
-  }
-
-  .skill-card:hover {
-    transform: translateY(-4px);
-    border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
-    box-shadow: var(--shadow-lg);
-  }
-
-  .skill-card h3 {
-    font-size: 1.05rem;
-    margin: 1rem 0 0.25rem;
-  }
-
-  .skill-card p {
-    font-size: 0.875rem;
+  .a-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding-top: 4rem;
     color: var(--text-muted);
+  }
+
+  .a-title {
+    margin: 2.5rem 0 4.5rem;
+    font-size: clamp(3.25rem, 12.5vw, 10.5rem);
+    line-height: 0.9;
+    letter-spacing: -0.04em;
+    text-transform: uppercase;
+    color: var(--text-main);
+  }
+
+  .a-title .line {
+    display: block;
+    white-space: nowrap;
+    will-change: transform;
+  }
+
+  /* Tiap baris: indent berbeda + geser ke arah berlawanan saat di-scroll */
+  .a-title .line-0 {
+    transform: translate3d(calc(var(--p, 0) * -26%), 0, 0);
+  }
+
+  .a-title .line-1 {
+    padding-left: 1.5em;
+    transform: translate3d(calc(var(--p, 0) * 22%), 0, 0);
+  }
+
+  .a-title .line-2 {
+    padding-left: 0.6em;
+    transform: translate3d(calc(var(--p, 0) * -14%), 0, 0);
+  }
+
+  .a-title .italic {
+    font-style: italic;
+    text-transform: none;
+    color: var(--text-muted);
+  }
+
+  .a-foot {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    padding: 1.75rem 0 5rem;
+    opacity: calc(1 - var(--p, 0) * 1.8);
+    transform: translate3d(0, calc(var(--p, 0) * -60px), 0);
+  }
+
+  .a-foot::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--text-muted);
+    transform-origin: left;
+    animation: draw-x 1.4s cubic-bezier(0.65, 0, 0.35, 1) 0.8s both;
+  }
+
+  .a-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    color: var(--text-main);
+  }
+
+  .a-lead {
+    font-family: var(--font-serif);
+    font-size: clamp(1.1rem, 1.6vw, 1.3rem);
+    line-height: 1.5;
+    color: var(--text-main);
+    max-width: 30rem;
+    margin-bottom: 2rem;
+  }
+
+  /* ===== Pita nama raksasa ===== */
+  .name-band {
+    overflow: hidden;
+    padding: 2.5rem 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .name-track {
+    display: inline-flex;
+    align-items: center;
+    gap: 3rem;
+    padding-right: 3rem;
+    white-space: nowrap;
+    animation: name-slide 50s linear infinite;
+    will-change: transform;
+  }
+
+  .name {
+    font-family: var(--font-serif);
+    font-size: clamp(3.5rem, 10vw, 8.5rem);
+    line-height: 1;
+    letter-spacing: -0.03em;
+    text-transform: uppercase;
+    color: transparent;
+    -webkit-text-stroke: 1px var(--text-main);
+  }
+
+  .name.solid {
+    color: var(--text-main);
+    -webkit-text-stroke: 0;
+  }
+
+  .name-sep {
+    font-size: clamp(2rem, 5vw, 4rem);
+    color: var(--text-main);
+  }
+
+  @keyframes name-slide {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  /* ===== Section umum ===== */
+  .block {
+    padding: 6rem 0;
+  }
+
+  /* Grid garis tipis: gap 1px di atas latar warna garis */
+  .grid-lines {
+    display: grid;
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+
+  .cell {
+    background: var(--bg-white);
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ===== 01 · Profil ===== */
+  .split {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 2rem;
+    margin-bottom: 4rem;
+  }
+
+  .split-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    color: var(--text-muted);
+  }
+
+  .bio {
+    font-family: var(--font-serif);
+    font-size: clamp(1.5rem, 2.8vw, 2.3rem);
+    line-height: 1.3;
+    letter-spacing: -0.01em;
+    color: var(--text-main);
+  }
+
+  /* Kata menyala berurutan mengikuti scroll (--p dari action scrub) */
+  .bio .w {
+    opacity: clamp(0.12, calc(var(--p, 1) * (var(--n) + 4) - var(--i)), 1);
+    transition: opacity 0.2s linear;
+  }
+
+  .bio .w.em {
+    font-style: italic;
+  }
+
+  .facts {
+    grid-template-columns: repeat(3, 1fr);
     margin-bottom: 1rem;
   }
 
-  /* ===== Pendidikan + CTA ===== */
-  .closing-grid {
-    display: grid;
-    grid-template-columns: 0.8fr 1.2fr;
-    gap: 1.25rem;
-    align-items: stretch;
+  .facts dd {
+    font-family: var(--font-serif);
+    font-size: 1.35rem;
+    line-height: 1.25;
+    color: var(--text-main);
   }
 
-  .edu-card {
+  .stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .stats .cell {
+    min-height: 13rem;
+  }
+
+  /* ===== 02 · Pengalaman ===== */
+  .exp {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1.6fr;
+    gap: 3rem;
+    padding: 2.5rem 0 4.5rem;
+  }
+
+  /* Garis atas tiap pengalaman tergambar dari kiri */
+  .exp::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--text-main);
+    transform-origin: left;
+    transition: transform 1.2s cubic-bezier(0.65, 0, 0.35, 1);
+  }
+
+  .exp .mask > span {
+    transition: transform 1s cubic-bezier(0.16, 1, 0.3, 1) 0.2s;
+  }
+
+  .exp:global(.motion)::before {
+    transform: scaleX(0);
+  }
+
+  .exp:global(.motion) .mask > span {
+    transform: translateY(110%);
+  }
+
+  .exp:global(.in)::before {
+    transform: scaleX(1);
+  }
+
+  .exp:global(.in) .mask > span {
+    transform: none;
+  }
+
+  .exp-side {
+    position: sticky;
+    top: 6.5rem;
+    align-self: start;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    padding: 2rem;
-    border: 1px solid var(--border);
-    border-radius: 1.25rem;
-    background: var(--bg-card);
-  }
-
-  .edu-row {
-    display: flex;
-    align-items: center;
     gap: 1rem;
-    margin-top: 0.5rem;
   }
 
-  .edu-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
+  .exp-index,
+  .exp-period {
+    color: var(--text-muted);
   }
 
-  .edu-row h3 {
-    font-size: 1.15rem;
-    margin-bottom: 0.15rem;
+  .exp-side h3 {
+    font-size: clamp(2rem, 3.6vw, 3.25rem);
+    line-height: 1.05;
+    letter-spacing: -0.025em;
   }
 
-  .cta-card {
-    position: relative;
-    overflow: hidden;
-    padding: 2.5rem;
-    border-radius: 1.25rem;
-    background: linear-gradient(160deg, #111827, #0b1120);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: #e2e8f0;
+  .exp-points li {
+    display: grid;
+    grid-template-columns: 3rem 1fr;
+    gap: 1rem;
+    padding: 1.4rem 0;
+    border-bottom: 1px solid var(--border);
   }
 
-  .cta-glow {
-    position: absolute;
-    top: -60%;
-    right: -20%;
-    width: 70%;
-    height: 160%;
-    background: radial-gradient(circle, rgba(249, 115, 22, 0.25), transparent 65%);
-    pointer-events: none;
+  .exp-points li:first-child {
+    padding-top: 0.25rem;
   }
 
-  .cta-card > :not(.cta-glow) {
-    position: relative;
+  .exp-points .mono {
+    color: var(--text-muted);
+    padding-top: 0.35rem;
   }
 
-  .cta-card h2 {
-    color: #f8fafc;
-    font-size: clamp(1.4rem, 2.4vw, 1.9rem);
-    max-width: 480px;
-    margin-bottom: 0.75rem;
+  .exp-points p {
+    font-family: var(--font-serif);
+    font-size: 1.2rem;
+    line-height: 1.5;
+    color: var(--text-main);
   }
 
-  .cta-card p {
-    color: #94a3b8;
+  .exp-tech {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+    padding-top: 1.5rem;
+    color: var(--text-muted);
   }
 
-  .cta-card .intro-btns {
-    margin-top: 1.5rem;
+  .exp-tech li::before {
+    content: "■ ";
+    font-size: 0.6em;
+    vertical-align: 0.15em;
   }
 
-  .btn-dark-ghost {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #f1f5f9;
+  /* ===== 03 · Keahlian ===== */
+  .skills {
+    grid-template-columns: repeat(3, 1fr);
   }
 
-  .btn-dark-ghost:hover {
-    border-color: var(--primary);
-    color: var(--primary);
+  /* Hover: kartu berbalik warna (hitam ↔ putih) */
+  .skill {
+    min-height: 17rem;
+    transition:
+      background 0.35s ease,
+      color 0.35s ease;
+  }
+
+  .skill h3 {
+    font-size: 1.75rem;
+    line-height: 1.1;
+    margin-bottom: 0.5rem;
+    transition: color 0.35s ease;
+  }
+
+  .skill p {
+    font-family: var(--font-serif);
+    color: var(--text-muted);
+    margin-bottom: 1.5rem;
+    transition: color 0.35s ease;
+  }
+
+  .skill-list {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    color: var(--text-muted);
+    transition: color 0.35s ease;
+  }
+
+  .skill .label {
+    transition: color 0.35s ease;
+  }
+
+  @media (hover: hover) {
+    .skill:hover {
+      background: var(--primary);
+    }
+
+    .skill:hover h3 {
+      color: var(--on-primary);
+    }
+
+    .skill:hover p,
+    .skill:hover .skill-list,
+    .skill:hover .label {
+      color: color-mix(in srgb, var(--on-primary) 65%, transparent);
+    }
+  }
+
+  /* ===== 04 · Pendidikan ===== */
+  .edu {
+    display: grid;
+    grid-template-columns: 1fr 2.5fr auto;
+    gap: 2rem;
+    align-items: baseline;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .edu-label,
+  .edu-year {
+    color: var(--text-muted);
+  }
+
+  .edu h3 {
+    font-size: clamp(2rem, 5vw, 4rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+  }
+
+  .edu .mask > span {
+    transition: transform 1.1s cubic-bezier(0.16, 1, 0.3, 1) 0.15s;
+  }
+
+  .edu:global(.motion) .mask > span {
+    transform: translateY(110%);
+  }
+
+  .edu:global(.in) .mask > span {
+    transform: none;
   }
 
   /* ===== Responsif ===== */
   @media (max-width: 960px) {
-    /* Di layar sempit foto jadi latar redup di belakang teks */
-    .about-photo img {
-      right: 50%;
-      transform: translateX(50%);
-      max-width: 90%;
-      opacity: 0.35;
-    }
-
-    .stats-inner {
+    .stats {
       grid-template-columns: repeat(2, 1fr);
     }
 
-    .stat:first-child {
-      padding-left: 1.75rem;
-    }
-
-    .stat:nth-child(3) {
-      border-left: none;
-    }
-
-    .stat:nth-child(n + 3) {
-      border-top: 1px solid rgba(255, 255, 255, 0.18);
-    }
-
-    .skill-grid {
+    .skills {
       grid-template-columns: repeat(2, 1fr);
     }
 
-    .exp-item {
+    .exp {
       grid-template-columns: 1fr;
-      gap: 1rem;
+      gap: 2rem;
     }
 
-    .closing-grid {
+    .exp-side {
+      position: static;
+    }
+
+    .edu {
       grid-template-columns: 1fr;
+      gap: 0.75rem;
     }
   }
 
-  @media (max-width: 600px) {
-    .about-hero {
-      padding-top: 10.5rem;
+  @media (max-width: 768px) {
+    .a-top {
+      padding-top: 2.5rem;
     }
 
-    .intro-btns .btn {
-      width: 100%;
+    .a-title {
+      margin: 2rem 0 3rem;
     }
 
-    .stat {
-      padding: 1.25rem;
+    .a-title .line-1 {
+      padding-left: 0.8em;
     }
 
-    .stat strong {
-      font-size: 1.5rem;
+    .a-title .line-2 {
+      padding-left: 0.3em;
     }
 
-    .skill-grid {
+    .a-foot,
+    .split,
+    .facts {
       grid-template-columns: 1fr;
     }
 
-    .exp-item,
-    .cta-card {
+    .a-foot {
+      padding-bottom: 3.5rem;
+    }
+
+    .block {
+      padding: 4rem 0;
+    }
+
+    .cell {
       padding: 1.5rem;
+    }
+
+    .stats .cell {
+      min-height: 9rem;
+    }
+
+    .stats .stat-num {
+      font-size: 2.25rem;
+    }
+
+    .name-band {
+      padding: 1.5rem 0;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .skills {
+      grid-template-columns: 1fr;
+    }
+
+    .skill {
+      min-height: 0;
+    }
+
+    .exp-points li {
+      grid-template-columns: 2.25rem 1fr;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .name-track,
+    .a-foot::before {
+      animation: none;
+    }
+
+    .exp::before,
+    .exp .mask > span,
+    .edu .mask > span {
+      transition: none;
     }
   }
 </style>

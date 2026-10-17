@@ -323,7 +323,7 @@
     gap: 0.6rem;
     margin-top: 0.25rem;
     background: var(--primary);
-    color: #fff;
+    color: var(--on-primary);
     border: none;
     border-radius: 0.65rem;
     padding: 0.95rem 1.75rem;
