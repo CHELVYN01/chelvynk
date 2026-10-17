@@ -33,7 +33,8 @@
   white-space: nowrap;
   transition:
     background 0.2s ease,
-    color 0.2s ease;
+    color 0.2s ease,
+    transform 0.15s ease;
 }
 
 .btn-solid {
@@ -85,7 +86,8 @@
   transition:
     background 0.2s ease,
     color 0.2s ease,
-    border-color 0.2s ease;
+    border-color 0.2s ease,
+    transform 0.15s ease;
 }
 
 .icon-btn:hover {
@@ -371,4 +373,32 @@
   .follower-card {
     transition: none;
   }
+}
+
+/* Sub-judul kecil (h3.sub-title.mono): aturan h3 serif di halaman jangan
+   menimpa font mono-nya (spesifisitas .a.b > h3.svelte-xxx) */
+.sub-title.mono {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+}
+
+/* ===== Sentuhan (HP/tablet) ===== */
+a,
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Tombol sedikit "ditekan" saat disentuh */
+.btn-solid:active,
+.btn-line:active,
+.icon-btn:active {
+  transform: scale(0.97);
+}
+
+.btn-solid,
+.btn-line,
+.icon-btn {
+  touch-action: manipulation;
 }
