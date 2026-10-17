@@ -1,629 +1,672 @@
 <script lang="ts">
-    import { Globe, Github, Play, X, ArrowUpRight } from "lucide-svelte";
-    import { fade, scale } from "svelte/transition";
-    import { quintOut } from "svelte/easing";
-    let { data } = $props();
-    const projects = $derived(data.projects);
+  import { Globe, Github, Play, ArrowUpRight, ArrowRight } from "lucide-svelte";
+  import { flip } from "svelte/animate";
+  import { quintOut } from "svelte/easing";
+  import { reveal } from "$lib/reveal";
+  import { formatUrl } from "$lib/url";
+  import {
+    exitProgress,
+    pageProgress,
+    scramble,
+    countUp,
+    cursorFollow,
+  } from "$lib/motion";
+  import ProjectModal from "$lib/components/ProjectModal.svelte";
+  import ClosingCta from "$lib/components/ClosingCta.svelte";
 
-    const formatUrl = (url: string) => {
-        if (!url) return "#";
-        if (url.startsWith("http://") || url.startsWith("https://")) return url;
-        return `https://${url}`;
-    };
+  let { data } = $props();
+  const projects = $derived(data.projects);
 
-    // --- Project Detail Modal ---
-    let selectedProject = $state<any>(null);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const heroLines = ["Semua", "Project"];
 
-    function openProject(project: any) {
-        selectedProject = project;
-    }
+  // Nomor arsip tetap (urutan asli), tidak berubah saat difilter
+  const indexOf = $derived(
+    new Map(projects.map((p: any, i: number) => [p.id, i + 1])),
+  );
 
-    function closeProject() {
-        selectedProject = null;
-    }
+  // Kategori di DB ditulis bebas ("Website Katalog Gaun", "web tools", ...),
+  // jadi filter memakai kelompok besar yang ditebak dari teks kategorinya.
+  const ALL = "Semua";
+  const groupOf = (cat: string) => {
+    if (/odoo|erp/i.test(cat)) return "Odoo";
+    if (/mobile|android|ios/i.test(cat)) return "Mobile";
+    if (/desktop|cli|terminal/i.test(cat)) return "Desktop & CLI";
+    if (/web|site|dashboard|admin/i.test(cat)) return "Web";
+    return "Lainnya";
+  };
+  const groupsOf = (p: any): string[] => [
+    ...new Set<string>(p.categories.map(groupOf)),
+  ];
 
-    function handleKeydown(e: KeyboardEvent) {
-        if (e.key === "Escape") closeProject();
-    }
+  // Kelompok + jumlah project, urut dari yang terbanyak
+  const categories = $derived.by(() => {
+    const counts = new Map<string, number>();
+    for (const p of projects)
+      for (const g of groupsOf(p)) counts.set(g, (counts.get(g) ?? 0) + 1);
+    return [...counts.entries()].sort((a, b) => b[1] - a[1]);
+  });
 
-    // Kunci scroll body saat modal terbuka
-    $effect(() => {
-        if (typeof document === "undefined") return;
-        document.body.style.overflow = selectedProject ? "hidden" : "";
-        return () => {
-            document.body.style.overflow = "";
-        };
-    });
+  let activeCat = $state(ALL);
+  const filtered = $derived(
+    activeCat === ALL
+      ? projects
+      : projects.filter((p: any) => groupsOf(p).includes(activeCat)),
+  );
+
+  // --- Modal detail ---
+  let selectedProject = $state<any>(null);
+
+  // --- Kartu pratinjau yang mengikuti kursor (desktop) ---
+  let hovered = $state<any>(null);
+  let preview = $state<any>(null); // konten terakhir, tetap ada saat memudar
+  function hover(project: any, e: PointerEvent) {
+    if (e.pointerType !== "mouse") return;
+    hovered = project;
+    preview = project;
+  }
 </script>
 
 <svelte:head>
-    <!-- prettier-ignore -->
-    <title>Portofolio Project — Chelvyn Kleden | Odoo, Laravel & Web Developer</title>
+  <!-- prettier-ignore -->
+  <title>Portofolio Project — Chelvyn Kleden | Odoo, Laravel & Web Developer</title>
 </svelte:head>
 
-<svelte:window onkeydown={handleKeydown} />
+<div class="page-progress" use:pageProgress aria-hidden="true"></div>
 
-<div class="projects-page">
-    <section class="page-header container">
-        <a href="/" class="back-link">← Kembali ke Home</a>
-        <h1>Semua <span class="text-orange">Project</span></h1>
-        <p>
-            Kumpulan lengkap dari berbagai solusi digital yang telah saya
-            bangun.
-        </p>
-    </section>
-
-    <section class="container">
-        <div class="project-grid">
-            {#each projects as project, i (project.id)}
-                <div
-                    class="card project-card fade-in"
-                    role="button"
-                    tabindex="0"
-                    aria-label={`Lihat detail project ${project.title}`}
-                    onclick={() => openProject(project)}
-                    onkeydown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            openProject(project);
-                        }
-                    }}
-                >
-                    <span class="project-index" aria-hidden="true"
-                        >{String(i + 1).padStart(2, "0")}</span
-                    >
-                    <div class="project-info">
-                        <div class="project-tags">
-                            {#each project.categories as cat}
-                                <span class="project-cat">{cat}</span>
-                            {/each}
-                        </div>
-                        <h3>{project.title}</h3>
-                        <p class="project-desc">{project.description}</p>
-                        <div class="project-tech">
-                            {#each project.tech.slice(0, 4) as t}
-                                <span>{t}</span>
-                            {/each}
-                            {#if project.tech.length > 4}
-                                <span class="tech-more"
-                                    >+{project.tech.length - 4}</span
-                                >
-                            {/if}
-                        </div>
-                        <div class="project-footer">
-                            <div class="project-mini-links">
-                                {#if project.link}
-                                    <a
-                                        href={formatUrl(project.link)}
-                                        class="mini-link-btn"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        title="Kunjungi Website"
-                                        onclick={(e) => e.stopPropagation()}
-                                    >
-                                        <Globe size={18} />
-                                    </a>
-                                {/if}
-
-                                {#if project.github}
-                                    <a
-                                        href={formatUrl(project.github)}
-                                        class="mini-link-btn"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        title="Lihat Source Code"
-                                        onclick={(e) => e.stopPropagation()}
-                                    >
-                                        <Github size={18} />
-                                    </a>
-                                {/if}
-
-                                {#if project.demo}
-                                    <a
-                                        href={formatUrl(project.demo)}
-                                        class="mini-link-btn"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        title="Lihat Demo"
-                                        onclick={(e) => e.stopPropagation()}
-                                    >
-                                        <Play size={18} />
-                                    </a>
-                                {/if}
-                            </div>
-                            <span class="detail-cta">
-                                Detail <ArrowUpRight size={16} />
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            {/each}
-        </div>
-    </section>
-</div>
-
-{#if selectedProject}
-    <div class="modal-backdrop" transition:fade={{ duration: 200 }}>
-        <button
-            class="modal-overlay-btn"
-            aria-label="Tutup detail"
-            onclick={closeProject}
-        ></button>
-        <div
-            class="modal-panel"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="modal-title"
-            tabindex="-1"
-            transition:scale={{
-                duration: 280,
-                start: 0.94,
-                opacity: 0,
-                easing: quintOut,
-            }}
-        >
-            <button
-                class="modal-close"
-                onclick={closeProject}
-                aria-label="Tutup detail"
-            >
-                <X size={20} />
-            </button>
-
-            <div class="modal-tags">
-                {#each selectedProject.categories as cat}
-                    <span class="project-cat">{cat}</span>
-                {/each}
-            </div>
-
-            <h3 id="modal-title" class="modal-title">
-                {selectedProject.title}
-            </h3>
-
-            <div class="modal-body">
-                <p class="modal-desc">{selectedProject.description}</p>
-
-                {#if selectedProject.tech.length > 0}
-                    <div class="modal-section">
-                        <h4>Teknologi</h4>
-                        <div class="project-tech">
-                            {#each selectedProject.tech as t}
-                                <span>{t}</span>
-                            {/each}
-                        </div>
-                    </div>
-                {/if}
-            </div>
-
-            {#if selectedProject.link || selectedProject.github || selectedProject.demo}
-                <div class="modal-actions">
-                    {#if selectedProject.link}
-                        <a
-                            href={formatUrl(selectedProject.link)}
-                            class="btn btn-primary"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            <Globe size={18} /> Kunjungi Website
-                        </a>
-                    {/if}
-                    {#if selectedProject.github}
-                        <a
-                            href={formatUrl(selectedProject.github)}
-                            class="btn btn-outline"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            <Github size={18} /> Source Code
-                        </a>
-                    {/if}
-                    {#if selectedProject.demo}
-                        <a
-                            href={formatUrl(selectedProject.demo)}
-                            class="btn btn-outline"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                        >
-                            <Play size={18} /> Demo
-                        </a>
-                    {/if}
-                </div>
-            {/if}
-        </div>
+<!-- ===== Hero ===== -->
+<section class="p-hero" use:exitProgress>
+  <div class="container">
+    <div class="mono p-top intro" style="--d: 0.1s">
+      <span use:scramble={200}>(Index) — Arsip Karya</span>
+      <span class="scroll-cue" aria-hidden="true">
+        <span use:scramble={400}>Scroll</span>
+        <span class="scroll-line"></span>
+      </span>
     </div>
+
+    <h1 class="p-title" aria-label="Semua project">
+      {#each heroLines as line, li}
+        <span class="line line-{li}" aria-hidden="true">
+          <span class="line-mask">
+            {#each line.split("") as ch, ci}
+              <span
+                class="ch"
+                style="--d: {(0.25 + li * 0.22 + ci * 0.045).toFixed(3)}s"
+                >{ch}</span
+              >
+            {/each}
+          </span>
+          {#if li === heroLines.length - 1}
+            <sup class="mono p-count intro" style="--d: 1s"
+              >(<span use:countUp={{ to: projects.length }}
+                >{projects.length}</span
+              >)</sup
+            >
+          {/if}
+        </span>
+      {/each}
+    </h1>
+
+    <div class="p-foot">
+      <div class="mono p-meta intro" style="--d: 1.05s">
+        <span>{pad(projects.length)} — Project</span>
+        <span>{pad(categories.length)} — Bidang</span>
+      </div>
+      <div class="intro" style="--d: 1.2s">
+        <p class="p-lead">
+          Kumpulan lengkap solusi digital yang pernah saya bangun — ERP, web,
+          hingga mobile. Arahkan kursor untuk pratinjau, klik untuk detail.
+        </p>
+        <a href="/contact" class="btn-text">
+          Diskusikan project baru <ArrowRight size={16} />
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== Filter kategori (menempel di bawah header) ===== -->
+{#if categories.length > 1}
+  <nav class="filters" aria-label="Filter kategori project">
+    <div class="container filters-inner">
+      {#each [[ALL, projects.length], ...categories] as [cat, count]}
+        <button
+          type="button"
+          class="mono filter"
+          class:active={activeCat === cat}
+          aria-pressed={activeCat === cat}
+          onclick={() => (activeCat = cat as string)}
+        >
+          {cat} <span class="filter-count">({pad(count as number)})</span>
+        </button>
+      {/each}
+    </div>
+  </nav>
 {/if}
 
+<!-- ===== Daftar project ===== -->
+<section class="p-list">
+  <div class="container">
+    <div
+      class="index"
+      role="list"
+      use:cursorFollow
+      onpointerleave={() => (hovered = null)}
+    >
+      {#each filtered as project (project.id)}
+        <div
+          class="row"
+          role="listitem"
+          animate:flip={{ duration: 650, easing: quintOut }}
+          use:reveal
+          onpointerenter={(e) => hover(project, e)}
+        >
+          <button
+            type="button"
+            class="row-hit"
+            aria-label={`Lihat detail project ${project.title}`}
+            onclick={() => (selectedProject = project)}
+          ></button>
+
+          <span class="mono row-num">{pad(indexOf.get(project.id) ?? 0)}</span>
+
+          <div class="row-main">
+            <h2>{project.title}</h2>
+            <!-- Perangkat sentuh: deskripsi tampil langsung (tanpa kursor) -->
+            <p class="row-desc">{project.description}</p>
+          </div>
+
+          <span class="mono row-cats">{project.categories.join(" / ")}</span>
+
+          <div class="row-actions">
+            {#if project.link}
+              <a
+                href={formatUrl(project.link)}
+                class="icon-btn"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Kunjungi Website"
+                aria-label={`Website ${project.title}`}
+              >
+                <Globe size={16} />
+              </a>
+            {/if}
+            {#if project.github}
+              <a
+                href={formatUrl(project.github)}
+                class="icon-btn"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Lihat Source Code"
+                aria-label={`Source code ${project.title}`}
+              >
+                <Github size={16} />
+              </a>
+            {/if}
+            {#if project.demo}
+              <a
+                href={formatUrl(project.demo)}
+                class="icon-btn"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Lihat Demo"
+                aria-label={`Demo ${project.title}`}
+              >
+                <Play size={16} />
+              </a>
+            {/if}
+            <span class="row-arrow" aria-hidden="true"
+              ><ArrowUpRight size={20} /></span
+            >
+          </div>
+        </div>
+      {/each}
+
+      <!-- Kartu pratinjau mengikuti kursor -->
+      <div class="follower" aria-hidden="true">
+        {#if preview}
+          <div class="follower-card" class:show={!!hovered}>
+            <span class="mono follower-meta"
+              >({pad(indexOf.get(preview.id) ?? 0)}) — {preview.categories.join(
+                " / ",
+              )}</span
+            >
+            <p class="follower-desc">{preview.description}</p>
+            {#if preview.tech.length > 0}
+              <ul class="mono follower-tech">
+                {#each preview.tech.slice(0, 6) as t}
+                  <li>{t}</li>
+                {/each}
+              </ul>
+            {/if}
+            <span class="mono follower-cta">Klik untuk detail ↗</span>
+          </div>
+        {/if}
+      </div>
+    </div>
+
+    {#if projects.length === 0}
+      <p class="empty">Project akan segera ditampilkan.</p>
+    {/if}
+  </div>
+</section>
+
+{#if selectedProject}
+  <ProjectModal
+    project={selectedProject}
+    onclose={() => (selectedProject = null)}
+  />
+{/if}
+
+<ClosingCta
+  kicker="Project berikutnya bisa jadi milik Anda."
+  lines={["Ayo", "Mulai."]}
+  lead="Punya ide produk, sistem ERP, atau aplikasi yang perlu dibangun? Ceritakan kebutuhannya."
+  primary={{ href: "/contact", label: "Diskusikan Project" }}
+  secondary={{ href: "/about", label: "Tentang Saya" }}
+/>
+
 <style>
-    .projects-page {
-        padding-bottom: 5rem;
-    }
-    .page-header {
-        padding: 8rem 0 4rem;
-    }
-    .back-link {
-        display: inline-block;
-        color: var(--text-muted);
-        font-size: 0.875rem;
-        font-weight: 500;
-        margin-bottom: 1.5rem;
-    }
-    .back-link:hover {
-        color: var(--primary);
-    }
-    .page-header h1 {
-        font-size: 3rem;
-        margin-bottom: 1rem;
-    }
-    .text-orange {
-        color: var(--primary);
+  /* ===== Hero ===== */
+  .p-hero {
+    position: relative;
+    padding: 0;
+    overflow: hidden;
+    background-image:
+      linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+    background-size: 64px 64px;
+    background-position: -1px calc(-1px + var(--p, 0) * 160px);
+  }
+
+  .p-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding-top: 4rem;
+    color: var(--text-muted);
+  }
+
+  .p-title {
+    margin: 2.5rem 0 4.5rem;
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: clamp(3.5rem, 14vw, 12rem);
+    line-height: 0.9;
+    letter-spacing: -0.045em;
+    text-transform: uppercase;
+    color: var(--text-main);
+  }
+
+  .p-title .line {
+    display: block;
+    white-space: nowrap;
+    will-change: transform;
+  }
+
+  .p-title .line-0 {
+    transform: translate3d(calc(var(--p, 0) * -26%), 0, 0);
+  }
+
+  .p-title .line-1 {
+    padding-left: 1.1em;
+    transform: translate3d(calc(var(--p, 0) * 18%), 0, 0);
+  }
+
+  /* Jumlah project kecil di pojok kanan atas kata "PROJECT" */
+  .p-count {
+    display: inline-block;
+    vertical-align: top;
+    margin-left: 0.6rem;
+    margin-top: 0.4em;
+    font-size: clamp(0.85rem, 1.6vw, 1.25rem);
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+  }
+
+  .p-foot {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    padding: 1.75rem 0 5rem;
+    opacity: calc(1 - var(--p, 0) * 1.8);
+    transform: translate3d(0, calc(var(--p, 0) * -60px), 0);
+  }
+
+  .p-foot::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--text-muted);
+    transform-origin: left;
+    animation: draw-x 1.4s cubic-bezier(0.65, 0, 0.35, 1) 0.7s both;
+  }
+
+  .p-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    color: var(--text-main);
+  }
+
+  .p-lead {
+    font-family: var(--font-serif);
+    font-size: clamp(1.1rem, 1.6vw, 1.3rem);
+    line-height: 1.5;
+    color: var(--text-main);
+    max-width: 30rem;
+    margin-bottom: 2rem;
+  }
+
+  /* ===== Filter ===== */
+  .filters {
+    position: sticky;
+    top: calc(4.5rem + 1px); /* tepat di bawah header */
+    z-index: 50;
+    background: var(--bg-white);
+    border-top: 1px solid var(--text-main);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .filters-inner {
+    display: flex;
+    gap: 0.5rem;
+    padding-top: 0.85rem;
+    padding-bottom: 0.85rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .filters-inner::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter {
+    flex-shrink: 0;
+    padding: 0.55rem 0.9rem;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+    transition:
+      background 0.2s ease,
+      color 0.2s ease,
+      border-color 0.2s ease;
+  }
+
+  .filter:hover {
+    color: var(--text-main);
+    border-color: var(--border);
+  }
+
+  .filter.active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: var(--on-primary);
+  }
+
+  .filter-count {
+    opacity: 0.6;
+  }
+
+  /* ===== Daftar ===== */
+  .p-list {
+    padding: 0 0 6rem;
+  }
+
+  .row {
+    position: relative;
+    display: grid;
+    grid-template-columns: 4rem minmax(0, 1fr) 14rem 11rem;
+    gap: 1.5rem;
+    align-items: center;
+    padding: 2.25rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Seluruh baris bisa diklik; tombol link di atasnya tetap bisa diklik */
+  .row-hit {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .row-hit:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 4px;
+  }
+
+  .row-actions {
+    position: relative;
+    z-index: 2;
+  }
+
+  /* Transisi redup dipasang di anak, bukan di baris (baris dipakai .reveal) */
+  .row > :not(.row-hit) {
+    transition: opacity 0.35s ease;
+  }
+
+  .row::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: -1px;
+    height: 1px;
+    background: var(--text-main);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.6s cubic-bezier(0.65, 0, 0.35, 1);
+  }
+
+  .row-num,
+  .row-cats {
+    color: var(--text-muted);
+    transition: color 0.3s ease;
+  }
+
+  .row-main h2 {
+    font-family: var(--font-serif);
+    font-weight: 400;
+    font-size: clamp(1.75rem, 4.4vw, 3.75rem);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    color: var(--text-main);
+    transition: transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .row-desc {
+    display: none;
+  }
+
+  .row-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  .row-actions .icon-btn {
+    opacity: 0;
+    transform: translateX(8px);
+    transition:
+      opacity 0.3s ease,
+      transform 0.3s ease,
+      background 0.2s ease,
+      color 0.2s ease;
+  }
+
+  .row-arrow {
+    display: grid;
+    place-items: center;
+    width: 56px;
+    height: 56px;
+    border: 1px solid var(--text-main);
+    color: var(--text-main);
+    transition:
+      background 0.25s ease,
+      color 0.25s ease,
+      transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @media (hover: hover) {
+    .index:hover .row:not(:hover) > :not(.row-hit) {
+      opacity: 0.22;
     }
 
-    .project-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-        gap: 2rem;
+    .row:hover::after {
+      transform: scaleX(1);
     }
 
-    .project-card {
-        position: relative;
-        padding: 2rem;
-        display: flex;
-        cursor: pointer;
-        overflow: hidden;
-        outline: none;
+    .row:hover .row-num,
+    .row:hover .row-cats {
+      color: var(--text-main);
     }
 
-    /* Garis aksen gradient di atas kartu, muncul saat hover */
-    .project-card::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: linear-gradient(90deg, var(--primary), var(--accent));
-        transform: scaleX(0);
-        transform-origin: left;
-        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    .row:hover .row-main h2 {
+      transform: translateX(0.75rem);
     }
 
-    .project-card:hover::before,
-    .project-card:focus-visible::before {
-        transform: scaleX(1);
+    .row:hover .icon-btn {
+      opacity: 1;
+      transform: none;
     }
 
-    .project-card:focus-visible {
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.25);
+    .row:hover .row-arrow {
+      background: var(--primary);
+      color: var(--on-primary);
+      transform: rotate(45deg);
+    }
+  }
+
+  .empty {
+    padding: 3rem 0;
+    font-family: var(--font-serif);
+    color: var(--text-muted);
+  }
+
+  .follower-desc {
+    margin: 0.9rem 0;
+    font-family: var(--font-serif);
+    font-size: 1.05rem;
+    line-height: 1.45;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .follower-tech {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem 0.9rem;
+    padding-top: 0.9rem;
+    margin-bottom: 0.9rem;
+    border-top: 1px solid color-mix(in srgb, var(--on-primary) 20%, transparent);
+  }
+
+  /* Tanpa kursor (HP/tablet): tanpa pratinjau, deskripsi tampil di baris */
+  @media (hover: none) {
+    .row-desc {
+      display: -webkit-box;
+      margin-top: 0.6rem;
+      font-family: var(--font-serif);
+      font-size: 1rem;
+      line-height: 1.5;
+      color: var(--text-muted);
+      -webkit-line-clamp: 2;
+      line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
 
-    .project-info {
-        display: flex;
-        flex-direction: column;
-        flex: 1;
-        min-width: 0;
-        z-index: 1;
+    .row-actions .icon-btn {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* ===== Responsif ===== */
+  @media (max-width: 960px) {
+    .row {
+      grid-template-columns: 2.75rem minmax(0, 1fr) auto;
+      gap: 0.35rem 1rem;
+      align-items: start;
+      padding: 1.6rem 0;
     }
 
-    /* Nomor index dekoratif di pojok kanan atas */
-    .project-index {
-        position: absolute;
-        top: 1.25rem;
-        right: 1.5rem;
-        font-size: 2.75rem;
-        font-weight: 800;
-        line-height: 1;
-        color: var(--text-main);
-        opacity: 0.06;
-        letter-spacing: -0.03em;
-        transition:
-            opacity 0.3s ease,
-            color 0.3s ease;
-        pointer-events: none;
+    .row-num {
+      padding-top: 0.15rem;
     }
 
-    .project-card:hover .project-index,
-    .project-card:focus-visible .project-index {
-        opacity: 0.14;
-        color: var(--primary);
+    .row-main {
+      grid-column: 2;
+      grid-row: 2;
     }
 
-    .project-tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        margin-bottom: 0.75rem;
+    .row-cats {
+      grid-column: 2;
+      grid-row: 1;
     }
 
-    .project-cat {
-        font-size: 0.7rem;
-        font-weight: 700;
-        color: var(--primary);
-        text-transform: uppercase;
-        letter-spacing: 0.04em;
-        padding: 0.25rem 0.65rem;
-        background: #fff7ed;
-        border: 1px solid #ffedd5;
-        border-radius: 2rem;
-        display: inline-block;
+    .row-actions {
+      grid-column: 3;
+      grid-row: 1 / span 2;
+      flex-direction: column-reverse;
+      justify-content: flex-end;
     }
 
-    :global(.dark) .project-cat {
-        background: rgba(251, 146, 60, 0.12);
-        border-color: rgba(251, 146, 60, 0.2);
+    .row-arrow {
+      width: 44px;
+      height: 44px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .p-top {
+      padding-top: 2.5rem;
     }
 
-    .project-card h3 {
-        margin-bottom: 0.75rem;
-        padding-right: 2.5rem;
-        font-size: 1.35rem;
-        transition: color 0.25s ease;
+    .p-title {
+      margin: 2rem 0 3rem;
     }
 
-    .project-card:hover h3,
-    .project-card:focus-visible h3 {
-        color: var(--primary);
+    .p-title .line-1 {
+      padding-left: 0.4em;
     }
 
-    .project-desc {
-        color: var(--text-muted);
-        font-size: 0.9375rem;
-        line-height: 1.65;
-        margin-bottom: 1.5rem;
-        display: -webkit-box;
-        -webkit-line-clamp: 3;
-        line-clamp: 3;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
+    .p-foot {
+      grid-template-columns: 1fr;
+      padding-bottom: 3.5rem;
     }
 
-    .project-tech {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        margin-bottom: 1.5rem;
+    .p-list {
+      padding-bottom: 4rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .p-foot::before {
+      animation: none;
     }
 
-    .project-tech span {
-        font-size: 0.75rem;
-        background: #f8fafc;
-        padding: 0.25rem 0.75rem;
-        border-radius: 0.5rem;
-        color: var(--text-muted);
-        border: 1px solid var(--border);
+    .row::after,
+    .row-main h2,
+    .row-arrow,
+    .follower-card {
+      transition: none;
     }
-
-    :global(.dark) .project-tech span {
-        background: rgba(255, 255, 255, 0.03);
-    }
-
-    .project-tech span.tech-more {
-        background: transparent;
-        border-color: transparent;
-        color: var(--primary);
-        font-weight: 700;
-    }
-
-    .project-footer {
-        margin-top: auto;
-        padding-top: 1.25rem;
-        border-top: 1px solid var(--border);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 1rem;
-    }
-
-    .project-mini-links {
-        display: flex;
-        gap: 0.75rem;
-        align-items: center;
-    }
-
-    .detail-cta {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.35rem;
-        font-size: 0.85rem;
-        font-weight: 700;
-        color: var(--text-muted);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        white-space: nowrap;
-    }
-
-    .detail-cta :global(svg) {
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .project-card:hover .detail-cta,
-    .project-card:focus-visible .detail-cta {
-        color: var(--primary);
-    }
-
-    .project-card:hover .detail-cta :global(svg),
-    .project-card:focus-visible .detail-cta :global(svg) {
-        transform: translate(2px, -2px);
-    }
-
-    .mini-link-btn {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        background: #fff7ed;
-        color: var(--primary);
-        border: 1px solid #ffedd5;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-
-    .mini-link-btn:hover {
-        background: var(--primary);
-        color: white;
-        transform: translateY(-3px) scale(1.1);
-        box-shadow: 0 10px 15px -3px rgba(249, 115, 22, 0.25);
-        border-color: var(--primary);
-    }
-
-    :global(.dark) .mini-link-btn {
-        background: rgba(251, 146, 60, 0.1);
-        border-color: rgba(251, 146, 60, 0.2);
-    }
-
-    /* ===== Project Detail Modal ===== */
-    .modal-backdrop {
-        position: fixed;
-        inset: 0;
-        z-index: 2000;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 1.5rem;
-        background: rgba(15, 23, 42, 0.55);
-        backdrop-filter: blur(6px);
-        -webkit-backdrop-filter: blur(6px);
-    }
-
-    .modal-overlay-btn {
-        position: absolute;
-        inset: 0;
-        width: 100%;
-        height: 100%;
-        background: transparent;
-        border: none;
-        padding: 0;
-        margin: 0;
-        cursor: pointer;
-    }
-
-    .modal-panel {
-        position: relative;
-        z-index: 1;
-        width: 100%;
-        max-width: 620px;
-        max-height: 88vh;
-        display: flex;
-        flex-direction: column;
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        border-radius: 1.75rem;
-        padding: 2.5rem;
-        box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4);
-    }
-
-    .modal-close {
-        position: absolute;
-        top: 1.25rem;
-        right: 1.25rem;
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border: 1px solid var(--border);
-        background: var(--bg-soft);
-        color: var(--text-muted);
-        border-radius: 50%;
-        cursor: pointer;
-        transition: all 0.25s ease;
-    }
-
-    .modal-close:hover {
-        background: var(--primary);
-        color: white;
-        border-color: var(--primary);
-        transform: rotate(90deg);
-    }
-
-    .modal-tags {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.5rem;
-        margin-bottom: 1rem;
-        padding-right: 3rem;
-    }
-
-    .modal-title {
-        font-size: clamp(1.5rem, 3vw, 2rem);
-        margin-bottom: 1.5rem;
-        padding-right: 2rem;
-        line-height: 1.2;
-    }
-
-    .modal-body {
-        flex: 1;
-        overflow-y: auto;
-        margin: 0 -0.5rem;
-        padding: 0 0.5rem;
-    }
-
-    .modal-desc {
-        color: var(--text-muted);
-        font-size: 1rem;
-        line-height: 1.75;
-        white-space: pre-line;
-        margin-bottom: 2rem;
-    }
-
-    .modal-section h4 {
-        font-size: 0.75rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--text-main);
-        margin-bottom: 0.85rem;
-    }
-
-    .modal-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75rem;
-        margin-top: 2rem;
-        padding-top: 1.75rem;
-        border-top: 1px solid var(--border);
-    }
-
-    .modal-actions .btn {
-        gap: 0.5rem;
-        flex: 1;
-        min-width: 150px;
-    }
-
-    /* Scrollbar halus untuk modal */
-    .modal-body::-webkit-scrollbar {
-        width: 6px;
-    }
-    .modal-body::-webkit-scrollbar-thumb {
-        background: var(--border);
-        border-radius: 3px;
-    }
-
-    @media (max-width: 768px) {
-        .page-header {
-            padding: 6rem 0 2rem;
-            text-align: center;
-        }
-        .page-header h1 {
-            font-size: 2.25rem;
-        }
-        .project-grid {
-            grid-template-columns: 1fr;
-            padding: 0 0.5rem;
-        }
-    }
-
-    @media (max-width: 480px) {
-        .page-header h1 {
-            font-size: 1.875rem;
-        }
-        .modal-panel {
-            padding: 1.75rem 1.25rem;
-            border-radius: 1.25rem;
-            max-height: 90vh;
-        }
-        .modal-actions .btn {
-            flex: 1 1 100%;
-        }
-    }
+  }
 </style>
