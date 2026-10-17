@@ -41,13 +41,35 @@ const emptyStats = {
     devices: [] as { device: string; count: number }[]
 };
 
+// Baca & validasi field form sertifikat (dipakai add & update).
+function readCertificateForm(formData: FormData) {
+    const title = sanitizeInput(formData.get('title') as string);
+    const issuer = sanitizeInput(formData.get('issuer') as string);
+    const issued_at = ((formData.get('issued_at') as string) || '').trim();
+    const credential_id = sanitizeInput(formData.get('credential_id') as string);
+    const credential_url = sanitizeUrl(formData.get('credential_url') as string);
+    const image_url = sanitizeUrl(formData.get('image_url') as string);
+
+    if (!title || !issuer) return { error: 'Judul dan penerbit wajib diisi' };
+    if (issued_at && !/^\d{4}-\d{2}$/.test(issued_at)) return { error: 'Format bulan terbit tidak valid' };
+
+    return {
+        title,
+        issuer,
+        issued_at: issued_at || null,
+        credential_id: credential_id || null,
+        credential_url: credential_url && credential_url !== '#' ? credential_url : null,
+        image_url: image_url && image_url !== '#' ? image_url : null
+    };
+}
+
 export const load: PageServerLoad = async ({ cookies, getClientAddress }) => {
     const auth = cookies.get('admin_auth');
     const authToken = cookies.get('admin_token');
 
     // Validate both cookie and token exist
     if (!auth || auth !== 'true' || !authToken) {
-        return { projects: [], settings: {}, experiences: [], stats: emptyStats, authenticated: false };
+        return { projects: [], settings: {}, experiences: [], certificates: [], stats: emptyStats, authenticated: false };
     }
 
     // Semua query dijalankan paralel — sebelumnya berurutan (await satu-satu),
@@ -56,6 +78,7 @@ export const load: PageServerLoad = async ({ cookies, getClientAddress }) => {
         projectsResult,
         settingsResult,
         experienceResult,
+        certificatesResult,
         appsResult,
         tokensResult,
         reviewsResult,
@@ -71,6 +94,7 @@ export const load: PageServerLoad = async ({ cookies, getClientAddress }) => {
         db.execute('SELECT * FROM projects ORDER BY created_at DESC'),
         db.execute('SELECT * FROM settings'),
         db.execute('SELECT * FROM experiences ORDER BY start_date DESC'),
+        db.execute('SELECT * FROM certificates ORDER BY issued_at DESC, created_at DESC'),
         db.execute('SELECT * FROM store_apps ORDER BY created_at DESC'),
 
         // Review: daftar link yang dibuat + review yang masuk (join biar tahu klien mana).
@@ -197,6 +221,7 @@ export const load: PageServerLoad = async ({ cookies, getClientAddress }) => {
         projects: projectsResult.rows,
         settings,
         experiences: experienceResult.rows,
+        certificates: certificatesResult.rows,
         apps: appsResult.rows,
         reviewTokens: tokensResult.rows,
         reviews: reviewsResult.rows,
@@ -485,6 +510,69 @@ export const actions: Actions = {
         } catch (e) {
             console.error('[DB Error] deleteExperience:', e);
             return fail(500, { error: 'Gagal menghapus pengalaman' });
+        }
+    },
+
+    // ==================== SERTIFIKAT ====================
+    addCertificate: async ({ request, cookies }) => {
+        const auth = cookies.get('admin_auth');
+        const token = cookies.get('admin_token');
+        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+
+        const cert = readCertificateForm(await request.formData());
+        if ('error' in cert) return fail(400, { error: cert.error });
+
+        try {
+            await db.execute(
+                'INSERT INTO certificates (title, issuer, issued_at, credential_id, credential_url, image_url) VALUES (?, ?, ?, ?, ?, ?)',
+                [cert.title, cert.issuer, cert.issued_at, cert.credential_id, cert.credential_url, cert.image_url]
+            );
+            return { success: true, message: 'Sertifikat berhasil ditambahkan' };
+        } catch (e) {
+            console.error('[DB Error] addCertificate:', e);
+            return fail(500, { error: 'Gagal menambah sertifikat' });
+        }
+    },
+
+    updateCertificate: async ({ request, cookies }) => {
+        const auth = cookies.get('admin_auth');
+        const token = cookies.get('admin_token');
+        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+
+        const formData = await request.formData();
+        const id = formData.get('id');
+        if (!id || isNaN(Number(id))) return fail(400, { error: 'ID tidak valid' });
+
+        const cert = readCertificateForm(formData);
+        if ('error' in cert) return fail(400, { error: cert.error });
+
+        try {
+            await db.execute(
+                'UPDATE certificates SET title = ?, issuer = ?, issued_at = ?, credential_id = ?, credential_url = ?, image_url = ? WHERE id = ?',
+                [cert.title, cert.issuer, cert.issued_at, cert.credential_id, cert.credential_url, cert.image_url, Number(id)]
+            );
+            return { success: true, message: 'Sertifikat berhasil diperbarui' };
+        } catch (e) {
+            console.error('[DB Error] updateCertificate:', e);
+            return fail(500, { error: 'Gagal memperbarui sertifikat' });
+        }
+    },
+
+    deleteCertificate: async ({ request, cookies }) => {
+        const auth = cookies.get('admin_auth');
+        const token = cookies.get('admin_token');
+        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+
+        const formData = await request.formData();
+        const id = formData.get('id');
+        if (!id || isNaN(Number(id))) return fail(400, { error: 'ID tidak valid' });
+
+        try {
+            await db.execute('DELETE FROM certificates WHERE id = ?', [Number(id)]);
+            return { success: true, message: 'Sertifikat berhasil dihapus' };
+        } catch (e) {
+            console.error('[DB Error] deleteCertificate:', e);
+            return fail(500, { error: 'Gagal menghapus sertifikat' });
         }
     },
 

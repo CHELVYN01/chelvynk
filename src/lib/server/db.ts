@@ -8,7 +8,7 @@ let _initPromise: Promise<void> | null = null;
 // NAIKKAN angka ini setiap kali menambah tabel/kolom/default di init().
 // Kalau versi di DB sudah sama, init() cuma jalan 1 query (bukan ~20) di setiap
 // cold start — penting karena tiap query = 1 round-trip ke Turso.
-const SCHEMA_VERSION = '1';
+const SCHEMA_VERSION = '2';
 
 // Fungsi untuk ambil client (Lazy Load ENV)
 function getClient() {
@@ -110,6 +110,20 @@ const TABLES = [
         message TEXT NOT NULL,
         ip TEXT,
         is_read INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`,
+
+    // Sertifikat untuk halaman /certificates. File tidak di-upload (filesystem
+    // serverless read-only) — cukup link verifikasi & link gambar (opsional).
+    // issued_at = 'YYYY-MM' dari <input type="month">, dipakai untuk urutan.
+    `CREATE TABLE IF NOT EXISTS certificates (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        issuer TEXT NOT NULL,
+        issued_at TEXT,
+        credential_id TEXT,
+        credential_url TEXT,
+        image_url TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`
 ];
