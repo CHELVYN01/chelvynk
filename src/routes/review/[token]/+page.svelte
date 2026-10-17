@@ -195,7 +195,7 @@
         border: none;
         border-radius: 10px;
         background: var(--primary);
-        color: #fff;
+        color: var(--on-primary);
         font-size: 1rem;
         font-weight: 600;
         cursor: pointer;
