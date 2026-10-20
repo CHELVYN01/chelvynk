@@ -63,13 +63,62 @@ function readCertificateForm(formData: FormData) {
     };
 }
 
+// 'Kancil Pro!' -> 'kancil-pro' (dipakai untuk URL /products/[slug])
+const slugify = (v: string) =>
+    v
+        .toLowerCase()
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 60);
+
+// Baca & validasi field form produk (dipakai add & update).
+function readProductForm(formData: FormData) {
+    const name = sanitizeInput(formData.get('name') as string);
+    const slug = slugify((formData.get('slug') as string) || name || '');
+    const tagline = sanitizeInput(formData.get('tagline') as string);
+    const text = (key: string) => sanitizeInput(formData.get(key) as string) || null;
+    const url = (key: string) => {
+        const v = sanitizeUrl(formData.get(key) as string);
+        return v && v !== '#' ? v : null;
+    };
+    const sortRaw = Number(formData.get('sort_order'));
+
+    if (!name || !tagline) return { error: 'Nama dan tagline wajib diisi' };
+    if (!slug) return { error: 'Slug tidak valid' };
+
+    return {
+        slug,
+        name,
+        tagline,
+        problem: text('problem'),
+        solution: text('solution'),
+        description: text('description'),
+        features: text('features'),
+        tags: text('tags'),
+        status: text('status'),
+        github_url: url('github_url'),
+        link_url: url('link_url'),
+        sort_order: Number.isFinite(sortRaw) ? Math.trunc(sortRaw) : 0
+    };
+}
+
+const productArgs = (p: any) => [
+    p.slug, p.name, p.tagline, p.problem, p.solution, p.description,
+    p.features, p.tags, p.status, p.github_url, p.link_url, p.sort_order
+];
+
+// Error UNIQUE pada slug -> pesan yang jelas untuk admin
+const isUniqueError = (e: unknown) => String(e).includes('UNIQUE');
+
 export const load: PageServerLoad = async ({ cookies, getClientAddress }) => {
     const auth = cookies.get('admin_auth');
     const authToken = cookies.get('admin_token');
 
     // Validate both cookie and token exist
     if (!auth || auth !== 'true' || !authToken) {
-        return { projects: [], settings: {}, experiences: [], certificates: [], stats: emptyStats, authenticated: false };
+        return { projects: [], settings: {}, experiences: [], certificates: [], products: [], stats: emptyStats, authenticated: false };
     }
 
     // Semua query dijalankan paralel — sebelumnya berurutan (await satu-satu),
@@ -79,6 +128,7 @@ export const load: PageServerLoad = async ({ cookies, getClientAddress }) => {
         settingsResult,
         experienceResult,
         certificatesResult,
+        productsResult,
         appsResult,
         tokensResult,
         reviewsResult,
@@ -95,6 +145,7 @@ export const load: PageServerLoad = async ({ cookies, getClientAddress }) => {
         db.execute('SELECT * FROM settings'),
         db.execute('SELECT * FROM experiences ORDER BY start_date DESC'),
         db.execute('SELECT * FROM certificates ORDER BY issued_at DESC, created_at DESC'),
+        db.execute('SELECT * FROM products ORDER BY sort_order ASC, created_at ASC'),
         db.execute('SELECT * FROM store_apps ORDER BY created_at DESC'),
 
         // Review: daftar link yang dibuat + review yang masuk (join biar tahu klien mana).
@@ -222,6 +273,7 @@ export const load: PageServerLoad = async ({ cookies, getClientAddress }) => {
         settings,
         experiences: experienceResult.rows,
         certificates: certificatesResult.rows,
+        products: productsResult.rows,
         apps: appsResult.rows,
         reviewTokens: tokensResult.rows,
         reviews: reviewsResult.rows,
@@ -510,6 +562,76 @@ export const actions: Actions = {
         } catch (e) {
             console.error('[DB Error] deleteExperience:', e);
             return fail(500, { error: 'Gagal menghapus pengalaman' });
+        }
+    },
+
+    // ==================== PRODUK ====================
+    addProduct: async ({ request, cookies }) => {
+        const auth = cookies.get('admin_auth');
+        const token = cookies.get('admin_token');
+        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+
+        const product = readProductForm(await request.formData());
+        if ('error' in product) return fail(400, { error: product.error });
+
+        try {
+            await db.execute(
+                `INSERT INTO products (slug, name, tagline, problem, solution, description,
+                    features, tags, status, github_url, link_url, sort_order)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                productArgs(product)
+            );
+            return { success: true, message: 'Produk berhasil ditambahkan' };
+        } catch (e) {
+            if (isUniqueError(e)) return fail(400, { error: `Slug "${product.slug}" sudah dipakai produk lain` });
+            console.error('[DB Error] addProduct:', e);
+            return fail(500, { error: 'Gagal menambah produk' });
+        }
+    },
+
+    updateProduct: async ({ request, cookies }) => {
+        const auth = cookies.get('admin_auth');
+        const token = cookies.get('admin_token');
+        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+
+        const formData = await request.formData();
+        const id = formData.get('id');
+        if (!id || isNaN(Number(id))) return fail(400, { error: 'ID tidak valid' });
+
+        const product = readProductForm(formData);
+        if ('error' in product) return fail(400, { error: product.error });
+
+        try {
+            await db.execute(
+                `UPDATE products SET slug = ?, name = ?, tagline = ?, problem = ?, solution = ?,
+                    description = ?, features = ?, tags = ?, status = ?, github_url = ?,
+                    link_url = ?, sort_order = ?
+                 WHERE id = ?`,
+                [...productArgs(product), Number(id)]
+            );
+            return { success: true, message: 'Produk berhasil diperbarui' };
+        } catch (e) {
+            if (isUniqueError(e)) return fail(400, { error: `Slug "${product.slug}" sudah dipakai produk lain` });
+            console.error('[DB Error] updateProduct:', e);
+            return fail(500, { error: 'Gagal memperbarui produk' });
+        }
+    },
+
+    deleteProduct: async ({ request, cookies }) => {
+        const auth = cookies.get('admin_auth');
+        const token = cookies.get('admin_token');
+        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+
+        const formData = await request.formData();
+        const id = formData.get('id');
+        if (!id || isNaN(Number(id))) return fail(400, { error: 'ID tidak valid' });
+
+        try {
+            await db.execute('DELETE FROM products WHERE id = ?', [Number(id)]);
+            return { success: true, message: 'Produk berhasil dihapus' };
+        } catch (e) {
+            console.error('[DB Error] deleteProduct:', e);
+            return fail(500, { error: 'Gagal menghapus produk' });
         }
     },
 
