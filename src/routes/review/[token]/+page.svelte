@@ -1,53 +1,82 @@
 <script lang="ts">
     import { enhance } from '$app/forms';
-    import { Star, CheckCircle2, XCircle } from 'lucide-svelte';
+    import { Star, ArrowRight } from 'lucide-svelte';
 
     let { data, form } = $props();
 
     let rating = $state(0);
     let hovered = $state(0);
     let submitting = $state(false);
+
+    const ratingLabels = ['', 'Kurang', 'Cukup', 'Baik', 'Sangat Baik', 'Luar Biasa'];
+    const active = $derived(hovered || rating);
 </script>
 
 <svelte:head>
-    <title>Beri Review — Chelvyn Kleden</title>
+    <title>Beri Review — ck.</title>
     <meta name="robots" content="noindex, nofollow" />
 </svelte:head>
 
-<div class="review-wrap">
-    <div class="review-card">
+<div class="review-page">
+    <!-- Bar atas: hanya logo, tanpa nama (logo sudah mewakili brand) -->
+    <header class="review-top">
+        <a href="/" class="review-logo" aria-label="Beranda">ck.</a>
+        <span class="mono">Review Klien</span>
+    </header>
+
+    <main class="review-main">
         {#if form?.success}
             <!-- Cek sukses DULUAN: setelah submit, token jadi used=1 & load re-run,
                  tapi klien harus lihat "Terima Kasih", bukan "Link Tidak Valid". -->
-            <div class="state-icon success"><CheckCircle2 size={56} /></div>
-            <h1>Terima Kasih! 🙏</h1>
-            <p class="muted">
-                Review Anda sudah kami terima dan akan segera ditampilkan setelah ditinjau.
-                Terima kasih sudah meluangkan waktu.
-            </p>
+            <div class="review-state">
+                <span class="mono state-label">Terkirim</span>
+                <h1>Terima kasih.</h1>
+                <p class="lead">
+                    Review Anda sudah diterima dan akan ditampilkan setelah ditinjau.
+                    Terima kasih sudah meluangkan waktu.
+                </p>
+                <a href="/" class="btn-line">Kunjungi Website <ArrowRight size={16} /></a>
+            </div>
         {:else if !data.valid}
             <!-- Token invalid / expired / sudah dipakai: pesan generik yang sama -->
-            <div class="state-icon error"><XCircle size={56} /></div>
-            <h1>Link Tidak Valid</h1>
-            <p class="muted">
-                Link review ini tidak valid, sudah pernah digunakan, atau masa berlakunya
-                telah habis. Silakan hubungi Chelvyn untuk mendapatkan link baru.
-            </p>
-        {:else}
-            <div class="brand">
-                <span class="tag">Review Klien</span>
-                <h1>Bagaimana pengalaman Anda?</h1>
-                <p class="muted">
-                    Halo <strong>{data.clientName}</strong>, terima kasih sudah mempercayakan
-                    proyek <strong>{data.projectName}</strong>. Umpan balik Anda sangat berarti.
+            <div class="review-state">
+                <span class="mono state-label">Link Tidak Valid</span>
+                <h1>Link ini sudah tidak berlaku.</h1>
+                <p class="lead">
+                    Link review ini tidak valid, sudah pernah digunakan, atau masa berlakunya
+                    telah habis. Silakan minta link baru.
                 </p>
+                <a href="/" class="btn-line">Kembali ke Beranda <ArrowRight size={16} /></a>
+            </div>
+        {:else}
+            <div class="review-head">
+                <h1>Bagaimana pengalaman Anda?</h1>
+                <p class="lead">
+                    Halo <strong>{data.clientName}</strong>, terima kasih sudah mempercayakan
+                    proyek ini. Umpan balik Anda sangat berarti.
+                </p>
+
+                <dl class="review-meta">
+                    <div>
+                        <dt class="mono">Klien</dt>
+                        <dd>{data.clientName}</dd>
+                    </div>
+                    <div>
+                        <dt class="mono">Proyek</dt>
+                        <dd>{data.projectName}</dd>
+                    </div>
+                </dl>
             </div>
 
             {#if form?.error}
-                <div class="alert">{form.error}</div>
+                <div class="review-alert" role="alert">
+                    <span class="mono">Error</span>
+                    {form.error}
+                </div>
             {/if}
 
             <form
+                class="review-form"
                 method="POST"
                 action="?/submit"
                 use:enhance={() => {
@@ -60,162 +89,322 @@
             >
                 <!-- Rating bintang -->
                 <div class="field">
-                    <label for="rating-group">Rating</label>
+                    <div class="field-head">
+                        <label class="mono" for="rating-group">01 — Rating</label>
+                        <span class="mono rating-text">
+                            {active ? `${active}/5 · ${ratingLabels[active]}` : 'Pilih bintang'}
+                        </span>
+                    </div>
                     <div class="stars" id="rating-group" role="radiogroup" aria-label="Rating bintang">
                         {#each [1, 2, 3, 4, 5] as n}
                             <button
                                 type="button"
                                 class="star-btn"
-                                class:filled={n <= (hovered || rating)}
+                                class:filled={n <= active}
+                                role="radio"
+                                aria-checked={rating === n}
                                 aria-label={`${n} bintang`}
                                 onclick={() => (rating = n)}
                                 onmouseenter={() => (hovered = n)}
                                 onmouseleave={() => (hovered = 0)}
                             >
-                                <Star size={34} fill={n <= (hovered || rating) ? 'currentColor' : 'none'} />
+                                <Star size={30} strokeWidth={1.25} fill={n <= active ? 'currentColor' : 'none'} />
                             </button>
                         {/each}
                     </div>
                     <input type="hidden" name="rating" value={rating} />
                 </div>
 
-                <div class="field">
-                    <label for="reviewer_name">Nama</label>
-                    <input id="reviewer_name" name="reviewer_name" type="text" required maxlength="100" placeholder="Nama Anda" />
+                <div class="field-row">
+                    <div class="field">
+                        <label class="mono" for="reviewer_name">02 — Nama</label>
+                        <input id="reviewer_name" name="reviewer_name" type="text" required maxlength="100" placeholder="Nama Anda" />
+                    </div>
+
+                    <div class="field">
+                        <label class="mono" for="reviewer_role">03 — Jabatan / Perusahaan <span class="opt">(opsional)</span></label>
+                        <input id="reviewer_role" name="reviewer_role" type="text" maxlength="120" placeholder="mis. CTO PT Sukses Makmur" />
+                    </div>
                 </div>
 
                 <div class="field">
-                    <label for="reviewer_role">Jabatan / Perusahaan <span class="opt">(opsional)</span></label>
-                    <input id="reviewer_role" name="reviewer_role" type="text" maxlength="120" placeholder="mis. CTO PT Sukses Makmur" />
-                </div>
-
-                <div class="field">
-                    <label for="testimonial">Testimoni</label>
+                    <label class="mono" for="testimonial">04 — Testimoni</label>
                     <textarea id="testimonial" name="testimonial" required rows="5" maxlength="2000" placeholder="Ceritakan pengalaman Anda bekerja sama..."></textarea>
                 </div>
 
-                <button type="submit" class="submit-btn" disabled={submitting || rating === 0}>
+                <button type="submit" class="btn-solid submit-btn" disabled={submitting || rating === 0}>
                     {submitting ? 'Mengirim...' : 'Kirim Review'}
+                    {#if !submitting}<ArrowRight size={16} />{/if}
                 </button>
+                {#if rating === 0}
+                    <p class="hint mono">Pilih rating dulu untuk mengirim</p>
+                {/if}
             </form>
         {/if}
-    </div>
+    </main>
 </div>
 
 <style>
-    .review-wrap {
+    .review-page {
         min-height: 100vh;
         display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 2rem 1rem;
+        flex-direction: column;
         background: var(--bg-soft);
     }
-    .review-card {
-        width: 100%;
-        max-width: 520px;
-        background: var(--bg-card);
-        border: 1px solid var(--border);
-        border-radius: 20px;
-        padding: 2.5rem 2rem;
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
-    }
-    .tag {
-        display: inline-block;
-        font-size: 0.75rem;
-        font-weight: 600;
-        letter-spacing: 0.06em;
-        text-transform: uppercase;
-        color: var(--primary);
-        background: color-mix(in srgb, var(--primary) 12%, transparent);
-        padding: 0.3rem 0.8rem;
-        border-radius: 999px;
-        margin-bottom: 1rem;
-    }
-    h1 {
-        font-size: 1.6rem;
-        font-weight: 700;
-        color: var(--text-main);
-        margin: 0 0 0.6rem;
-        line-height: 1.25;
-    }
-    .muted {
-        color: var(--text-muted);
-        font-size: 0.95rem;
-        line-height: 1.6;
-        margin: 0;
-    }
-    .brand { margin-bottom: 1.75rem; text-align: center; }
 
-    .field { margin-bottom: 1.25rem; }
-    .field label {
-        display: block;
-        font-size: 0.85rem;
-        font-weight: 600;
-        color: var(--text-main);
-        margin-bottom: 0.5rem;
+    /* ===== Bar atas ===== */
+    .review-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.25rem clamp(1.25rem, 4vw, 2.5rem);
+        border-bottom: 1px solid var(--border);
+        color: var(--text-muted);
     }
-    .field .opt { font-weight: 400; color: var(--text-muted); }
+
+    .review-logo {
+        font-family: var(--font-serif);
+        font-style: italic;
+        font-weight: 400;
+        font-size: 2rem;
+        font-variation-settings: 'opsz' 72;
+        letter-spacing: -0.04em;
+        line-height: 1;
+        color: var(--text-main);
+    }
+
+    /* ===== Konten ===== */
+    .review-main {
+        flex: 1;
+        width: 100%;
+        max-width: 640px;
+        margin: 0 auto;
+        padding: clamp(3rem, 8vw, 5.5rem) 1.25rem 5rem;
+    }
+
+    h1 {
+        font-family: var(--font-serif);
+        font-weight: 400;
+        font-size: clamp(2.25rem, 6vw, 3.25rem);
+        line-height: 1.05;
+        letter-spacing: -0.03em;
+        color: var(--text-main);
+        margin: 0 0 1.25rem;
+    }
+
+    .lead {
+        color: var(--text-muted);
+        font-size: 1rem;
+        line-height: 1.7;
+        margin: 0;
+        max-width: 520px;
+    }
+
+    .lead strong {
+        color: var(--text-main);
+        font-weight: 600;
+    }
+
+    /* Ringkasan klien & proyek: tabel tipis bergaris */
+    .review-meta {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        margin: 2.5rem 0 0;
+        border-top: 2px solid var(--text-main);
+    }
+
+    .review-meta > div {
+        padding: 1rem 0;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .review-meta > div + div {
+        padding-left: 1.25rem;
+        border-left: 1px solid var(--border);
+    }
+
+    .review-meta dt {
+        color: var(--text-muted);
+        margin-bottom: 0.35rem;
+    }
+
+    .review-meta dd {
+        margin: 0;
+        font-family: var(--font-serif);
+        font-size: 1.2rem;
+        color: var(--text-main);
+        line-height: 1.3;
+        overflow-wrap: anywhere;
+    }
+
+    /* ===== Form ===== */
+    .review-form {
+        display: flex;
+        flex-direction: column;
+        gap: 2.25rem;
+        margin-top: 3rem;
+    }
+
+    .field-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2.25rem 1.5rem;
+    }
+
+    .field {
+        display: flex;
+        flex-direction: column;
+        gap: 0.6rem;
+        min-width: 0;
+    }
+
+    .field-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 1rem;
+    }
+
+    .field label {
+        color: var(--text-main);
+    }
+
+    .field .opt {
+        color: var(--text-muted);
+        text-transform: none;
+        letter-spacing: 0;
+    }
+
+    .rating-text {
+        color: var(--text-muted);
+    }
+
     input[type='text'],
     textarea {
         width: 100%;
-        padding: 0.75rem 0.9rem;
-        border: 1px solid var(--border);
-        border-radius: 10px;
-        background: var(--bg-soft);
+        padding: 0.7rem 0;
+        border: none;
+        border-bottom: 1px solid color-mix(in srgb, var(--text-muted) 45%, transparent);
+        border-radius: 0;
+        background: transparent;
         color: var(--text-main);
-        font-size: 0.95rem;
-        font-family: inherit;
-        transition: border-color 0.15s;
-        box-sizing: border-box;
+        font-family: var(--font-sans);
+        font-size: 1rem;
+        transition: border-color 0.2s ease;
     }
+
+    input[type='text']::placeholder,
+    textarea::placeholder {
+        color: color-mix(in srgb, var(--text-muted) 65%, transparent);
+    }
+
     input[type='text']:focus,
     textarea:focus {
         outline: none;
-        border-color: var(--primary);
+        border-bottom-color: var(--text-main);
+        box-shadow: 0 1px 0 0 var(--text-main);
     }
-    textarea { resize: vertical; }
 
-    .stars { display: flex; gap: 0.35rem; }
+    textarea {
+        resize: vertical;
+        min-height: 130px;
+        line-height: 1.6;
+    }
+
+    /* Bintang monokrom */
+    .stars {
+        display: flex;
+        gap: 0.25rem;
+        margin-left: -0.2rem;
+    }
+
     .star-btn {
         background: none;
         border: none;
-        padding: 0.15rem;
+        padding: 0.2rem;
         cursor: pointer;
-        color: #cbd5e1;
-        transition: color 0.12s, transform 0.12s;
+        color: color-mix(in srgb, var(--text-muted) 55%, transparent);
         line-height: 0;
+        transition:
+            color 0.15s ease,
+            transform 0.15s ease;
     }
-    .star-btn.filled { color: #f59e0b; }
-    .star-btn:hover { transform: scale(1.12); }
+
+    .star-btn.filled {
+        color: var(--text-main);
+    }
+
+    .star-btn:hover {
+        transform: translateY(-2px);
+    }
+
+    .star-btn:focus-visible {
+        outline: 1px solid var(--text-main);
+        outline-offset: 2px;
+    }
 
     .submit-btn {
         width: 100%;
-        padding: 0.9rem;
-        border: none;
-        border-radius: 10px;
+        cursor: pointer;
+        font-family: var(--font-serif);
+    }
+
+    .submit-btn:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+    }
+
+    .submit-btn:disabled:hover {
         background: var(--primary);
         color: var(--on-primary);
-        font-size: 1rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: background 0.15s;
-    }
-    .submit-btn:hover:not(:disabled) { background: var(--primary-hover); }
-    .submit-btn:disabled { opacity: 0.55; cursor: not-allowed; }
-
-    .alert {
-        background: color-mix(in srgb, #ef4444 12%, transparent);
-        border: 1px solid color-mix(in srgb, #ef4444 40%, transparent);
-        color: #dc2626;
-        padding: 0.75rem 1rem;
-        border-radius: 10px;
-        font-size: 0.9rem;
-        margin-bottom: 1.25rem;
     }
 
-    .state-icon { display: flex; justify-content: center; margin-bottom: 1rem; }
-    .state-icon.success { color: #22c55e; }
-    .state-icon.error { color: #ef4444; }
-    .review-card:has(.state-icon) { text-align: center; }
+    .hint {
+        margin: -1.25rem 0 0;
+        text-align: center;
+        color: var(--text-muted);
+    }
+
+    .review-alert {
+        display: flex;
+        flex-direction: column;
+        gap: 0.3rem;
+        margin-top: 2rem;
+        padding: 0.9rem 1rem;
+        border-left: 2px solid var(--text-main);
+        background: color-mix(in srgb, var(--text-main) 5%, transparent);
+        color: var(--text-main);
+        font-size: 0.92rem;
+    }
+
+    /* ===== Status sukses / link invalid ===== */
+    .review-state {
+        padding-top: 1.25rem;
+        border-top: 2px solid var(--text-main);
+    }
+
+    .state-label {
+        display: inline-block;
+        margin-bottom: 2rem;
+        color: var(--text-muted);
+    }
+
+    .review-state .btn-line {
+        margin-top: 2.5rem;
+    }
+
+    @media (max-width: 560px) {
+        .field-row {
+            grid-template-columns: 1fr;
+        }
+
+        .review-meta {
+            grid-template-columns: 1fr;
+        }
+
+        .review-meta > div + div {
+            padding-left: 0;
+            border-left: none;
+        }
+    }
 </style>

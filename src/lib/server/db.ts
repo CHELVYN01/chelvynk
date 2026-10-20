@@ -8,7 +8,7 @@ let _initPromise: Promise<void> | null = null;
 // NAIKKAN angka ini setiap kali menambah tabel/kolom/default di init().
 // Kalau versi di DB sudah sama, init() cuma jalan 1 query (bukan ~20) di setiap
 // cold start — penting karena tiap query = 1 round-trip ke Turso.
-const SCHEMA_VERSION = '2';
+const SCHEMA_VERSION = '3';
 
 // Fungsi untuk ambil client (Lazy Load ENV)
 function getClient() {
@@ -125,7 +125,46 @@ const TABLES = [
         credential_url TEXT,
         image_url TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`,
+
+    // Produk buatan sendiri untuk /products dan /products/[slug].
+    // features = satu poin per baris; tags = dipisah koma.
+    `CREATE TABLE IF NOT EXISTS products (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        slug TEXT NOT NULL UNIQUE,
+        name TEXT NOT NULL,
+        tagline TEXT NOT NULL,
+        problem TEXT,
+        solution TEXT,
+        description TEXT,
+        features TEXT,
+        tags TEXT,
+        status TEXT,
+        github_url TEXT,
+        link_url TEXT,
+        sort_order INTEGER DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`
+];
+
+// Produk pertama. Hanya dimasukkan sekali (saat schema naik ke v3) dan
+// tidak menimpa apa pun kalau slug 'kancil' sudah ada.
+const SEED_PRODUCTS = [
+    {
+        sql: `INSERT INTO products (slug, name, tagline, problem, solution, tags, sort_order)
+              SELECT ?, ?, ?, ?, ?, ?, ?
+              WHERE NOT EXISTS (SELECT 1 FROM products WHERE slug = ?)`,
+        args: [
+            'kancil',
+            'Kancil',
+            'Aturan kerja (skill) yang membantu model AI kecil menyelesaikan tugas coding sungguhan.',
+            'Model AI kecil biasanya tahu langkah yang benar, tapi gagal menuntaskannya.',
+            'Kancil menutup celah itu tanpa mengganti modelnya.',
+            'AI, Skill, Coding',
+            1,
+            'kancil'
+        ]
+    }
 ];
 
 // Dijalankan satu per satu karena error "duplicate column" (kolom sudah ada) itu normal.
@@ -178,6 +217,7 @@ async function init() {
             "INSERT OR IGNORE INTO settings (key, value) VALUES ('github', '#')",
             "INSERT OR IGNORE INTO settings (key, value) VALUES ('linkedin', '#')",
             "INSERT OR IGNORE INTO settings (key, value) VALUES ('twitter', '#')",
+            ...SEED_PRODUCTS,
             { sql: "INSERT OR REPLACE INTO settings (key, value) VALUES ('schema_version', ?)", args: [SCHEMA_VERSION] }
         ], 'write');
 
