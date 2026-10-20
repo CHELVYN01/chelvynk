@@ -25,6 +25,7 @@
     ...(STORE_ENABLED ? [{ href: "/store", label: "Store" }] : []),
     { href: "/about", label: "About" },
     { href: "/projects", label: "Projects" },
+    { href: "/products", label: "Products" },
     { href: "/certificates", label: "Certificates" },
   ];
   const pad = (n: number) => String(n).padStart(2, "0");
@@ -62,7 +63,6 @@
 </script>
 
 <svelte:head>
-  <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
   <link
@@ -100,9 +100,12 @@
   />
   <meta property="og:site_name" content="Chelvyn Kleden" />
   <meta property="og:locale" content="id_ID" />
+  <meta property="og:image" content="https://chelvynkleden.com/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
   <meta
-    property="og:image"
-    content="https://chelvynkleden.com/profile-bg-atas.jpg"
+    property="og:image:alt"
+    content="chelvynkleden — Odoo Technical Consultant & Fullstack Developer"
   />
 
   <!-- Twitter Card -->
@@ -117,7 +120,7 @@
   />
   <meta
     name="twitter:image"
-    content="https://chelvynkleden.com/profile-bg-atas.jpg"
+    content="https://chelvynkleden.com/og-image.png"
   />
 </svelte:head>
 
@@ -129,7 +132,7 @@
   <header class="header" class:menu-open={isMobileMenuOpen}>
     <div class="container nav-container">
       <a href="/" class="logo"
-        ><span class="logo-mark" aria-hidden="true"></span>Chelvyn Kleden</a
+        >Chelvyn Kleden</a
       >
 
       <!-- Mobile: tombol teks "Menu" / "Tutup" yang bergeser -->
@@ -228,7 +231,7 @@
     <div class="container">
       <div class="footer-content">
         <div class="footer-logo">
-          <span class="logo-mark" aria-hidden="true"></span>Chelvyn Kleden
+          Chelvyn Kleden
         </div>
         <div class="footer-links">
           <a
@@ -285,7 +288,7 @@
     height: 4.5rem;
   }
 
-  /* Logo: kotak solid + nama monospace */
+  /* Logo: nama monospace saja */
   .logo,
   .footer-logo {
     display: inline-flex;
@@ -301,13 +304,6 @@
 
   .logo {
     z-index: 1100;
-  }
-
-  .logo-mark {
-    width: 14px;
-    height: 14px;
-    background: var(--text-main);
-    flex-shrink: 0;
   }
 
   .nav-links {
@@ -333,6 +329,13 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
+    }
+  }
+
+  /* Layar tanggung: rapatkan menu tengah supaya tidak menabrak logo/Kontak */
+  @media (min-width: 769px) and (max-width: 1024px) {
+    .nav-links .nav-center {
+      gap: 1.25rem;
     }
   }
 
