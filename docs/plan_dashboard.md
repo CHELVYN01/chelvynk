@@ -1,18 +1,3 @@
-oke pak hari ini tanggal 28/07/2026
-# memperbaiki tampilan dari dashboard porto kita
+pak saya mau rombak desain portofolio saya kita mulai dari home itu saya mau desainya itu hitam Chromono
 
-### style loyout
-- gaya yang modern
-- loading yang smoot dan tidak keliatan lemot dan gaya cepat loading nya 
-#### persekarang loading nya kaya gak ada dan lemot 
-
-### fiture 
-- analytics 
-  tampilan nya di awal dan menggunakan grafik (berikan saya chart yang cocok untuk fitur saya)
-- loading dan notifikasih di kanan itu kaya lemot banget 
-
-
-
-
-
-
+terus tulisanya tali yah untuk layou sudah benar cuman ganti warna aja jadi klo mode cerah tulisan hitam terus mode gelap tulisan putih oke extra minimalis oke kita mulai dari home yah 

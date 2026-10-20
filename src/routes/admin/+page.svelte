@@ -33,6 +33,7 @@
     Activity,
     Award,
     ExternalLink,
+    Package,
   } from "lucide-svelte";
   import { theme } from "$lib/theme.svelte";
   import { navigating } from "$app/state";
@@ -53,6 +54,7 @@
       settings: any;
       experiences: any[];
       certificates: any[];
+      products: any[];
       apps: any[];
       reviewTokens: any[];
       reviews: any[];
@@ -88,7 +90,8 @@
   );
   let isAddModalOpen = $state(false);
   let isAddExpModalOpen = $state(false);
-  // Form sertifikat: null = tertutup, {} = tambah baru, objek ber-id = edit
+  // Form produk & sertifikat: null = tertutup, {} = tambah baru, objek ber-id = edit
+  let productForm = $state<any | null>(null);
   let certForm = $state<any | null>(null);
 
   /** 'YYYY-MM' -> 'Mar 2025' */
@@ -385,7 +388,7 @@ Sekali lagi makasih banyak! 🚀`;
     <!-- SIDEBAR -->
     <aside class="sidebar">
       <div class="sidebar-brand">
-        <div class="logo">CK<span>.</span></div>
+        <div class="logo">ck.</div>
         <span class="brand-text">Dashboard</span>
       </div>
 
@@ -421,6 +424,14 @@ Sekali lagi makasih banyak! 🚀`;
         >
           <Award size={20} />
           <span>Sertifikat</span>
+        </button>
+        <button
+          class="nav-item"
+          class:active={activeTab === "products"}
+          onclick={() => (activeTab = "products")}
+        >
+          <Package size={20} />
+          <span>Produk</span>
         </button>
         <button
           class="nav-item"
@@ -503,6 +514,8 @@ Sekali lagi makasih banyak! 🚀`;
               Kelola Pengalaman
             {:else if activeTab === "certificates"}
               Kelola Sertifikat
+            {:else if activeTab === "products"}
+              Kelola Produk
             {:else if activeTab === "store"}
               Kelola Store Apps
             {:else if activeTab === "analytics"}
@@ -524,6 +537,8 @@ Sekali lagi makasih banyak! 🚀`;
               Daftar riwayat karir bapak.
             {:else if activeTab === "certificates"}
               Sertifikat yang tampil di halaman /certificates.
+            {:else if activeTab === "products"}
+              Produk buatan sendiri di halaman /products.
             {:else if activeTab === "store"}
               Kelola aplikasi Store yang dibagikan.
             {:else if activeTab === "analytics"}
@@ -564,6 +579,15 @@ Sekali lagi makasih banyak! 🚀`;
           >
             <PlusCircle size={18} />
             Tambah Sertifikat
+          </button>
+        {:else if activeTab === "products"}
+          <button
+            class="btn btn-primary"
+            onclick={() => (productForm = {})}
+            style="gap: 0.5rem;"
+          >
+            <PlusCircle size={18} />
+            Tambah Produk
           </button>
         {:else if activeTab === "store"}
           <button
@@ -954,6 +978,66 @@ Sekali lagi makasih banyak! 🚀`;
                 <p class="empty-state">
                   Belum ada sertifikat yang ditambahkan.
                 </p>
+              {/if}
+            </div>
+          </div>
+        {:else if activeTab === "products"}
+          <!-- PRODUCTS LIST -->
+          <div class="card projects-container fade-in">
+            <div class="project-list">
+              {#each data.products as prod (prod.id)}
+                <div class="project-item">
+                  <div class="project-main-info">
+                    <div class="project-tags">
+                      <span class="tag">/products/{prod.slug}</span>
+                      {#if prod.status}<span class="tag">{prod.status}</span>{/if}
+                    </div>
+                    <h3>{prod.name}</h3>
+                    <p class="project-desc">{prod.tagline}</p>
+                  </div>
+
+                  <div class="project-item-actions">
+                    <a
+                      href="/products/{prod.slug}"
+                      class="action-btn"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Lihat halaman produk"
+                    >
+                      <ExternalLink size={18} />
+                    </a>
+                    <button
+                      type="button"
+                      class="action-btn"
+                      title="Edit Produk"
+                      onclick={() => (productForm = { ...prod })}
+                    >
+                      <Pencil size={18} />
+                    </button>
+                    <form
+                      method="POST"
+                      action="?/deleteProduct"
+                      use:enhance={trackedEnhance({
+                        success: "Produk berhasil dihapus",
+                      })}
+                    >
+                      <input type="hidden" name="id" value={prod.id} />
+                      <button
+                        type="submit"
+                        class="action-btn btn-delete-icon"
+                        title="Hapus Produk"
+                        onclick={(e) =>
+                          !confirm("Hapus produk ini?") && e.preventDefault()}
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              {/each}
+
+              {#if data.products.length === 0}
+                <p class="empty-state">Belum ada produk yang ditambahkan.</p>
               {/if}
             </div>
           </div>
@@ -2181,6 +2265,189 @@ Sekali lagi makasih banyak! 🚀`;
     </div>
   {/if}
 
+  <!-- Modal Tambah / Edit Produk -->
+  {#if productForm}
+    <div
+      class="modal-overlay"
+      role="button"
+      tabindex="-1"
+      transition:fade={{ duration: 200 }}
+      onclick={(e) => {
+        if (e.target === e.currentTarget) productForm = null;
+      }}
+      onkeydown={(e) => {
+        if (e.key === "Escape") productForm = null;
+      }}
+    >
+      <div
+        class="modal-content card"
+        transition:fly={{ y: 20, duration: 300 }}
+        style="max-width: 680px;"
+      >
+        <div class="modal-header">
+          <h2>{productForm.id ? "Edit Produk" : "Tambah Produk"}</h2>
+          <button class="close-btn" onclick={() => (productForm = null)}>
+            <X size={20} />
+          </button>
+        </div>
+        <form
+          method="POST"
+          action={productForm.id ? "?/updateProduct" : "?/addProduct"}
+          use:enhance={() => {
+            return async ({ result, update }) => {
+              if (result.type === "success") productForm = null;
+              await update();
+            };
+          }}
+          class="admin-form"
+        >
+          {#if productForm.id}
+            <input type="hidden" name="id" value={productForm.id} />
+          {/if}
+
+          <div
+            style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;"
+          >
+            <div class="form-group">
+              <label for="prod_name">Nama Produk</label>
+              <input
+                type="text"
+                id="prod_name"
+                name="name"
+                value={productForm.name ?? ""}
+                placeholder="Contoh: Kancil"
+                required
+              />
+            </div>
+            <div class="form-group">
+              <label for="prod_slug">Slug URL (opsional)</label>
+              <input
+                type="text"
+                id="prod_slug"
+                name="slug"
+                value={productForm.slug ?? ""}
+                placeholder="otomatis dari nama"
+              />
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label for="prod_tagline">Tagline (satu kalimat)</label>
+            <input
+              type="text"
+              id="prod_tagline"
+              name="tagline"
+              value={productForm.tagline ?? ""}
+              placeholder="Apa produk ini, dalam satu kalimat"
+              required
+            />
+          </div>
+
+          <div
+            style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;"
+          >
+            <div class="form-group">
+              <label for="prod_problem">Masalah (opsional)</label>
+              <textarea id="prod_problem" name="problem" rows="3"
+                >{productForm.problem ?? ""}</textarea
+              >
+            </div>
+            <div class="form-group">
+              <label for="prod_solution">Solusi (opsional)</label>
+              <textarea id="prod_solution" name="solution" rows="3"
+                >{productForm.solution ?? ""}</textarea
+              >
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label for="prod_desc">Detail (opsional, pisahkan paragraf dengan baris kosong)</label>
+            <textarea id="prod_desc" name="description" rows="5"
+              >{productForm.description ?? ""}</textarea
+            >
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1.5rem;">
+            <label for="prod_features">Fitur (opsional, satu poin per baris)</label>
+            <textarea id="prod_features" name="features" rows="4"
+              >{productForm.features ?? ""}</textarea
+            >
+          </div>
+
+          <div
+            style="display: grid; grid-template-columns: 1.4fr 1fr 0.6fr; gap: 1.5rem; margin-bottom: 1.5rem;"
+          >
+            <div class="form-group">
+              <label for="prod_tags">Tag (pisahkan koma)</label>
+              <input
+                type="text"
+                id="prod_tags"
+                name="tags"
+                value={productForm.tags ?? ""}
+                placeholder="AI, Skill, Coding"
+              />
+            </div>
+            <div class="form-group">
+              <label for="prod_status">Status (opsional)</label>
+              <input
+                type="text"
+                id="prod_status"
+                name="status"
+                value={productForm.status ?? ""}
+                placeholder="Open Source / Beta"
+              />
+            </div>
+            <div class="form-group">
+              <label for="prod_order">Urutan</label>
+              <input
+                type="number"
+                id="prod_order"
+                name="sort_order"
+                value={productForm.sort_order ?? 0}
+              />
+            </div>
+          </div>
+
+          <div
+            style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;"
+          >
+            <div class="form-group">
+              <label for="prod_github">Link GitHub (opsional)</label>
+              <input
+                type="text"
+                id="prod_github"
+                name="github_url"
+                value={productForm.github_url ?? ""}
+                placeholder="https://github.com/..."
+              />
+            </div>
+            <div class="form-group">
+              <label for="prod_link">Link Website/Demo (opsional)</label>
+              <input
+                type="text"
+                id="prod_link"
+                name="link_url"
+                value={productForm.link_url ?? ""}
+                placeholder="https://..."
+              />
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-outline"
+              onclick={() => (productForm = null)}>Batal</button
+            >
+            <button type="submit" class="btn btn-primary"
+              >{productForm.id ? "Simpan Perubahan" : "Simpan Produk"}</button
+            >
+          </div>
+        </form>
+      </div>
+    </div>
+  {/if}
+
   <!-- Modal Tambah / Edit Sertifikat -->
   {#if certForm}
     <div
@@ -2899,13 +3166,14 @@ Sekali lagi makasih banyak! 🚀`;
   }
 
   .sidebar-brand .logo {
-    font-size: 1.35rem;
-    font-weight: 800;
+    font-family: var(--font-serif);
+    font-style: italic;
+    font-size: 1.6rem;
+    font-weight: 400;
+    font-variation-settings: "opsz" 72;
+    letter-spacing: -0.04em;
     color: var(--text-main);
     line-height: 1;
-  }
-  .sidebar-brand .logo span {
-    color: var(--primary);
   }
   .sidebar-brand span.brand-text {
     font-weight: 600;
