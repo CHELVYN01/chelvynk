@@ -54,6 +54,11 @@
     document.body.style.overflow = isMobileMenuOpen ? "hidden" : "";
   });
 
+  // Kursor pena di halaman publik (admin & review tetap kursor biasa)
+  $effect(() => {
+    document.documentElement.classList.toggle("pen-cursor", !isAdmin);
+  });
+
   afterNavigate(() => (isMobileMenuOpen = false));
 
   function toggleMenu() {

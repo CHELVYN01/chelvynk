@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  <!-- Pena miring 45°, ujung mata pena di (3, 29) = titik klik kursor -->
+  <g transform="translate(3 29) rotate(45)" stroke="#fff" stroke-width="1.4" stroke-linejoin="round">
+    <path d="M0 0 L-3.2 -7.5 L3.2 -7.5 Z" fill="#0a0a0a"/>
+    <rect x="-3.6" y="-11" width="7.2" height="3.5" fill="#fafafa" stroke="#0a0a0a" stroke-width="1"/>
+    <rect x="-3.6" y="-31" width="7.2" height="20" rx="2" fill="#0a0a0a"/>
+    <path d="M0 -1.5 L0 -5.5" stroke="#fff" stroke-width="0.9" stroke-linecap="round"/>
+  </g>
+</svg>

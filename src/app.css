@@ -40,6 +40,20 @@ body {
     -webkit-font-smoothing: antialiased;
 }
 
+/* Kursor pena (kelas dipasang di <html> oleh +layout.svelte, kecuali admin).
+   !important supaya menang atas cursor: pointer di style komponen. */
+.pen-cursor,
+.pen-cursor * {
+    cursor: url("/cursor-pen.svg") 3 29, auto !important;
+}
+
+/* Kolom ketik tetap pakai kursor teks supaya nyaman mengetik */
+.pen-cursor textarea,
+.pen-cursor [contenteditable="true"],
+.pen-cursor input:not([type="checkbox"], [type="radio"], [type="submit"], [type="button"], [type="range"], [type="file"]) {
+    cursor: text !important;
+}
+
 h1,
 h2,
 h3 {
