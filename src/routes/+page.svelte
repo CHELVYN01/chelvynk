@@ -12,6 +12,7 @@
   import { reveal } from "$lib/reveal";
   import { formatUrl } from "$lib/url";
   import ProjectModal from "$lib/components/ProjectModal.svelte";
+  import HeroPortrait from "$lib/components/HeroPortrait.svelte";
   import {
     exitProgress,
     scrub,
@@ -199,8 +200,10 @@
 <!-- Garis progres scroll di puncak layar -->
 <div class="page-progress" use:pageProgress aria-hidden="true"></div>
 
-<!-- ===== Hero: tipografi saja, tanpa gambar ===== -->
+<!-- ===== Hero: tipografi + potret partikel samar di kiri (desktop/tablet) ===== -->
 <section id="home" class="hero" use:exitProgress>
+  <HeroPortrait />
+
   <div class="container">
     <div class="mono hero-top intro" style="--d: 0.1s">
       <p class="hero-status">
@@ -622,6 +625,8 @@
     /* Grid ikut bergeser pelan saat hero di-scroll (--p dari exitProgress) */
     background-position: -1px calc(-1px + var(--p, 0) * 160px);
     overflow: hidden;
+    /* Potret partikel (z-index -1) tetap di atas grid tapi di bawah teks */
+    isolation: isolate;
   }
 
 
