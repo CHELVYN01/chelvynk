@@ -1,16 +1,26 @@
-import db from '$lib/server/db';
+import { listProjects } from '$lib/server/projects';
+import { collectionLd, type Seo } from '$lib/seo';
 import type { PageServerLoad } from './$types';
 
+const DESCRIPTION =
+    'Portofolio project Chelvyn Kleden: implementasi & kustomisasi Odoo ERP, aplikasi web Laravel, CodeIgniter 4, Svelte, Next.js, hingga aplikasi mobile.';
+
 export const load: PageServerLoad = async () => {
-    // Fetch all projects
-    const result = await db.execute('SELECT * FROM projects ORDER BY created_at DESC');
-    const rawProjects = result.rows as any[];
+    const projects = await listProjects();
 
-    const projects = rawProjects.map(p => ({
-        ...p,
-        tech: p.tech ? (p.tech as string).split(',').map((s: string) => s.trim()) : [],
-        categories: p.category ? (p.category as string).split(',').map((s: string) => s.trim()) : []
-    }));
+    const seo: Seo = {
+        title: 'Portofolio Project — Chelvyn Kleden | Odoo, Laravel & Web Developer',
+        description: DESCRIPTION,
+        path: '/projects',
+        jsonLd: [
+            collectionLd({
+                name: 'Portofolio Project Chelvyn Kleden',
+                description: DESCRIPTION,
+                path: '/projects',
+                items: projects.map((p) => ({ name: String(p.title), path: `/projects/${p.slug}` }))
+            })
+        ]
+    };
 
-    return { projects };
+    return { projects, seo };
 };

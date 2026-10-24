@@ -1,3 +1,4 @@
+import type { Seo } from '$lib/seo';
 import db from '$lib/server/db';
 import { fail, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
@@ -13,15 +14,22 @@ const formSecret = () => env.FORM_SECRET || env.DATABASE_AUTH_TOKEN || 'dev-only
 const IP_MAX = 3;    // per IP per 30 menit
 const EMAIL_MAX = 2; // per email per 24 jam
 
+const seo: Seo = {
+    title: 'Kontak — Chelvyn Kleden | Hire Odoo Technical Consultant & Developer',
+    description:
+        'Hubungi Chelvyn Kleden untuk project Odoo ERP, aplikasi web, atau mobile. Konsultasi kebutuhan, estimasi, dan kolaborasi freelance di Indonesia.',
+    path: '/contact'
+};
+
 export const load: PageServerLoad = async () => {
     const formToken = await createFormToken(formSecret());
     try {
         const settingsResult = await db.execute("SELECT value FROM settings WHERE key = 'status'");
         const siteStatus = (settingsResult.rows[0]?.value as string) || 'Tersedia untuk Project Baru';
-        return { siteStatus, formToken };
+        return { siteStatus, formToken, seo };
     } catch (e) {
         console.error('[Contact Load Error]:', e);
-        return { siteStatus: 'Tersedia untuk Project Baru', formToken };
+        return { siteStatus: 'Tersedia untuk Project Baru', formToken, seo };
     }
 };
 

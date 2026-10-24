@@ -1,4 +1,5 @@
 import db from '$lib/server/db';
+import { toProject } from '$lib/server/projects';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async () => {
@@ -24,11 +25,7 @@ export const load: PageServerLoad = async () => {
             `)
         ]);
 
-        const projects = (result.rows as any[]).map(p => ({
-            ...p,
-            tech: p.tech ? (p.tech as string).split(',').map((s: string) => s.trim()) : [],
-            categories: p.category ? (p.category as string).split(',').map((s: string) => s.trim()) : []
-        }));
+        const projects = (result.rows as any[]).map(toProject);
 
         const siteStatus = settingsResult.rows[0]?.value as string || 'Tersedia untuk Project Baru';
 

@@ -8,10 +8,6 @@
   let sending = $state(false);
 </script>
 
-<svelte:head>
-  <title>Kontak — Chelvyn Kleden | Odoo Technical Consultant</title>
-</svelte:head>
-
 <section class="contact-section">
   <div class="container contact-grid">
     <div class="contact-intro">

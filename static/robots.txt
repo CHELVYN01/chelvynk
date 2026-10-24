@@ -1,4 +1,25 @@
+# Mesin pencari & crawler AI dipersilakan mengindeks seluruh konten publik.
+# Crawler AI disebut eksplisit supaya jelas diizinkan (search, jawaban, & kutipan).
+# Baris User-agent berurutan berbagi aturan yang sama di bawahnya.
 User-agent: *
+User-agent: Googlebot
+User-agent: Bingbot
+User-agent: Google-Extended
+User-agent: GPTBot
+User-agent: OAI-SearchBot
+User-agent: ChatGPT-User
+User-agent: ClaudeBot
+User-agent: Claude-SearchBot
+User-agent: Claude-User
+User-agent: PerplexityBot
+User-agent: Perplexity-User
+User-agent: Applebot
+User-agent: Applebot-Extended
+User-agent: meta-externalagent
+User-agent: DuckAssistBot
 Allow: /
+Disallow: /admin
+Disallow: /review/
+Disallow: /wa
 
 Sitemap: https://chelvynkleden.com/sitemap.xml

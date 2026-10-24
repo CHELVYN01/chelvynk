@@ -61,10 +61,6 @@
   }
 </script>
 
-<svelte:head>
-  <title>Sertifikat — Chelvyn Kleden | Odoo Technical Consultant</title>
-</svelte:head>
-
 <div class="page-progress" use:pageProgress aria-hidden="true"></div>
 
 <!-- ===== Hero ===== -->

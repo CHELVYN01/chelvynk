@@ -216,7 +216,6 @@ async function init() {
             "INSERT OR IGNORE INTO settings (key, value) VALUES ('status', 'Tersedia untuk Project Baru')",
             "INSERT OR IGNORE INTO settings (key, value) VALUES ('github', '#')",
             "INSERT OR IGNORE INTO settings (key, value) VALUES ('linkedin', '#')",
-            "INSERT OR IGNORE INTO settings (key, value) VALUES ('twitter', '#')",
             ...SEED_PRODUCTS,
             { sql: "INSERT OR REPLACE INTO settings (key, value) VALUES ('schema_version', ?)", args: [SCHEMA_VERSION] }
         ], 'write');

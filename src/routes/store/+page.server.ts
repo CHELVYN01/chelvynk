@@ -5,6 +5,7 @@ export const load = async () => {
     const appsResult = await db.execute('SELECT * FROM store_apps ORDER BY created_at DESC');
 
     return {
-        apps: appsResult.rows
+        apps: appsResult.rows,
+        seo: { title: 'Store | Chelvyn Kleden — Aplikasi oleh Chelvyn Kleden', path: '/store' }
     };
 };

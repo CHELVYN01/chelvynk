@@ -11,7 +11,6 @@
     countUp,
     cursorFollow,
   } from "$lib/motion";
-  import ProjectModal from "$lib/components/ProjectModal.svelte";
   import ClosingCta from "$lib/components/ClosingCta.svelte";
 
   let { data } = $props();
@@ -54,9 +53,6 @@
       : projects.filter((p: any) => groupsOf(p).includes(activeCat)),
   );
 
-  // --- Modal detail ---
-  let selectedProject = $state<any>(null);
-
   // --- Kartu pratinjau yang mengikuti kursor (desktop) ---
   let hovered = $state<any>(null);
   let preview = $state<any>(null); // konten terakhir, tetap ada saat memudar
@@ -66,11 +62,6 @@
     preview = project;
   }
 </script>
-
-<svelte:head>
-  <!-- prettier-ignore -->
-  <title>Portofolio Project — Chelvyn Kleden | Odoo, Laravel & Web Developer</title>
-</svelte:head>
 
 <div class="page-progress" use:pageProgress aria-hidden="true"></div>
 
@@ -172,17 +163,21 @@
           use:reveal
           onpointerenter={(e) => hover(project, e)}
         >
-          <button
-            type="button"
+          <!-- Area klik seluruh baris. Link di judul (bawah) yang dibaca
+               crawler & dipakai keyboard; yang ini cuma untuk mouse. -->
+          <a
+            href="/projects/{project.slug}"
             class="row-hit"
-            aria-label={`Lihat detail project ${project.title}`}
-            onclick={() => (selectedProject = project)}
-          ></button>
+            tabindex="-1"
+            aria-hidden="true"
+          ></a>
 
           <span class="mono row-num">{pad(indexOf.get(project.id) ?? 0)}</span>
 
           <div class="row-main">
-            <h2>{project.title}</h2>
+            <!-- Link asli (bukan tombol modal) supaya crawler bisa mengikuti
+                 ke halaman project -->
+            <h2><a href="/projects/{project.slug}" class="row-link">{project.title}</a></h2>
             <!-- Perangkat sentuh: deskripsi tampil langsung (tanpa kursor) -->
             <p class="row-desc">{project.description}</p>
           </div>
@@ -261,13 +256,6 @@
     {/if}
   </div>
 </section>
-
-{#if selectedProject}
-  <ProjectModal
-    project={selectedProject}
-    onclose={() => (selectedProject = null)}
-  />
-{/if}
 
 <ClosingCta
   kicker="Project berikutnya bisa jadi milik Anda."
@@ -441,18 +429,20 @@
     border-bottom: 1px solid var(--border);
   }
 
-  /* Seluruh baris bisa diklik; tombol link di atasnya tetap bisa diklik */
+  /* Seluruh baris bisa diklik; tombol link di atasnya tetap bisa diklik.
+     Bukan ::after di judul: judul di-transform saat hover, dan itu akan
+     menyusutkan area kliknya ke selebar judul. */
   .row-hit {
     position: absolute;
     inset: 0;
     z-index: 1;
-    width: 100%;
-    border: none;
-    background: transparent;
-    cursor: pointer;
   }
 
-  .row-hit:focus-visible {
+  .row-link {
+    color: inherit;
+  }
+
+  .row-link:focus-visible {
     outline: 2px solid var(--primary);
     outline-offset: 4px;
   }

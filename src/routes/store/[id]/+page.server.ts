@@ -13,7 +13,13 @@ export const load = async ({ params }) => {
         throw error(404, 'App not found');
     }
 
+    const app = appResult.rows[0] as any;
     return {
-        app: appResult.rows[0]
+        app,
+        seo: {
+            title: `${app.title} | Chelvyn Store`,
+            description: String(app.description ?? '').substring(0, 150),
+            path: `/store/${id}`
+        }
     };
 };

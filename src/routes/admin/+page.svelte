@@ -34,6 +34,7 @@
     Award,
     ExternalLink,
     Package,
+    ArrowLeft,
   } from "lucide-svelte";
   import { theme } from "$lib/theme.svelte";
   import { navigating } from "$app/state";
@@ -116,6 +117,29 @@
   // chart ringkasan (pengunjung, project, review) tanpa perlu klik apa pun.
   let activeTab = $state("overview");
   let currentStatus = $state("");
+
+  // Urutan di sini = urutan kolom di tab Pengaturan.
+  const socialFields = [
+    { key: "github", label: "GitHub", placeholder: "https://github.com/username" },
+    { key: "linkedin", label: "LinkedIn", placeholder: "https://linkedin.com/in/username" },
+    { key: "threads", label: "Threads", placeholder: "https://www.threads.net/@username" },
+    { key: "instagram", label: "Instagram", placeholder: "https://instagram.com/username" },
+    { key: "tiktok", label: "TikTok", placeholder: "https://www.tiktok.com/@username" },
+  ];
+
+  // Form produk tampil inline menggantikan daftar (bukan popup) — isinya
+  // terlalu panjang untuk modal. Pindah tab menutup form supaya kembali ke
+  // tab Produk selalu mulai dari daftar.
+  function openProductForm(prod: any = {}) {
+    productForm = { ...prod };
+    // Tombol Edit bisa ada jauh di bawah daftar; form dimulai dari atas.
+    window.scrollTo({ top: 0 });
+  }
+
+  $effect(() => {
+    activeTab;
+    productForm = null;
+  });
 
   // ===== Turunan data analytics =====
   const stats = $derived(data.stats);
@@ -580,10 +604,10 @@ Sekali lagi makasih banyak! 🚀`;
             <PlusCircle size={18} />
             Tambah Sertifikat
           </button>
-        {:else if activeTab === "products"}
+        {:else if activeTab === "products" && !productForm}
           <button
             class="btn btn-primary"
-            onclick={() => (productForm = {})}
+            onclick={() => openProductForm()}
             style="gap: 0.5rem;"
           >
             <PlusCircle size={18} />
@@ -981,6 +1005,190 @@ Sekali lagi makasih banyak! 🚀`;
               {/if}
             </div>
           </div>
+        {:else if activeTab === "products" && productForm}
+          <!-- PRODUCT EDITOR (inline, menggantikan daftar) -->
+          <section class="product-editor" in:fade={{ duration: 200 }}>
+            <div class="pe-header">
+              <button
+                type="button"
+                class="pe-back"
+                onclick={() => (productForm = null)}
+              >
+                <ArrowLeft size={16} />
+                Kembali ke daftar
+              </button>
+              <h2>{productForm.id ? `Edit Produk — ${productForm.name}` : "Tambah Produk Baru"}</h2>
+            </div>
+
+            <form
+              method="POST"
+              action={productForm.id ? "?/updateProduct" : "?/addProduct"}
+              use:enhance={() => {
+                return async ({ result, update }) => {
+                  if (result.type === "success") productForm = null;
+                  await update();
+                };
+              }}
+              class="admin-form"
+            >
+              {#if productForm.id}
+                <input type="hidden" name="id" value={productForm.id} />
+              {/if}
+
+              <div class="pe-section">
+                <div class="pe-section-info">
+                  <h3>Identitas</h3>
+                  <p>Nama dan kalimat singkat yang tampil di kartu produk.</p>
+                </div>
+                <div class="pe-fields">
+                  <div class="pe-grid pe-grid-name">
+                    <div class="form-group">
+                      <label for="prod_name">Nama Produk</label>
+                      <input
+                        type="text"
+                        id="prod_name"
+                        name="name"
+                        value={productForm.name ?? ""}
+                        placeholder="Contoh: Kancil"
+                        required
+                      />
+                    </div>
+                    <div class="form-group">
+                      <label for="prod_slug">Slug URL (opsional)</label>
+                      <input
+                        type="text"
+                        id="prod_slug"
+                        name="slug"
+                        value={productForm.slug ?? ""}
+                        placeholder="otomatis dari nama"
+                      />
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="prod_tagline">Tagline (satu kalimat)</label>
+                    <input
+                      type="text"
+                      id="prod_tagline"
+                      name="tagline"
+                      value={productForm.tagline ?? ""}
+                      placeholder="Apa produk ini, dalam satu kalimat"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="pe-section">
+                <div class="pe-section-info">
+                  <h3>Cerita Produk</h3>
+                  <p>Isi halaman /products/slug. Semua opsional.</p>
+                </div>
+                <div class="pe-fields">
+                  <div class="pe-grid">
+                    <div class="form-group">
+                      <label for="prod_problem">Masalah</label>
+                      <textarea id="prod_problem" name="problem" rows="3"
+                        >{productForm.problem ?? ""}</textarea
+                      >
+                    </div>
+                    <div class="form-group">
+                      <label for="prod_solution">Solusi</label>
+                      <textarea id="prod_solution" name="solution" rows="3"
+                        >{productForm.solution ?? ""}</textarea
+                      >
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="prod_desc">Detail (pisahkan paragraf dengan baris kosong)</label>
+                    <textarea id="prod_desc" name="description" rows="5"
+                      >{productForm.description ?? ""}</textarea
+                    >
+                  </div>
+                  <div class="form-group">
+                    <label for="prod_features">Fitur (satu poin per baris)</label>
+                    <textarea id="prod_features" name="features" rows="4"
+                      >{productForm.features ?? ""}</textarea
+                    >
+                  </div>
+                </div>
+              </div>
+
+              <div class="pe-section">
+                <div class="pe-section-info">
+                  <h3>Label & Tautan</h3>
+                  <p>Tag, status, urutan tampil, dan link keluar.</p>
+                </div>
+                <div class="pe-fields">
+                  <div class="pe-grid pe-grid-meta">
+                    <div class="form-group">
+                      <label for="prod_tags">Tag (pisahkan koma)</label>
+                      <input
+                        type="text"
+                        id="prod_tags"
+                        name="tags"
+                        value={productForm.tags ?? ""}
+                        placeholder="AI, Skill, Coding"
+                      />
+                    </div>
+                    <div class="form-group">
+                      <label for="prod_status">Status (opsional)</label>
+                      <input
+                        type="text"
+                        id="prod_status"
+                        name="status"
+                        value={productForm.status ?? ""}
+                        placeholder="Open Source / Beta"
+                      />
+                    </div>
+                    <div class="form-group">
+                      <label for="prod_order">Urutan</label>
+                      <input
+                        type="number"
+                        id="prod_order"
+                        name="sort_order"
+                        value={productForm.sort_order ?? 0}
+                      />
+                    </div>
+                  </div>
+                  <div class="pe-grid">
+                    <div class="form-group">
+                      <label for="prod_github">Link GitHub (opsional)</label>
+                      <input
+                        type="text"
+                        id="prod_github"
+                        name="github_url"
+                        value={productForm.github_url ?? ""}
+                        placeholder="https://github.com/..."
+                      />
+                    </div>
+                    <div class="form-group">
+                      <label for="prod_link">Link Website/Demo (opsional)</label>
+                      <input
+                        type="text"
+                        id="prod_link"
+                        name="link_url"
+                        value={productForm.link_url ?? ""}
+                        placeholder="https://..."
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Menempel di bawah layar: tombol Simpan selalu terlihat
+                   walau form-nya panjang. -->
+              <div class="pe-footer">
+                <button
+                  type="button"
+                  class="btn btn-outline"
+                  onclick={() => (productForm = null)}>Batal</button
+                >
+                <button type="submit" class="btn btn-primary"
+                  >{productForm.id ? "Simpan Perubahan" : "Simpan Produk"}</button
+                >
+              </div>
+            </form>
+          </section>
         {:else if activeTab === "products"}
           <!-- PRODUCTS LIST -->
           <div class="card projects-container fade-in">
@@ -1010,7 +1218,7 @@ Sekali lagi makasih banyak! 🚀`;
                       type="button"
                       class="action-btn"
                       title="Edit Produk"
-                      onclick={() => (productForm = { ...prod })}
+                      onclick={() => openProductForm(prod)}
                     >
                       <Pencil size={18} />
                     </button>
@@ -1405,37 +1613,22 @@ Sekali lagi makasih banyak! 🚀`;
                 class="admin-form"
                 style="max-width: 900px;"
               >
+                <p style="margin-bottom: 1.5rem; color: var(--text-muted); font-size: 0.875rem;">
+                  Kosongkan kolom untuk menyembunyikan link-nya di navbar & footer.
+                </p>
                 <div class="form-grid">
-                  <div class="form-group">
-                    <label for="github">GitHub URL</label>
-                    <input
-                      type="text"
-                      id="github"
-                      name="github"
-                      value={data.settings.github || "#"}
-                      placeholder="https://github.com/username"
-                    />
-                  </div>
-                  <div class="form-group">
-                    <label for="linkedin">LinkedIn URL</label>
-                    <input
-                      type="text"
-                      id="linkedin"
-                      name="linkedin"
-                      value={data.settings.linkedin || "#"}
-                      placeholder="https://linkedin.com/in/username"
-                    />
-                  </div>
-                  <div class="form-group">
-                    <label for="twitter">Twitter / X URL</label>
-                    <input
-                      type="text"
-                      id="twitter"
-                      name="twitter"
-                      value={data.settings.twitter || "#"}
-                      placeholder="https://twitter.com/username"
-                    />
-                  </div>
+                  {#each socialFields as f (f.key)}
+                    <div class="form-group">
+                      <label for={f.key}>{f.label} URL</label>
+                      <input
+                        type="text"
+                        id={f.key}
+                        name={f.key}
+                        value={data.settings[f.key] === "#" ? "" : (data.settings[f.key] ?? "")}
+                        placeholder={f.placeholder}
+                      />
+                    </div>
+                  {/each}
                 </div>
                 <div
                   style="margin-top: 2.5rem; padding-top: 2rem; border-top: 1px solid #f1f5f9;"
@@ -2258,189 +2451,6 @@ Sekali lagi makasih banyak! 🚀`;
             >
             <button type="submit" class="btn btn-primary"
               >Simpan Pengalaman</button
-            >
-          </div>
-        </form>
-      </div>
-    </div>
-  {/if}
-
-  <!-- Modal Tambah / Edit Produk -->
-  {#if productForm}
-    <div
-      class="modal-overlay"
-      role="button"
-      tabindex="-1"
-      transition:fade={{ duration: 200 }}
-      onclick={(e) => {
-        if (e.target === e.currentTarget) productForm = null;
-      }}
-      onkeydown={(e) => {
-        if (e.key === "Escape") productForm = null;
-      }}
-    >
-      <div
-        class="modal-content card"
-        transition:fly={{ y: 20, duration: 300 }}
-        style="max-width: 680px;"
-      >
-        <div class="modal-header">
-          <h2>{productForm.id ? "Edit Produk" : "Tambah Produk"}</h2>
-          <button class="close-btn" onclick={() => (productForm = null)}>
-            <X size={20} />
-          </button>
-        </div>
-        <form
-          method="POST"
-          action={productForm.id ? "?/updateProduct" : "?/addProduct"}
-          use:enhance={() => {
-            return async ({ result, update }) => {
-              if (result.type === "success") productForm = null;
-              await update();
-            };
-          }}
-          class="admin-form"
-        >
-          {#if productForm.id}
-            <input type="hidden" name="id" value={productForm.id} />
-          {/if}
-
-          <div
-            style="display: grid; grid-template-columns: 1.4fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;"
-          >
-            <div class="form-group">
-              <label for="prod_name">Nama Produk</label>
-              <input
-                type="text"
-                id="prod_name"
-                name="name"
-                value={productForm.name ?? ""}
-                placeholder="Contoh: Kancil"
-                required
-              />
-            </div>
-            <div class="form-group">
-              <label for="prod_slug">Slug URL (opsional)</label>
-              <input
-                type="text"
-                id="prod_slug"
-                name="slug"
-                value={productForm.slug ?? ""}
-                placeholder="otomatis dari nama"
-              />
-            </div>
-          </div>
-
-          <div class="form-group" style="margin-bottom: 1.5rem;">
-            <label for="prod_tagline">Tagline (satu kalimat)</label>
-            <input
-              type="text"
-              id="prod_tagline"
-              name="tagline"
-              value={productForm.tagline ?? ""}
-              placeholder="Apa produk ini, dalam satu kalimat"
-              required
-            />
-          </div>
-
-          <div
-            style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;"
-          >
-            <div class="form-group">
-              <label for="prod_problem">Masalah (opsional)</label>
-              <textarea id="prod_problem" name="problem" rows="3"
-                >{productForm.problem ?? ""}</textarea
-              >
-            </div>
-            <div class="form-group">
-              <label for="prod_solution">Solusi (opsional)</label>
-              <textarea id="prod_solution" name="solution" rows="3"
-                >{productForm.solution ?? ""}</textarea
-              >
-            </div>
-          </div>
-
-          <div class="form-group" style="margin-bottom: 1.5rem;">
-            <label for="prod_desc">Detail (opsional, pisahkan paragraf dengan baris kosong)</label>
-            <textarea id="prod_desc" name="description" rows="5"
-              >{productForm.description ?? ""}</textarea
-            >
-          </div>
-
-          <div class="form-group" style="margin-bottom: 1.5rem;">
-            <label for="prod_features">Fitur (opsional, satu poin per baris)</label>
-            <textarea id="prod_features" name="features" rows="4"
-              >{productForm.features ?? ""}</textarea
-            >
-          </div>
-
-          <div
-            style="display: grid; grid-template-columns: 1.4fr 1fr 0.6fr; gap: 1.5rem; margin-bottom: 1.5rem;"
-          >
-            <div class="form-group">
-              <label for="prod_tags">Tag (pisahkan koma)</label>
-              <input
-                type="text"
-                id="prod_tags"
-                name="tags"
-                value={productForm.tags ?? ""}
-                placeholder="AI, Skill, Coding"
-              />
-            </div>
-            <div class="form-group">
-              <label for="prod_status">Status (opsional)</label>
-              <input
-                type="text"
-                id="prod_status"
-                name="status"
-                value={productForm.status ?? ""}
-                placeholder="Open Source / Beta"
-              />
-            </div>
-            <div class="form-group">
-              <label for="prod_order">Urutan</label>
-              <input
-                type="number"
-                id="prod_order"
-                name="sort_order"
-                value={productForm.sort_order ?? 0}
-              />
-            </div>
-          </div>
-
-          <div
-            style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;"
-          >
-            <div class="form-group">
-              <label for="prod_github">Link GitHub (opsional)</label>
-              <input
-                type="text"
-                id="prod_github"
-                name="github_url"
-                value={productForm.github_url ?? ""}
-                placeholder="https://github.com/..."
-              />
-            </div>
-            <div class="form-group">
-              <label for="prod_link">Link Website/Demo (opsional)</label>
-              <input
-                type="text"
-                id="prod_link"
-                name="link_url"
-                value={productForm.link_url ?? ""}
-                placeholder="https://..."
-              />
-            </div>
-          </div>
-
-          <div class="modal-footer">
-            <button
-              type="button"
-              class="btn btn-outline"
-              onclick={() => (productForm = null)}>Batal</button
-            >
-            <button type="submit" class="btn btn-primary"
-              >{productForm.id ? "Simpan Perubahan" : "Simpan Produk"}</button
             >
           </div>
         </form>
@@ -3271,7 +3281,10 @@ Sekali lagi makasih banyak! 🚀`;
   /* MAIN CONTENT */
   .admin-main {
     padding: 2.5rem 4rem;
-    overflow-y: auto;
+    /* Bukan overflow: yang scroll adalah window — overflow di sini membuat
+       elemen sticky (footer editor produk) menempel ke .admin-main, bukan
+       layar. min-width: 0 tetap mencegah isi lebar meregangkan grid. */
+    min-width: 0;
   }
 
   .content-header {
@@ -3291,6 +3304,127 @@ Sekali lagi makasih banyak! 🚀`;
   .content-header p {
     color: var(--text-muted);
     font-weight: 500;
+  }
+
+  /* Editor produk inline — sengaja tidak pakai .card: efek hover-nya
+     (translateY) bikin form sebesar ini ikut bergeser. */
+  .product-editor {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 1.25rem;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .pe-header {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .pe-header h2 {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: var(--text-main);
+  }
+
+  .pe-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+
+  .pe-back:hover {
+    color: var(--text-main);
+  }
+
+  /* Label section di kiri, kolom isian di kanan */
+  .pe-section {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 2rem;
+    padding: 2rem;
+  }
+
+  .pe-section + .pe-section {
+    border-top: 1px solid var(--border);
+  }
+
+  .pe-section-info h3 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 0.35rem;
+  }
+
+  .pe-section-info p {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  .pe-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    min-width: 0;
+  }
+
+  .pe-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+
+  .pe-grid-name {
+    grid-template-columns: 1.4fr 1fr;
+  }
+
+  .pe-grid-meta {
+    grid-template-columns: 1.4fr 1fr 0.6fr;
+  }
+
+  .pe-footer {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding: 1.25rem 2rem;
+    background: var(--bg-card);
+    border-top: 1px solid var(--border);
+    border-radius: 0 0 1.25rem 1.25rem;
+  }
+
+  @media (max-width: 1024px) {
+    .pe-section {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .pe-header,
+    .pe-section,
+    .pe-footer {
+      padding-left: 1.25rem;
+      padding-right: 1.25rem;
+    }
+    .pe-grid,
+    .pe-grid-name,
+    .pe-grid-meta {
+      grid-template-columns: 1fr;
+    }
   }
 
   /* Projects & Settings Containers */
