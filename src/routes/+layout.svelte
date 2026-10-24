@@ -2,9 +2,17 @@
   import { page } from "$app/state";
   import { onMount } from "svelte";
   import { afterNavigate } from "$app/navigation";
-  import { Sun, Moon } from "lucide-svelte";
+  import { Sun, Moon, MessageCircle } from "lucide-svelte";
   import { theme } from "$lib/theme.svelte";
   import { STORE_ENABLED } from "$lib/features";
+  import {
+    SITE,
+    DEFAULT_TITLE,
+    DEFAULT_DESCRIPTION,
+    abs,
+    siteGraph,
+    type Seo,
+  } from "$lib/seo";
   import "../app.css";
   import "$lib/styles/editorial.css";
 
@@ -17,9 +25,20 @@
     page.url.pathname.startsWith("/admin") ||
       page.url.pathname.startsWith("/review"),
   );
-  const canonicalUrl = $derived(
-    `https://chelvynkleden.com${page.url.pathname}`,
-  );
+
+  // Meta tiap halaman datang dari `seo` di load halaman itu (lihat $lib/seo).
+  const seo = $derived.by(() => {
+    const p: Seo = page.data.seo ?? {};
+    return {
+      title: p.title ?? DEFAULT_TITLE,
+      description: p.description ?? DEFAULT_DESCRIPTION,
+      url: abs(p.path ?? page.url.pathname),
+      image: p.image ? abs(p.image) : SITE.ogImage,
+      type: p.type ?? "website",
+      noindex: isAdmin || !!p.noindex || page.status >= 400,
+      extra: p.jsonLd ?? [],
+    };
+  });
 
   const navItems = [
     ...(STORE_ENABLED ? [{ href: "/store", label: "Store" }] : []),
@@ -29,6 +48,35 @@
     { href: "/certificates", label: "Certificates" },
   ];
   const pad = (n: number) => String(n).padStart(2, "0");
+
+  // Diisi dari admin (tab Pengaturan). Yang kosong / "#" tidak ditampilkan.
+  const SOCIALS = [
+    { key: "github", label: "GitHub" },
+    { key: "linkedin", label: "LinkedIn" },
+    { key: "threads", label: "Threads" },
+    { key: "instagram", label: "Instagram" },
+    { key: "tiktok", label: "TikTok" },
+  ];
+  const socialLinks = $derived(
+    SOCIALS.map((s) => ({ ...s, href: data.settings?.[s.key] as string | undefined }))
+      .filter((s) => s.href && s.href !== "#"),
+  );
+
+  // Person & WebSite di setiap halaman + JSON-LD khusus halaman. "<" di-escape
+  // supaya teks dari DB (judul/deskripsi) tidak bisa menutup tag <script>.
+  const jsonLd = $derived(
+    JSON.stringify([
+      ...siteGraph([
+        ...new Set([
+          "https://github.com/CHELVYN01",
+          "https://linkedin.com/in/chelvynkleden",
+          "https://t.me/kledenvin",
+          ...socialLinks.map((s) => s.href as string),
+        ]),
+      ]),
+      ...seo.extra,
+    ]).replace(/</g, "\\u003c"),
+  );
   const isCurrent = (href: string) => page.url.pathname.startsWith(href);
 
   onMount(() => {
@@ -74,59 +122,43 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap"
     rel="stylesheet"
   />
-  <!-- prettier-ignore -->
-  <title>Blasius Chelvyn Kera Kleden — Odoo Technical Consultant & Freelance Developer</title>
-  <meta
-    name="description"
-    content="Blasius Chelvyn Kera Kleden (Chelvyn Kleden) — Odoo Technical Consultant & Odoo Developer freelance di Indonesia. Spesialis kustomisasi modul Odoo ERP, integrasi Odoo API, Laravel, CodeIgniter 4, Svelte, dan Next.js."
-  />
+  <title>{seo.title}</title>
+  <meta name="description" content={seo.description} />
   <meta
     name="keywords"
     content="Blasius Chelvyn Kera Kleden, Chelvyn Kleden, Kleden Chelvyn, Teknikal Odoo, Odoo Technical Consultant, Odoo Developer, Odoo Development, Odoo Freelance, Freelance Odoo Developer, Konsultan Odoo, Odoo Indonesia, Laravel Developer, CodeIgniter 4, Fullstack Developer Indonesia"
   />
-  <meta name="author" content="Blasius Chelvyn Kera Kleden" />
+  <meta name="author" content={SITE.personName} />
   <meta
     name="robots"
-    content={isAdmin ? "noindex, nofollow" : "index, follow"}
+    content={seo.noindex
+      ? "noindex, nofollow"
+      : "index, follow, max-image-preview:large, max-snippet:-1"}
   />
   <meta name="theme-color" content={theme.isDark ? "#000000" : "#ffffff"} />
-  <link rel="canonical" href={canonicalUrl} />
+  <link rel="canonical" href={seo.url} />
+  <link rel="alternate" type="text/plain" href="/llms.txt" title="llms.txt" />
 
   <!-- Open Graph / Social Media -->
-  <meta property="og:type" content="website" />
-  <meta property="og:url" content={canonicalUrl} />
-  <meta
-    property="og:title"
-    content="Blasius Chelvyn Kera Kleden — Odoo Technical Consultant & Freelance Developer"
-  />
-  <meta
-    property="og:description"
-    content="Odoo Technical Consultant & Odoo Developer freelance di Indonesia. Spesialis kustomisasi modul Odoo ERP, integrasi Odoo API, Laravel, CodeIgniter 4, Svelte, dan Next.js."
-  />
-  <meta property="og:site_name" content="Chelvyn Kleden" />
-  <meta property="og:locale" content="id_ID" />
-  <meta property="og:image" content="https://chelvynkleden.com/og-image.png" />
+  <meta property="og:type" content={seo.type} />
+  <meta property="og:url" content={seo.url} />
+  <meta property="og:title" content={seo.title} />
+  <meta property="og:description" content={seo.description} />
+  <meta property="og:site_name" content={SITE.name} />
+  <meta property="og:locale" content={SITE.locale} />
+  <meta property="og:image" content={seo.image} />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
-  <meta
-    property="og:image:alt"
-    content="chelvynkleden — Odoo Technical Consultant & Fullstack Developer"
-  />
+  <meta property="og:image:alt" content={seo.title} />
 
-  <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta
-    name="twitter:title"
-    content="Blasius Chelvyn Kera Kleden — Odoo Technical Consultant"
-  />
-  <meta
-    name="twitter:description"
-    content="Odoo Technical Consultant & Odoo Developer freelance di Indonesia. Spesialis Odoo ERP, Laravel, CodeIgniter 4, Svelte & Next.js."
-  />
-  <meta
-    name="twitter:image"
-    content="https://chelvynkleden.com/og-image.png"
-  />
+  <meta name="twitter:title" content={seo.title} />
+  <meta name="twitter:description" content={seo.description} />
+  <meta name="twitter:image" content={seo.image} />
+
+  {#if !seo.noindex}
+    {@html `<script type="application/ld+json">${jsonLd}</script>`}
+  {/if}
 </svelte:head>
 
 <svelte:window
@@ -204,21 +236,11 @@
         <!-- Mobile: info kecil di dasar menu -->
         <div class="mono nav-meta">
           <div class="nav-social">
-            <a
-              href={data.settings?.github || "https://github.com"}
-              target="_blank"
-              rel="noopener noreferrer">GitHub</a
-            >
-            <a
-              href={data.settings?.linkedin || "https://linkedin.com"}
-              target="_blank"
-              rel="noopener noreferrer">LinkedIn</a
-            >
-            <a
-              href={data.settings?.twitter || "https://twitter.com"}
-              target="_blank"
-              rel="noopener noreferrer">Twitter</a
-            >
+            {#each socialLinks as s (s.key)}
+              <a href={s.href} target="_blank" rel="noopener noreferrer"
+                >{s.label}</a
+              >
+            {/each}
           </div>
           <span>© 2026 — Chelvyn Kleden</span>
         </div>
@@ -239,21 +261,11 @@
           Chelvyn Kleden
         </div>
         <div class="footer-links">
-          <a
-            href={data.settings?.github || "https://github.com"}
-            target="_blank"
-            rel="noopener noreferrer">GitHub</a
-          >
-          <a
-            href={data.settings?.linkedin || "https://linkedin.com"}
-            target="_blank"
-            rel="noopener noreferrer">LinkedIn</a
-          >
-          <a
-            href={data.settings?.twitter || "https://twitter.com"}
-            target="_blank"
-            rel="noopener noreferrer">Twitter</a
-          >
+          {#each socialLinks as s (s.key)}
+            <a href={s.href} target="_blank" rel="noopener noreferrer"
+              >{s.label}</a
+            >
+          {/each}
         </div>
         <p class="copyright">
           &copy; 2026 Chelvyn Kleden. Membangun solusi digital yang bermakna.
@@ -262,6 +274,22 @@
     </div>
 
   </footer>
+
+  <!-- Nomor WA sengaja tidak ada di HTML: /wa (server) yang meneruskan ke
+       wa.me setelah menyaring bot. Jangan pakai noreferrer — Referer dipakai
+       /wa untuk memastikan kliknya dari situs ini. -->
+  {#if !isMobileMenuOpen}
+    <a
+      href="/wa"
+      class="wa-float"
+      target="_blank"
+      rel="nofollow noopener"
+      aria-label="Chat via WhatsApp"
+    >
+      <MessageCircle size={18} />
+      <span class="wa-label">WhatsApp</span>
+    </a>
+  {/if}
 {/if}
 
 <style>
@@ -589,7 +617,8 @@
 
     .nav-social {
       display: flex;
-      gap: 1.5rem;
+      flex-wrap: wrap;
+      gap: 0.75rem 1.5rem;
     }
 
     .nav-links .nav-social a {
@@ -622,7 +651,8 @@
 
   .footer-links {
     display: flex;
-    gap: 2rem;
+    flex-wrap: wrap;
+    gap: 0.75rem 2rem;
   }
 
   .footer-links a,
@@ -663,5 +693,46 @@
     color: var(--on-primary);
     border-color: var(--primary);
     background: var(--primary);
+  }
+
+  /* Tombol WhatsApp melayang — kotak monokrom, senada .btn-solid */
+  .wa-float {
+    position: fixed;
+    right: 1.5rem;
+    bottom: 1.5rem;
+    z-index: 950;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.85rem 1.1rem;
+    background: var(--primary);
+    color: var(--on-primary);
+    border: 1px solid var(--primary);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    box-shadow: var(--shadow-lg);
+    transition:
+      background 0.2s ease,
+      color 0.2s ease,
+      transform 0.2s ease;
+  }
+
+  .wa-float:hover {
+    background: var(--bg-white);
+    color: var(--text-main);
+    transform: translateY(-2px);
+  }
+
+  @media (max-width: 640px) {
+    .wa-float {
+      right: 1rem;
+      bottom: 1rem;
+      padding: 0.9rem;
+    }
+    .wa-label {
+      display: none;
+    }
   }
 </style>

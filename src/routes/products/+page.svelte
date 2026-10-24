@@ -11,10 +11,6 @@
   const heroLines = ["Produk", "Sendiri."];
 </script>
 
-<svelte:head>
-  <title>Produk — Chelvyn Kleden | Alat & Produk Buatan Sendiri</title>
-</svelte:head>
-
 <div class="page-progress" use:pageProgress aria-hidden="true"></div>
 
 <!-- ===== Hero ===== -->

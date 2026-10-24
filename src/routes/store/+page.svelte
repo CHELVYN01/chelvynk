@@ -24,10 +24,6 @@
   };
 </script>
 
-<svelte:head>
-  <title>Store | Chelvyn Kleden — Aplikasi oleh Chelvyn Kleden</title>
-</svelte:head>
-
 <div class="store-page">
   <section class="page-header container">
     <a href="/" class="back-link">← Kembali ke Home</a>

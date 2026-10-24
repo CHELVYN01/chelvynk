@@ -116,10 +116,6 @@
 
 </script>
 
-<svelte:head>
-  <title>Tentang — Chelvyn Kleden | Product Software Engineer & Odoo Developer</title>
-</svelte:head>
-
 <div class="page-progress" use:pageProgress aria-hidden="true"></div>
 
 <!-- ===== Hero: tiga baris raksasa, tanpa gambar ===== -->

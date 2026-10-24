@@ -27,10 +27,6 @@
   });
 </script>
 
-<svelte:head>
-  <title>{product.name} — Produk Chelvyn Kleden</title>
-</svelte:head>
-
 <div class="page-progress" use:pageProgress aria-hidden="true"></div>
 
 <!-- ===== Hero: nama produk raksasa ===== -->

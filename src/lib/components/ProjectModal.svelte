@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Github, Play, Globe, X } from "lucide-svelte";
+  import { Github, Play, Globe, X, ArrowRight } from "lucide-svelte";
   import { fade, scale } from "svelte/transition";
   import { quintOut } from "svelte/easing";
   import { formatUrl } from "$lib/url";
@@ -50,6 +50,12 @@
             {/each}
           </ul>
         </div>
+      {/if}
+
+      {#if project.slug}
+        <a href="/projects/{project.slug}" class="btn-text modal-more" onclick={onclose}>
+          Baca selengkapnya <ArrowRight size={14} />
+        </a>
       {/if}
     </div>
 
@@ -195,6 +201,10 @@
     flex-wrap: wrap;
     gap: 0.4rem 1.25rem;
     color: var(--text-muted);
+  }
+
+  .modal-more {
+    margin-top: 2rem;
   }
 
   .modal-actions {

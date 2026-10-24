@@ -705,15 +705,18 @@ export const actions: Actions = {
 
         const formData = await request.formData();
 
-        // Sanitize URLs
-        const github = sanitizeUrl(formData.get('github') as string);
-        const linkedin = sanitizeUrl(formData.get('linkedin') as string);
-        const twitter = sanitizeUrl(formData.get('twitter') as string);
+        // Kosong = link disembunyikan di navbar & footer.
+        const keys = ['github', 'linkedin', 'threads', 'instagram', 'tiktok'];
+        const args = keys.flatMap((k) => [k, sanitizeUrl(formData.get(k) as string)]);
 
         try {
-            await db.execute("UPDATE settings SET value = ? WHERE key = 'github'", [github]);
-            await db.execute("UPDATE settings SET value = ? WHERE key = 'linkedin'", [linkedin]);
-            await db.execute("UPDATE settings SET value = ? WHERE key = 'twitter'", [twitter]);
+            // Upsert, bukan UPDATE: threads/instagram/tiktok belum punya baris di
+            // DB lama, dan UPDATE ke baris yang tidak ada lolos diam-diam.
+            await db.execute(
+                `INSERT INTO settings (key, value) VALUES ${keys.map(() => '(?, ?)').join(', ')}
+                 ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+                args
+            );
             return { success: true, message: 'Social links berhasil diperbarui' };
         } catch (e) {
             console.error('[DB Error] updateSocialLinks:', e);

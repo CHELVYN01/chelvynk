@@ -23,17 +23,20 @@ async function findValidToken(token: string | undefined) {
     return row;
 }
 
+const seo = { title: 'Beri Review — ck.', noindex: true };
+
 export const load: PageServerLoad = async ({ params }) => {
     const row = await findValidToken(params.token);
 
     if (!row) {
-        return { valid: false };
+        return { valid: false, seo };
     }
 
     return {
         valid: true,
         clientName: row.client_name as string,
-        projectName: row.project_name as string
+        projectName: row.project_name as string,
+        seo
     };
 };
 

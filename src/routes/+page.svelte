@@ -142,60 +142,7 @@
   function closeProject() {
     selectedProject = null;
   }
-
-  // Structured Data for Google
-  const structuredData = {
-    "@context": "https://schema.org",
-    "@type": "Person",
-    name: "Blasius Chelvyn Kera Kleden",
-    alternateName: ["Chelvyn Kleden", "Kleden Chelvyn"],
-    url: "https://chelvynkleden.com",
-    image: "https://chelvynkleden.com/profile-bg-atas.jpg",
-    jobTitle: "Odoo Technical Consultant & Product Software Engineer",
-    description:
-      "Blasius Chelvyn Kera Kleden (Chelvyn Kleden) — Odoo Technical Consultant & Odoo Developer freelance di Indonesia. Spesialis kustomisasi modul Odoo ERP, integrasi Odoo API, Laravel, CodeIgniter 4, Svelte, dan Next.js.",
-    nationality: "Indonesian",
-    address: {
-      "@type": "PostalAddress",
-      addressCountry: "ID",
-    },
-    hasOccupation: {
-      "@type": "Occupation",
-      name: "Odoo Technical Consultant",
-      occupationalCategory: "Software Developer / ERP Consultant",
-      occupationLocation: {
-        "@type": "Country",
-        name: "Indonesia",
-      },
-    },
-    knowsAbout: [
-      "Odoo ERP",
-      "Odoo Development",
-      "Odoo Custom Module",
-      "Odoo API Integration",
-      "Laravel",
-      "CodeIgniter 4",
-      "PHP",
-      "Svelte",
-      "Next.js",
-      "React Native",
-      "Rust",
-      "Python",
-      "Docker",
-    ],
-    sameAs: [
-      "https://github.com/CHELVYN01",
-      "https://linkedin.com/in/chelvynkleden",
-      "https://t.me/kledenvin",
-    ],
-  };
 </script>
-
-<svelte:head>
-  <script type="application/ld+json">
-    {@html JSON.stringify(structuredData)}
-  </script>
-</svelte:head>
 
 <!-- Garis progres scroll di puncak layar -->
 <div class="page-progress" use:pageProgress aria-hidden="true"></div>

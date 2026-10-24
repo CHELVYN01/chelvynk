@@ -12,11 +12,6 @@
     const active = $derived(hovered || rating);
 </script>
 
-<svelte:head>
-    <title>Beri Review — ck.</title>
-    <meta name="robots" content="noindex, nofollow" />
-</svelte:head>
-
 <div class="review-page">
     <!-- Bar atas: hanya logo, tanpa nama (logo sudah mewakili brand) -->
     <header class="review-top">

@@ -35,11 +35,6 @@
   };
 </script>
 
-<svelte:head>
-  <title>{app.title} | Chelvyn Store</title>
-  <meta name="description" content={app.description.substring(0, 150)} />
-</svelte:head>
-
 <div class="store-detail-page">
   <section class="page-header container">
     <a href="/store" class="back-link">
