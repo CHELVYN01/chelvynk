@@ -1,7 +1,7 @@
 import { error, redirect } from '@sveltejs/kit';
 import { listProjects } from '$lib/server/projects';
 import { formatUrl } from '$lib/url';
-import { abs, breadcrumbLd, clip, PERSON_ID, type Seo } from '$lib/seo';
+import { abs, breadcrumbLd, clip, fitTitle, PERSON_ID, type Seo } from '$lib/seo';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params }) => {
@@ -24,9 +24,15 @@ export const load: PageServerLoad = async ({ params }) => {
     const links = [project.link, project.github, project.demo].filter(Boolean).map(formatUrl);
 
     const seo: Seo = {
-        title: project.categories[0]
-            ? `${title} — ${project.categories[0]} | Project Chelvyn Kleden`
-            : `${title} | Project Chelvyn Kleden`,
+        // Kategori diketik bebas di admin dan bisa panjang — ikut hanya kalau muat
+        title: fitTitle(
+            ...(project.categories[0]
+                ? [`${title} — ${project.categories[0]} | Chelvyn Kleden`]
+                : []),
+            `${title} | Project Chelvyn Kleden`,
+            `${title} | Chelvyn Kleden`,
+            title
+        ),
         description: clip(String(project.description)),
         path,
         type: 'article',

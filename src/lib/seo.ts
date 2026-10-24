@@ -14,9 +14,16 @@ export const SITE = {
 	locale: 'id_ID'
 };
 
-export const DEFAULT_TITLE =
-	'Blasius Chelvyn Kera Kleden — Odoo Technical Consultant & Freelance Developer';
+// Batas aman hasil pencarian: judul ≤ 60 karakter, description ≤ 155
+// (Bing menandai judul > ~70 dan description di luar 25–160 sebagai error).
+export const TITLE_MAX = 60;
+
+export const DEFAULT_TITLE = 'Blasius Chelvyn Kera Kleden — Odoo Technical Consultant';
 export const DEFAULT_DESCRIPTION =
+	'Chelvyn Kleden, Odoo Technical Consultant & developer freelance di Indonesia: kustomisasi modul Odoo ERP, integrasi API, aplikasi web & mobile.';
+
+/** Bio panjang untuk JSON-LD Person & llms.txt — tidak dibatasi panjang meta. */
+export const PERSON_DESCRIPTION =
 	'Blasius Chelvyn Kera Kleden (Chelvyn Kleden) — Odoo Technical Consultant & Odoo Developer freelance di Indonesia. Spesialis kustomisasi modul Odoo ERP, integrasi Odoo API, Laravel, CodeIgniter 4, Svelte, dan Next.js.';
 
 export type Seo = {
@@ -39,6 +46,17 @@ export function clip(text: string | null | undefined, max = 155): string {
 	if (t.length <= max) return t;
 	const cut = t.slice(0, max - 1);
 	return `${cut.slice(0, cut.lastIndexOf(' ') > 80 ? cut.lastIndexOf(' ') : cut.length)}…`;
+}
+
+/**
+ * Pilih judul pertama yang muat TITLE_MAX — urutkan dari yang paling
+ * informatif. Kalau tidak ada yang muat, yang terakhir dipotong.
+ */
+export function fitTitle(...options: string[]): string {
+	const fit = options.find((t) => t.length <= TITLE_MAX);
+	if (fit) return fit;
+	const last = options[options.length - 1];
+	return `${last.slice(0, TITLE_MAX - 1).trimEnd()}…`;
 }
 
 export function slugify(text: string): string {
@@ -83,7 +101,7 @@ export function siteGraph(sameAs: string[]) {
 			url: SITE.url,
 			image: `${SITE.url}/profile-bg-atas.jpg`,
 			jobTitle: SITE.jobTitle,
-			description: DEFAULT_DESCRIPTION,
+			description: PERSON_DESCRIPTION,
 			nationality: 'Indonesian',
 			address: { '@type': 'PostalAddress', addressCountry: 'ID' },
 			hasOccupation: {

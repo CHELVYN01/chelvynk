@@ -1,7 +1,7 @@
 import db from '$lib/server/db';
 import { listProducts } from '$lib/server/products';
 import { listProjects } from '$lib/server/projects';
-import { SITE, DEFAULT_DESCRIPTION } from '$lib/seo';
+import { SITE, PERSON_DESCRIPTION } from '$lib/seo';
 import type { RequestHandler } from './$types';
 
 /**
@@ -26,7 +26,7 @@ export const GET: RequestHandler = async () => {
     const lines = [
         `# ${SITE.personName} (${SITE.name})`,
         '',
-        `> ${DEFAULT_DESCRIPTION}`,
+        `> ${PERSON_DESCRIPTION}`,
         '',
         `${SITE.name} adalah ${SITE.jobTitle} yang berbasis di Indonesia. Ia membangun produk software end-to-end: implementasi dan kustomisasi Odoo ERP (modul kustom, integrasi API, migrasi, performa), aplikasi web (Laravel, CodeIgniter 4, Svelte/SvelteKit, Next.js), aplikasi desktop (Tauri/Rust), dan mobile (React Native). Tersedia untuk project freelance dan konsultasi.`,
         '',

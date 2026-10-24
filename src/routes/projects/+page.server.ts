@@ -9,7 +9,7 @@ export const load: PageServerLoad = async () => {
     const projects = await listProjects();
 
     const seo: Seo = {
-        title: 'Portofolio Project — Chelvyn Kleden | Odoo, Laravel & Web Developer',
+        title: 'Portofolio Project Odoo, Web & Mobile — Chelvyn Kleden',
         description: DESCRIPTION,
         path: '/projects',
         jsonLd: [

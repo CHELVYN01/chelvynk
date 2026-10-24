@@ -10,6 +10,7 @@
     DEFAULT_TITLE,
     DEFAULT_DESCRIPTION,
     abs,
+    clip,
     siteGraph,
     type Seo,
   } from "$lib/seo";
@@ -31,7 +32,7 @@
     const p: Seo = page.data.seo ?? {};
     return {
       title: p.title ?? DEFAULT_TITLE,
-      description: p.description ?? DEFAULT_DESCRIPTION,
+      description: clip(p.description ?? DEFAULT_DESCRIPTION),
       url: abs(p.path ?? page.url.pathname),
       image: p.image ? abs(p.image) : SITE.ogImage,
       type: p.type ?? "website",

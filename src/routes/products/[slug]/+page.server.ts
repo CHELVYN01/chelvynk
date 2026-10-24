@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
 import { listProducts } from '$lib/server/products';
-import { abs, breadcrumbLd, clip, PERSON_ID, type Seo } from '$lib/seo';
+import { abs, breadcrumbLd, clip, fitTitle, PERSON_ID, type Seo } from '$lib/seo';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params }) => {
@@ -14,11 +14,13 @@ export const load: PageServerLoad = async ({ params }) => {
     const path = `/products/${product.slug}`;
 
     const seo: Seo = {
-        // Google memotong judul di ±60 karakter — tagline hanya ikut kalau muat
-        title:
-            `${product.name} — ${product.tagline}`.length <= 60
-                ? `${product.name} — ${product.tagline}`
-                : `${product.name} | Produk Chelvyn Kleden`,
+        // tagline hanya ikut kalau judulnya masih muat
+        title: fitTitle(
+            `${product.name} — ${product.tagline}`,
+            `${product.name} | Produk Chelvyn Kleden`,
+            `${product.name} | Chelvyn Kleden`,
+            product.name
+        ),
         description: clip(
             [product.tagline, product.problem, product.solution].filter(Boolean).join(' ')
         ),
