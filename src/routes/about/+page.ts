@@ -3,7 +3,7 @@ import type { PageLoad } from './$types';
 
 export const load: PageLoad = () => {
     const seo: Seo = {
-        title: 'Tentang — Chelvyn Kleden | Product Software Engineer & Odoo Developer',
+        title: 'Tentang Chelvyn Kleden — Odoo Developer & Software Engineer',
         description:
             'Profil Blasius Chelvyn Kera Kleden: Odoo Technical Consultant & Product Software Engineer di Indonesia — pengalaman, keahlian Odoo ERP, web, dan mobile.',
         path: '/about',

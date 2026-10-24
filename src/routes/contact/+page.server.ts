@@ -15,7 +15,7 @@ const IP_MAX = 3;    // per IP per 30 menit
 const EMAIL_MAX = 2; // per email per 24 jam
 
 const seo: Seo = {
-    title: 'Kontak — Chelvyn Kleden | Hire Odoo Technical Consultant & Developer',
+    title: 'Kontak Chelvyn Kleden — Hire Odoo Consultant & Developer',
     description:
         'Hubungi Chelvyn Kleden untuk project Odoo ERP, aplikasi web, atau mobile. Konsultasi kebutuhan, estimasi, dan kolaborasi freelance di Indonesia.',
     path: '/contact'
