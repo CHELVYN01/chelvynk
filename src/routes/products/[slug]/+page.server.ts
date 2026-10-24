@@ -27,17 +27,20 @@ export const load: PageServerLoad = async ({ params }) => {
         path,
         type: 'article',
         jsonLd: [
+            // Bukan SoftwareApplication: rich result Google untuk tipe itu wajib
+            // punya harga + rating/review, dan tanpa itu Search Console menandainya
+            // error. Rating tidak boleh dikarang, jadi pakai tipe tanpa syarat.
             {
                 '@context': 'https://schema.org',
-                '@type': 'SoftwareApplication',
+                '@type': product.github_url ? 'SoftwareSourceCode' : 'CreativeWork',
                 name: product.name,
+                headline: product.name,
                 description: [product.tagline, product.description].filter(Boolean).join('\n\n'),
                 url: abs(path),
-                applicationCategory: 'DeveloperApplication',
-                operatingSystem: 'Any',
                 keywords: product.tags.join(', '),
-                ...(product.features.length ? { featureList: product.features } : {}),
-                ...(product.status ? { softwareVersion: product.status } : {}),
+                ...(product.github_url ? { codeRepository: product.github_url } : {}),
+                ...(product.features.length ? { abstract: product.features.join('; ') } : {}),
+                inLanguage: 'id-ID',
                 author: { '@id': PERSON_ID },
                 creator: { '@id': PERSON_ID },
                 sameAs: [product.github_url, product.link_url].filter(Boolean)

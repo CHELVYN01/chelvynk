@@ -81,6 +81,60 @@ export const projectSlug = (p: { id: number | string; title: string }) =>
 export const PERSON_ID = `${SITE.url}/#person`;
 export const WEBSITE_ID = `${SITE.url}/#website`;
 
+const SOCIAL_KEYS = ['github', 'linkedin', 'threads', 'instagram', 'tiktok'];
+
+/** Profil resmi untuk `sameAs`: link tetap + link sosial yang diisi di admin. */
+export function personSameAs(settings: Record<string, unknown> | undefined): string[] {
+	const fromAdmin = SOCIAL_KEYS.map((k) => settings?.[k])
+		.filter((v): v is string => typeof v === 'string' && !!v && v !== '#');
+	return [
+		...new Set([
+			'https://github.com/CHELVYN01',
+			'https://linkedin.com/in/chelvynkleden',
+			'https://t.me/kledenvin',
+			...fromAdmin
+		])
+	];
+}
+
+export function personLd(sameAs: string[]) {
+	return {
+		'@context': 'https://schema.org',
+		'@type': 'Person',
+		'@id': PERSON_ID,
+		name: SITE.personName,
+		alternateName: ['Chelvyn Kleden', 'Kleden Chelvyn'],
+		url: SITE.url,
+		image: `${SITE.url}/profile-bg-atas.jpg`,
+		jobTitle: SITE.jobTitle,
+		description: PERSON_DESCRIPTION,
+		nationality: 'Indonesian',
+		address: { '@type': 'PostalAddress', addressCountry: 'ID' },
+		hasOccupation: {
+			'@type': 'Occupation',
+			name: 'Odoo Technical Consultant',
+			occupationalCategory: 'Software Developer / ERP Consultant',
+			occupationLocation: { '@type': 'Country', name: 'Indonesia' }
+		},
+		knowsAbout: [
+			'Odoo ERP',
+			'Odoo Development',
+			'Odoo Custom Module',
+			'Odoo API Integration',
+			'Laravel',
+			'CodeIgniter 4',
+			'PHP',
+			'Svelte',
+			'Next.js',
+			'React Native',
+			'Rust',
+			'Python',
+			'Docker'
+		],
+		sameAs
+	};
+}
+
 export function siteGraph(sameAs: string[]) {
 	return [
 		{
@@ -92,41 +146,7 @@ export function siteGraph(sameAs: string[]) {
 			inLanguage: 'id-ID',
 			publisher: { '@id': PERSON_ID }
 		},
-		{
-			'@context': 'https://schema.org',
-			'@type': 'Person',
-			'@id': PERSON_ID,
-			name: SITE.personName,
-			alternateName: ['Chelvyn Kleden', 'Kleden Chelvyn'],
-			url: SITE.url,
-			image: `${SITE.url}/profile-bg-atas.jpg`,
-			jobTitle: SITE.jobTitle,
-			description: PERSON_DESCRIPTION,
-			nationality: 'Indonesian',
-			address: { '@type': 'PostalAddress', addressCountry: 'ID' },
-			hasOccupation: {
-				'@type': 'Occupation',
-				name: 'Odoo Technical Consultant',
-				occupationalCategory: 'Software Developer / ERP Consultant',
-				occupationLocation: { '@type': 'Country', name: 'Indonesia' }
-			},
-			knowsAbout: [
-				'Odoo ERP',
-				'Odoo Development',
-				'Odoo Custom Module',
-				'Odoo API Integration',
-				'Laravel',
-				'CodeIgniter 4',
-				'PHP',
-				'Svelte',
-				'Next.js',
-				'React Native',
-				'Rust',
-				'Python',
-				'Docker'
-			],
-			sameAs
-		}
+		personLd(sameAs)
 	];
 }
 
