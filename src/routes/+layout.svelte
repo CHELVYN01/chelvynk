@@ -12,6 +12,7 @@
     abs,
     clip,
     siteGraph,
+    personSameAs,
     type Seo,
   } from "$lib/seo";
   import "../app.css";
@@ -67,14 +68,7 @@
   // supaya teks dari DB (judul/deskripsi) tidak bisa menutup tag <script>.
   const jsonLd = $derived(
     JSON.stringify([
-      ...siteGraph([
-        ...new Set([
-          "https://github.com/CHELVYN01",
-          "https://linkedin.com/in/chelvynkleden",
-          "https://t.me/kledenvin",
-          ...socialLinks.map((s) => s.href as string),
-        ]),
-      ]),
+      ...siteGraph(personSameAs(data.settings)),
       ...seo.extra,
     ]).replace(/</g, "\\u003c"),
   );
