@@ -8,7 +8,7 @@ let _initPromise: Promise<void> | null = null;
 // NAIKKAN angka ini setiap kali menambah tabel/kolom/default di init().
 // Kalau versi di DB sudah sama, init() cuma jalan 1 query (bukan ~20) di setiap
 // cold start — penting karena tiap query = 1 round-trip ke Turso.
-const SCHEMA_VERSION = '4';
+const SCHEMA_VERSION = '5';
 
 // Fungsi untuk ambil client (Lazy Load ENV)
 function getClient() {
@@ -120,6 +120,16 @@ const TABLES = [
         token TEXT PRIMARY KEY,
         created_at INTEGER NOT NULL,
         expires_at INTEGER NOT NULL
+    )`,
+
+    // Percobaan login admin per IP. Dipakai untuk rate limit yang tahan
+    // restart & serverless (tiap instance punya memori sendiri — rate limit
+    // in-memory mudah dilewati). created_at = epoch milidetik.
+    `CREATE TABLE IF NOT EXISTS login_attempts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        ip TEXT NOT NULL,
+        success INTEGER DEFAULT 0,
+        created_at INTEGER NOT NULL
     )`,
 
     // Produk buatan sendiri untuk /products dan /products/[slug].

@@ -380,10 +380,11 @@ Sekali lagi makasih banyak! 🚀`;
             type="password"
             id="pin"
             name="pin"
-            placeholder="····"
+            placeholder="······"
             required
+            minlength="6"
             maxlength="8"
-            pattern="[0-9]*"
+            pattern={"[0-9]{6,8}"}
             inputmode="numeric"
             autocomplete="off"
             class="pin-input"

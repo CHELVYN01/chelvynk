@@ -3,8 +3,6 @@ import { fail, type Actions, redirect } from '@sveltejs/kit';
 import { env } from '$env/dynamic/private';
 import type { PageServerLoad } from './$types';
 import {
-    checkRateLimit,
-    recordLoginAttempt,
     sanitizeInput,
     sanitizeUrl,
     validatePin,
@@ -12,7 +10,13 @@ import {
     createCaptcha,
     verifyCaptcha
 } from '$lib/server/security';
-import { createSession, deleteSession, isAuthenticated } from '$lib/server/auth';
+import {
+    createSession,
+    deleteSession,
+    isAuthenticated,
+    checkLoginRateLimit,
+    recordLoginResult
+} from '$lib/server/auth';
 
 // Kunci HMAC puzzle captcha login — sama pola dengan formSecret() di contact/+page.server.ts.
 const captchaSecret = () => env.FORM_SECRET || env.DATABASE_AUTH_TOKEN || 'dev-only-secret';
@@ -311,8 +315,8 @@ export const actions: Actions = {
         const ip = getClientAddress();
         const ua = request.headers.get('user-agent') || '';
 
-        // Check rate limit
-        const rateLimit = checkRateLimit(ip);
+        // Rate limit berbasis DB (tahan restart & serverless).
+        const rateLimit = await checkLoginRateLimit(ip);
         if (!rateLimit.allowed) {
             console.warn(`[SECURITY] Rate limited IP: ${ip}`);
             return fail(429, {
@@ -329,7 +333,7 @@ export const actions: Actions = {
         // Honeypot check - bots will fill this hidden field
         if (honeypot) {
             console.warn(`[SECURITY] Bot detected via honeypot from IP: ${ip}`);
-            recordLoginAttempt(ip, false, ua);
+            await recordLoginResult(ip, false);
             // Return generic error to not reveal detection method
             return fail(401, { error: 'PIN Salah!' });
         }
@@ -337,13 +341,13 @@ export const actions: Actions = {
         // Puzzle captcha check - mencegah bot yang submit form tanpa render/solve soal
         if (!(await verifyCaptcha(captchaSecret(), captchaToken, captchaAnswer))) {
             console.warn(`[SECURITY] Captcha gagal dari IP: ${ip}`);
-            recordLoginAttempt(ip, false, ua);
+            await recordLoginResult(ip, false);
             return fail(400, { error: 'Jawaban puzzle salah atau kedaluwarsa. Coba lagi.' });
         }
 
         // Validate PIN format
         if (!validatePin(pin)) {
-            recordLoginAttempt(ip, false, ua);
+            await recordLoginResult(ip, false);
             return fail(400, { error: 'Format PIN tidak valid' });
         }
 
@@ -355,7 +359,7 @@ export const actions: Actions = {
 
         if (pin === adminPin) {
             // Success - reset rate limit and set secure cookies
-            recordLoginAttempt(ip, true, ua);
+            await recordLoginResult(ip, true);
 
             const sessionToken = generateToken(32);
             // Simpan sesi ke DB supaya token cookie bisa diverifikasi tiap request.
@@ -381,11 +385,9 @@ export const actions: Actions = {
             return { success: true };
         }
 
-        // Failed login
-        recordLoginAttempt(ip, false, ua);
-        return fail(401, {
-            error: `PIN Salah! Sisa percobaan: ${rateLimit.remaining - 1}`
-        });
+        // Failed login — pesan generik, jangan bocorkan sisa percobaan.
+        await recordLoginResult(ip, false);
+        return fail(401, { error: 'PIN salah.' });
     },
 
     logout: async ({ cookies }) => {

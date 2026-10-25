@@ -222,8 +222,9 @@ export function sanitizeUrl(url: string | null | undefined): string {
  */
 export function validatePin(pin: string | null | undefined): boolean {
     if (!pin) return false;
-    // PIN harus 4-8 digit angka
-    return /^\d{4,8}$/.test(pin);
+    // PIN harus 6-8 digit angka. Minimal dinaikkan dari 4 -> 6 untuk
+    // mempersempit ruang tebakan (4 digit = 10rb kombinasi, terlalu kecil).
+    return /^\d{6,8}$/.test(pin);
 }
 
 /**
