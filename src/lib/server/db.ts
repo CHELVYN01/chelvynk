@@ -54,19 +54,6 @@ const TABLES = [
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`,
 
-    `CREATE TABLE IF NOT EXISTS store_apps (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        developer TEXT NOT NULL,
-        description TEXT NOT NULL,
-        icon_url TEXT NOT NULL,
-        download_url TEXT NOT NULL,
-        version TEXT,
-        size TEXT,
-        featured INTEGER DEFAULT 0,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )`,
-
     `CREATE TABLE IF NOT EXISTS traffic (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         ip TEXT,

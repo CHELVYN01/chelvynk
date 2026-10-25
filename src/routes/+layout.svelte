@@ -4,7 +4,6 @@
   import { afterNavigate } from "$app/navigation";
   import { Sun, Moon, MessageCircle } from "lucide-svelte";
   import { theme } from "$lib/theme.svelte";
-  import { STORE_ENABLED } from "$lib/features";
   import {
     SITE,
     DEFAULT_TITLE,
@@ -43,7 +42,6 @@
   });
 
   const navItems = [
-    ...(STORE_ENABLED ? [{ href: "/store", label: "Store" }] : []),
     { href: "/about", label: "About" },
     { href: "/projects", label: "Projects" },
     { href: "/products", label: "Products" },
