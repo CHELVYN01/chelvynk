@@ -24,3 +24,7 @@ vite.config.ts.timestamp-*
 
 # Claude
 CLAUDE.md
+
+# Local SQLite database (jangan commit data pengunjung/pesan)
+portfolio.sqlite
+portfolio.sqlite-*

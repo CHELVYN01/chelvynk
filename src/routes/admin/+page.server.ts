@@ -12,6 +12,7 @@ import {
     createCaptcha,
     verifyCaptcha
 } from '$lib/server/security';
+import { createSession, deleteSession, isAuthenticated } from '$lib/server/auth';
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
 
@@ -118,11 +119,8 @@ const productArgs = (p: any) => [
 const isUniqueError = (e: unknown) => String(e).includes('UNIQUE');
 
 export const load: PageServerLoad = async ({ cookies, getClientAddress }) => {
-    const auth = cookies.get('admin_auth');
-    const authToken = cookies.get('admin_token');
-
-    // Validate both cookie and token exist
-    if (!auth || auth !== 'true' || !authToken) {
+    // Sesi divalidasi ke DB (bukan sekadar cookie ada) — cegah auth bypass.
+    if (!(await isAuthenticated(cookies))) {
         const captcha = await createCaptcha(captchaSecret());
         return {
             projects: [],
@@ -365,6 +363,8 @@ export const actions: Actions = {
             recordLoginAttempt(ip, true, ua);
 
             const sessionToken = generateToken(32);
+            // Simpan sesi ke DB supaya token cookie bisa diverifikasi tiap request.
+            await createSession(sessionToken);
 
             cookies.set('admin_auth', 'true', {
                 path: '/',
@@ -394,15 +394,14 @@ export const actions: Actions = {
     },
 
     logout: async ({ cookies }) => {
+        await deleteSession(cookies.get('admin_token'));
         cookies.delete('admin_auth', { path: '/' });
         cookies.delete('admin_token', { path: '/' });
         throw redirect(303, '/admin');
     },
 
     addProject: async ({ request, cookies }) => {
-        const auth = cookies.get('admin_auth');
-        const token = cookies.get('admin_token');
-        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+        if (!(await isAuthenticated(cookies))) return fail(403, { error: 'Tidak diijinkan' });
 
         const formData = await request.formData();
 
@@ -432,9 +431,7 @@ export const actions: Actions = {
     },
 
     toggleFeatured: async ({ request, cookies }) => {
-        const auth = cookies.get('admin_auth');
-        const token = cookies.get('admin_token');
-        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+        if (!(await isAuthenticated(cookies))) return fail(403, { error: 'Tidak diijinkan' });
 
         const formData = await request.formData();
         const id = formData.get('id');
@@ -453,9 +450,7 @@ export const actions: Actions = {
     },
 
     updateProject: async ({ request, cookies }) => {
-        const auth = cookies.get('admin_auth');
-        const token = cookies.get('admin_token');
-        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+        if (!(await isAuthenticated(cookies))) return fail(403, { error: 'Tidak diijinkan' });
 
         const formData = await request.formData();
         const id = formData.get('id');
@@ -486,9 +481,7 @@ export const actions: Actions = {
     },
 
     deleteProject: async ({ request, cookies }) => {
-        const auth = cookies.get('admin_auth');
-        const token = cookies.get('admin_token');
-        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+        if (!(await isAuthenticated(cookies))) return fail(403, { error: 'Tidak diijinkan' });
 
         const formData = await request.formData();
         const id = formData.get('id');
@@ -506,9 +499,7 @@ export const actions: Actions = {
     },
 
     updateStatus: async ({ request, cookies }) => {
-        const auth = cookies.get('admin_auth');
-        const token = cookies.get('admin_token');
-        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+        if (!(await isAuthenticated(cookies))) return fail(403, { error: 'Tidak diijinkan' });
 
         const formData = await request.formData();
         const status = sanitizeInput(formData.get('status') as string);
@@ -525,9 +516,7 @@ export const actions: Actions = {
     },
 
     addExperience: async ({ request, cookies }) => {
-        const auth = cookies.get('admin_auth');
-        const token = cookies.get('admin_token');
-        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+        if (!(await isAuthenticated(cookies))) return fail(403, { error: 'Tidak diijinkan' });
 
         const formData = await request.formData();
         const startDateRaw = formData.get('start_date') as string;
@@ -570,9 +559,7 @@ export const actions: Actions = {
     },
 
     deleteExperience: async ({ request, cookies }) => {
-        const auth = cookies.get('admin_auth');
-        const token = cookies.get('admin_token');
-        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+        if (!(await isAuthenticated(cookies))) return fail(403, { error: 'Tidak diijinkan' });
 
         const formData = await request.formData();
         const id = formData.get('id');
@@ -591,9 +578,7 @@ export const actions: Actions = {
 
     // ==================== PRODUK ====================
     addProduct: async ({ request, cookies }) => {
-        const auth = cookies.get('admin_auth');
-        const token = cookies.get('admin_token');
-        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+        if (!(await isAuthenticated(cookies))) return fail(403, { error: 'Tidak diijinkan' });
 
         const product = readProductForm(await request.formData());
         if ('error' in product) return fail(400, { error: product.error });
@@ -614,9 +599,7 @@ export const actions: Actions = {
     },
 
     updateProduct: async ({ request, cookies }) => {
-        const auth = cookies.get('admin_auth');
-        const token = cookies.get('admin_token');
-        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+        if (!(await isAuthenticated(cookies))) return fail(403, { error: 'Tidak diijinkan' });
 
         const formData = await request.formData();
         const id = formData.get('id');
@@ -642,9 +625,7 @@ export const actions: Actions = {
     },
 
     deleteProduct: async ({ request, cookies }) => {
-        const auth = cookies.get('admin_auth');
-        const token = cookies.get('admin_token');
-        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+        if (!(await isAuthenticated(cookies))) return fail(403, { error: 'Tidak diijinkan' });
 
         const formData = await request.formData();
         const id = formData.get('id');
@@ -661,9 +642,7 @@ export const actions: Actions = {
 
     // ==================== SERTIFIKAT ====================
     addCertificate: async ({ request, cookies }) => {
-        const auth = cookies.get('admin_auth');
-        const token = cookies.get('admin_token');
-        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+        if (!(await isAuthenticated(cookies))) return fail(403, { error: 'Tidak diijinkan' });
 
         const cert = readCertificateForm(await request.formData());
         if ('error' in cert) return fail(400, { error: cert.error });
@@ -681,9 +660,7 @@ export const actions: Actions = {
     },
 
     updateCertificate: async ({ request, cookies }) => {
-        const auth = cookies.get('admin_auth');
-        const token = cookies.get('admin_token');
-        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+        if (!(await isAuthenticated(cookies))) return fail(403, { error: 'Tidak diijinkan' });
 
         const formData = await request.formData();
         const id = formData.get('id');
@@ -705,9 +682,7 @@ export const actions: Actions = {
     },
 
     deleteCertificate: async ({ request, cookies }) => {
-        const auth = cookies.get('admin_auth');
-        const token = cookies.get('admin_token');
-        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+        if (!(await isAuthenticated(cookies))) return fail(403, { error: 'Tidak diijinkan' });
 
         const formData = await request.formData();
         const id = formData.get('id');
@@ -723,9 +698,7 @@ export const actions: Actions = {
     },
 
     updateSocialLinks: async ({ request, cookies }) => {
-        const auth = cookies.get('admin_auth');
-        const token = cookies.get('admin_token');
-        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+        if (!(await isAuthenticated(cookies))) return fail(403, { error: 'Tidak diijinkan' });
 
         const formData = await request.formData();
 
@@ -749,9 +722,7 @@ export const actions: Actions = {
     },
 
     addApp: async ({ request, cookies }) => {
-        const auth = cookies.get('admin_auth');
-        const token = cookies.get('admin_token');
-        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+        if (!(await isAuthenticated(cookies))) return fail(403, { error: 'Tidak diijinkan' });
 
         const formData = await request.formData();
         const title = sanitizeInput(formData.get('title') as string);
@@ -807,9 +778,7 @@ export const actions: Actions = {
     },
 
     updateApp: async ({ request, cookies }) => {
-        const auth = cookies.get('admin_auth');
-        const token = cookies.get('admin_token');
-        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+        if (!(await isAuthenticated(cookies))) return fail(403, { error: 'Tidak diijinkan' });
 
         const formData = await request.formData();
         const id = formData.get('id');
@@ -875,9 +844,7 @@ export const actions: Actions = {
     },
 
     deleteApp: async ({ request, cookies }) => {
-        const auth = cookies.get('admin_auth');
-        const token = cookies.get('admin_token');
-        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+        if (!(await isAuthenticated(cookies))) return fail(403, { error: 'Tidak diijinkan' });
 
         const formData = await request.formData();
         const id = formData.get('id');
@@ -896,9 +863,7 @@ export const actions: Actions = {
     // ==================== REVIEW KLIEN ====================
 
     generateReviewLink: async ({ request, cookies }) => {
-        const auth = cookies.get('admin_auth');
-        const token = cookies.get('admin_token');
-        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+        if (!(await isAuthenticated(cookies))) return fail(403, { error: 'Tidak diijinkan' });
 
         const formData = await request.formData();
         const clientName = sanitizeInput(formData.get('client_name') as string);
@@ -945,9 +910,7 @@ export const actions: Actions = {
     // Tautkan (atau lepas) link review lama ke sebuah project.
     // Berguna kalau klien sudah review duluan sebelum project-nya didaftarkan.
     linkTokenProject: async ({ request, cookies }) => {
-        const auth = cookies.get('admin_auth');
-        const token = cookies.get('admin_token');
-        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+        if (!(await isAuthenticated(cookies))) return fail(403, { error: 'Tidak diijinkan' });
 
         const formData = await request.formData();
         const id = formData.get('id');
@@ -979,9 +942,7 @@ export const actions: Actions = {
     },
 
     approveReview: async ({ request, cookies }) => {
-        const auth = cookies.get('admin_auth');
-        const token = cookies.get('admin_token');
-        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+        if (!(await isAuthenticated(cookies))) return fail(403, { error: 'Tidak diijinkan' });
 
         const formData = await request.formData();
         const id = formData.get('id');
@@ -997,9 +958,7 @@ export const actions: Actions = {
     },
 
     rejectReview: async ({ request, cookies }) => {
-        const auth = cookies.get('admin_auth');
-        const token = cookies.get('admin_token');
-        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+        if (!(await isAuthenticated(cookies))) return fail(403, { error: 'Tidak diijinkan' });
 
         const formData = await request.formData();
         const id = formData.get('id');
@@ -1015,9 +974,7 @@ export const actions: Actions = {
     },
 
     deleteReviewToken: async ({ request, cookies }) => {
-        const auth = cookies.get('admin_auth');
-        const token = cookies.get('admin_token');
-        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+        if (!(await isAuthenticated(cookies))) return fail(403, { error: 'Tidak diijinkan' });
 
         const formData = await request.formData();
         const id = formData.get('id');
@@ -1035,9 +992,7 @@ export const actions: Actions = {
     },
 
     markMessageRead: async ({ request, cookies }) => {
-        const auth = cookies.get('admin_auth');
-        const token = cookies.get('admin_token');
-        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+        if (!(await isAuthenticated(cookies))) return fail(403, { error: 'Tidak diijinkan' });
 
         const formData = await request.formData();
         const id = formData.get('id');
@@ -1053,9 +1008,7 @@ export const actions: Actions = {
     },
 
     deleteMessage: async ({ request, cookies }) => {
-        const auth = cookies.get('admin_auth');
-        const token = cookies.get('admin_token');
-        if (auth !== 'true' || !token) return fail(403, { error: 'Tidak diijinkan' });
+        if (!(await isAuthenticated(cookies))) return fail(403, { error: 'Tidak diijinkan' });
 
         const formData = await request.formData();
         const id = formData.get('id');
