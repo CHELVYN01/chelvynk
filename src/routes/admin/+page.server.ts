@@ -8,10 +8,15 @@ import {
     sanitizeInput,
     sanitizeUrl,
     validatePin,
-    generateToken
+    generateToken,
+    createCaptcha,
+    verifyCaptcha
 } from '$lib/server/security';
 import { writeFileSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
+
+// Kunci HMAC puzzle captcha login — sama pola dengan formSecret() di contact/+page.server.ts.
+const captchaSecret = () => env.FORM_SECRET || env.DATABASE_AUTH_TOKEN || 'dev-only-secret';
 
 // PIN dari environment variable (WAJIB)
 const getAdminPin = () => {
@@ -118,7 +123,17 @@ export const load: PageServerLoad = async ({ cookies, getClientAddress }) => {
 
     // Validate both cookie and token exist
     if (!auth || auth !== 'true' || !authToken) {
-        return { projects: [], settings: {}, experiences: [], certificates: [], products: [], stats: emptyStats, authenticated: false };
+        const captcha = await createCaptcha(captchaSecret());
+        return {
+            projects: [],
+            settings: {},
+            experiences: [],
+            certificates: [],
+            products: [],
+            stats: emptyStats,
+            authenticated: false,
+            captcha
+        };
     }
 
     // Semua query dijalankan paralel — sebelumnya berurutan (await satu-satu),
@@ -315,6 +330,8 @@ export const actions: Actions = {
         const formData = await request.formData();
         const pin = formData.get('pin') as string;
         const honeypot = formData.get('website') as string;
+        const captchaToken = formData.get('captcha_token') as string;
+        const captchaAnswer = formData.get('captcha_answer') as string;
 
         // Honeypot check - bots will fill this hidden field
         if (honeypot) {
@@ -322,6 +339,13 @@ export const actions: Actions = {
             recordLoginAttempt(ip, false, ua);
             // Return generic error to not reveal detection method
             return fail(401, { error: 'PIN Salah!' });
+        }
+
+        // Puzzle captcha check - mencegah bot yang submit form tanpa render/solve soal
+        if (!(await verifyCaptcha(captchaSecret(), captchaToken, captchaAnswer))) {
+            console.warn(`[SECURITY] Captcha gagal dari IP: ${ip}`);
+            recordLoginAttempt(ip, false, ua);
+            return fail(400, { error: 'Jawaban puzzle salah atau kedaluwarsa. Coba lagi.' });
         }
 
         // Validate PIN format

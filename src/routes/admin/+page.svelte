@@ -35,6 +35,8 @@
     ExternalLink,
     Package,
     ArrowLeft,
+    Lock,
+    ShieldCheck,
   } from "lucide-svelte";
   import { theme } from "$lib/theme.svelte";
   import { navigating } from "$app/state";
@@ -77,6 +79,7 @@
         devices: { device: string; count: number }[];
       };
       authenticated: boolean;
+      captcha?: { question: string; token: string };
     };
     form: any;
   } = $props();
@@ -354,16 +357,22 @@ Sekali lagi makasih banyak! 🚀`;
 </script>
 
 {#if !data.authenticated}
-  <div class="login-wrapper container">
-    <div class="login-container card fade-in">
+  <div class="login-wrapper">
+    <div class="login-container fade-in">
+      <div class="login-icon">
+        <Lock size={26} />
+      </div>
       <h1>Admin Login</h1>
       <p>Masukkan PIN untuk mengelola project.</p>
 
       {#if form?.error}
-        <div class="alert alert-error">{form.error}</div>
+        <div class="alert alert-error" transition:fade={{ duration: 150 }}>
+          <AlertCircle size={16} />
+          {form.error}
+        </div>
       {/if}
 
-      <form method="POST" action="?/login" use:enhance class="admin-form">
+      <form method="POST" action="?/login" use:enhance class="admin-form login-form">
         <!-- Honeypot field - invisible to humans, bots will fill this -->
         <div
           style="position: absolute; left: -9999px; opacity: 0;"
@@ -385,14 +394,37 @@ Sekali lagi makasih banyak! 🚀`;
             type="password"
             id="pin"
             name="pin"
-            placeholder="****"
+            placeholder="····"
             required
             maxlength="8"
             pattern="[0-9]*"
             inputmode="numeric"
+            autocomplete="off"
             class="pin-input"
           />
         </div>
+
+        {#if data.captcha}
+          <input type="hidden" name="captcha_token" value={data.captcha.token} />
+          <div class="form-group">
+            <label for="captcha_answer" class="pin-label">
+              <ShieldCheck size={13} />
+              Verifikasi: berapa {data.captcha.question}?
+            </label>
+            <input
+              type="text"
+              id="captcha_answer"
+              name="captcha_answer"
+              placeholder="Jawaban"
+              required
+              inputmode="numeric"
+              pattern="[0-9]*"
+              autocomplete="off"
+              class="captcha-input"
+            />
+          </div>
+        {/if}
+
         <button type="submit" class="btn btn-primary w-full btn-login"
           >Buka Dashboard</button
         >
@@ -3686,24 +3718,104 @@ Sekali lagi makasih banyak! 🚀`;
     align-items: center;
     justify-content: center;
     min-height: 100vh;
+    padding: 1.5rem;
+    background:
+      radial-gradient(circle at 20% 15%, rgba(249, 115, 22, 0.12), transparent 45%),
+      radial-gradient(circle at 85% 85%, rgba(249, 115, 22, 0.08), transparent 40%),
+      #0b0b0e;
   }
   .login-container {
-    max-width: 450px;
-    padding: 4rem 3rem;
+    width: 100%;
+    max-width: 400px;
+    padding: 2.75rem 2.25rem;
     text-align: center;
+    background: #141418;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1.75rem;
+    box-shadow:
+      0 20px 60px -20px rgba(0, 0, 0, 0.6),
+      0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+  }
+  .login-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    margin: 0 auto 1.25rem;
+    border-radius: 1rem;
+    background: rgba(249, 115, 22, 0.12);
+    color: var(--primary, #f97316);
+  }
+  .login-container h1 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #fff;
+    margin-bottom: 0.4rem;
+  }
+  .login-container > p {
+    color: #94a3b8;
+    font-size: 0.9rem;
+    margin-bottom: 1.75rem;
+  }
+  .login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+  }
+  .login-form .form-group {
+    text-align: left;
+  }
+  .login-form .pin-label {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: #94a3b8;
+    margin-bottom: 0.5rem;
+  }
+  .login-form .pin-input,
+  .login-form .captcha-input {
+    background: #1c1c22;
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    color: #fff;
+  }
+  .login-form .pin-input:focus,
+  .login-form .captcha-input:focus {
+    background: #1c1c22;
+    border-color: var(--primary, #f97316);
   }
   .pin-input {
-    font-size: 2.5rem;
-    letter-spacing: 1rem;
+    font-size: 2rem;
+    letter-spacing: 0.9rem;
     text-align: center;
-    padding: 1.5rem !important;
+    padding: 1.1rem !important;
+  }
+  .captcha-input {
+    font-size: 1.15rem;
+    font-weight: 700;
+    text-align: center;
+    letter-spacing: 0.05em;
   }
   .btn-login {
-    height: 60px;
-    font-size: 1.125rem;
+    height: 56px;
+    font-size: 1rem;
     font-weight: 800;
-    border-radius: 1.25rem;
-    margin-top: 1rem;
+    border-radius: 1.1rem;
+    margin-top: 0.25rem;
+  }
+  .login-wrapper .alert-error {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-align: left;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.25rem;
+    border-radius: 0.75rem;
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #fca5a5;
+    font-size: 0.85rem;
+    font-weight: 600;
   }
 
   /* Toast — muncul instan (180ms), bisa menumpuk, bisa ditutup manual */

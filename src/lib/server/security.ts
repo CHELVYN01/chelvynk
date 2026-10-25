@@ -114,6 +114,40 @@ export async function verifyFormToken(
     return 'ok';
 }
 
+// ===== Puzzle captcha login admin =====
+// Soal matematika sederhana ("4 + 7 = ?"), jawabannya tidak disimpan di server
+// (stateless, aman di serverless) — di-encode + ditandatangani HMAC di dalam
+// token yang dikirim balik ke client. Bot yang submit PIN langsung tanpa
+// menyelesaikan soal (atau menebak token) akan ditolak di sini.
+const CAPTCHA_TTL_MS = 5 * 60 * 1000; // soal berlaku 5 menit
+
+export async function createCaptcha(
+    secret: string
+): Promise<{ question: string; token: string }> {
+    const a = 1 + Math.floor(Math.random() * 9);
+    const b = 1 + Math.floor(Math.random() * 9);
+    const answer = a + b;
+    const expires = Date.now() + CAPTCHA_TTL_MS;
+    const payload = `${answer}.${expires}`;
+    const sig = await hmacHex(secret, payload);
+    return { question: `${a} + ${b}`, token: `${payload}.${sig}` };
+}
+
+/** true kalau jawaban user benar, token valid (belum diubah), dan belum kedaluwarsa. */
+export async function verifyCaptcha(
+    secret: string,
+    token: string | null | undefined,
+    userAnswer: string | null | undefined
+): Promise<boolean> {
+    if (!token || !userAnswer) return false;
+    const [answerRaw, expiresRaw, sig] = token.split('.');
+    const expires = Number(expiresRaw);
+    if (!answerRaw || !Number.isFinite(expires) || !sig) return false;
+    if (sig !== (await hmacHex(secret, `${answerRaw}.${expiresRaw}`))) return false;
+    if (Date.now() > expires) return false;
+    return answerRaw === String(userAnswer).trim();
+}
+
 // Pola spam yang sering muncul di form kontak: template "newsletter/updates"
 // (hasil terjemahan mesin), SEO/backlink, judi, kripto, dll.
 const SPAM_PATTERNS: RegExp[] = [
